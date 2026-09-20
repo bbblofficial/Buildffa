@@ -15,6 +15,15 @@ kill-height: 0.0
 high-limit: 100.0
 
 # ----------------------------------------------------------
+#  YPvP (Y-Level PvP Restriction)
+#  Players at or above this Y level cannot hit or be hit.
+#  Set with /buildffa ypvp [y]
+# ----------------------------------------------------------
+ypvp:
+  enabled: false
+  y-level: 150.0
+
+# ----------------------------------------------------------
 #  Messages
 # ----------------------------------------------------------
 void-message: '&c%player% &7fell into the void'

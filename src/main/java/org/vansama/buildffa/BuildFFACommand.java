@@ -64,6 +64,9 @@ public class BuildFFACommand implements CommandExecutor {
     if (sub.equals("buildmode")) {
       return handleBuildMode(sender);
     }
+    if (sub.equals("ypvp")) {
+      return handleYPvP(sender, args);
+    }
     if (sub.equals("creator")) {
       return handleCreator(sender);
     }
@@ -76,6 +79,92 @@ public class BuildFFACommand implements CommandExecutor {
     }
     sender.sendMessage(colorize("&cUnknown subcommand. Use /buildffa help"));
     return true;
+  }
+
+  // ==========================================
+  // YPvP Command
+  // ==========================================
+  private boolean handleYPvP(CommandSender sender, String[] args) {
+    if (!sender.hasPermission(getPerm("ypvp", "buildffa.ypvp"))) {
+      sendNoPerm(sender);
+      return true;
+    }
+    
+    YPvP ypvp = getYPvPListener();
+    if (ypvp == null) {
+      sender.sendMessage(colorize("&cError: YPvP listener not found. Try /buildffa reload"));
+      return true;
+    }
+    
+    // /buildffa ypvp (no args) → show current status
+    if (args.length < 2) {
+      sender.sendMessage(colorize("&8&m----------------------------------"));
+      sender.sendMessage(colorize("&6&lYPvP Status"));
+      sender.sendMessage(colorize("&7Enabled: " + (ypvp.isEnabled() ? "&aYES" : "&cNO")));
+      sender.sendMessage(colorize("&7Y-Level: &e" + ypvp.getYPvPLimit()));
+      sender.sendMessage(colorize("&7Usage: &e/buildffa ypvp [y] &7- Set Y level"));
+      sender.sendMessage(colorize("&7Usage: &e/buildffa ypvp toggle &7- Enable/Disable"));
+      sender.sendMessage(colorize("&7Usage: &e/buildffa ypvp off &7- Disable"));
+      sender.sendMessage(colorize("&8&m----------------------------------"));
+      return true;
+    }
+    
+    String arg = args[1].toLowerCase();
+    
+    // /buildffa ypvp toggle
+    if (arg.equals("toggle")) {
+      boolean newState = !ypvp.isEnabled();
+      ypvp.setEnabled(newState);
+      sender.sendMessage(colorize(newState 
+          ? "&aYPvP has been &lENABLED &aat Y >= &e" + ypvp.getYPvPLimit()
+          : "&cYPvP has been &lDISABLED"));
+      return true;
+    }
+    
+    // /buildffa ypvp off
+    if (arg.equals("off")) {
+      ypvp.setEnabled(false);
+      sender.sendMessage(colorize("&cYPvP has been &lDISABLED"));
+      return true;
+    }
+    
+    // /buildffa ypvp on
+    if (arg.equals("on")) {
+      ypvp.setEnabled(true);
+      sender.sendMessage(colorize("&aYPvP has been &lENABLED &aat Y >= &e" + ypvp.getYPvPLimit()));
+      return true;
+    }
+    
+    // /buildffa ypvp <number> → set Y level and enable
+    double y;
+    try {
+      y = Double.parseDouble(arg);
+    } catch (NumberFormatException e) {
+      sender.sendMessage(colorize("&cInvalid number: &e" + args[1]));
+      sender.sendMessage(colorize("&7Usage: &e/buildffa ypvp [y]"));
+      return true;
+    }
+    
+    ypvp.setYPvPLimit(y);
+    ypvp.setEnabled(true);
+    
+    sender.sendMessage(colorize("&aYPvP Y-level set to &e" + y + " &aand &lENABLED&a."));
+    sender.sendMessage(colorize("&7Players at Y >= &e" + y + " &7cannot hit or be hit."));
+    return true;
+  }
+  
+  /**
+   * Find the YPvP listener instance from registered listeners.
+   */
+  private YPvP getYPvPListener() {
+    ArrayList<RegisteredListener> listeners = HandlerList.getRegisteredListeners(this.plugin);
+    for (RegisteredListener rl : listeners) {
+      Listener l = rl.getListener();
+      if (l instanceof YPvP) {
+        return (YPvP) l;
+      }
+    }
+    return null;
   }
 
   // ==========================================
@@ -264,6 +353,9 @@ public class BuildFFACommand implements CommandExecutor {
       if (l instanceof High) {
         ((High) l).reloadConfig();
       }
+      if (l instanceof YPvP) {
+        ((YPvP) l).reloadConfig();
+      }
     }
   }
   
@@ -298,6 +390,9 @@ public class BuildFFACommand implements CommandExecutor {
     sender.sendMessage(colorize("&e/buildffa setvoid [y] &7- Set void Y to a specific value"));
     sender.sendMessage(colorize("&e/buildffa sethighlimit &7- Set high limit to your current Y"));
     sender.sendMessage(colorize("&e/buildffa sethighlimit [y] &7- Set high limit to a value"));
+    sender.sendMessage(colorize("&e/buildffa ypvp [y] &7- Set YPvP Y level & enable"));
+    sender.sendMessage(colorize("&e/buildffa ypvp toggle &7- Enable/Disable YPvP"));
+    sender.sendMessage(colorize("&e/buildffa ypvp off &7- Disable YPvP"));
     sender.sendMessage(colorize("&e/buildffa setspawn &7- Set respawn point to your location"));
     sender.sendMessage(colorize("&e/buildffa creator &7- Show plugin credits"));
     sender.sendMessage(colorize("&e/buildffa reload &7- Reload configuration"));

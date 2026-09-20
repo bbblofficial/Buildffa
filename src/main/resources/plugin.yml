@@ -6,7 +6,7 @@ description: BuildFFA - Created by Muvixo
 commands:
   buildffa:
     description: Main BuildFFA command
-    usage: /buildffa <help|kiteditor|setvoid|sethighlimit|setspawn|buildmode|creator|reload>
+    usage: /buildffa <help|kiteditor|setvoid|sethighlimit|setspawn|buildmode|ypvp|creator|reload>
     aliases:
       - bffa
 permissions:
@@ -27,6 +27,12 @@ permissions:
     default: true
   buildffa.highlimit.bypass:
     description: Bypass the high-limit build restriction
+    default: op
+  buildffa.ypvp:
+    description: Allows setting the YPvP Y level
+    default: op
+  buildffa.ypvp.bypass:
+    description: Bypass the YPvP PvP restriction
     default: op
   buildffa.buildmode:
     description: Allows toggling build mode decorative command

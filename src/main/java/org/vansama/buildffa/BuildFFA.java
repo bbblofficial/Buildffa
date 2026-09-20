@@ -42,6 +42,7 @@ public final class BuildFFA extends JavaPlugin {
     getServer().getPluginManager().registerEvents(new Infinite(this), (Plugin) this);
     getServer().getPluginManager().registerEvents(new KitRestore(this, this.equip, this.kitEditor), (Plugin) this);
     getServer().getPluginManager().registerEvents(new SpawnManager(this), (Plugin) this);
+    getServer().getPluginManager().registerEvents(new YPvP(this), (Plugin) this);
     
     // Register command executor
     getCommand("buildffa").setExecutor(new BuildFFACommand(this, this.kitEditor));
@@ -125,6 +126,8 @@ public final class BuildFFA extends JavaPlugin {
         cfg.set("quit-message", "&e%player% &7left the game &8(&e%online%&7/&e100&8)");
         cfg.set("infinite.food", Boolean.valueOf(true));
         cfg.set("infinite.blocks", Boolean.valueOf(true));
+        cfg.set("ypvp.enabled", Boolean.valueOf(false));
+        cfg.set("ypvp.y-level", Double.valueOf(150.0D));
         cfg.save(configFile);
         getLogger().info("Created default config.yml");
       } catch (IOException e) {
