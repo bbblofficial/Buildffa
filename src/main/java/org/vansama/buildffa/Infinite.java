@@ -76,6 +76,7 @@ public class Infinite implements Listener {
     }
     
     final Material type = itemInHand.getType();
+    final short data = itemInHand.getDurability();
     
     this.plugin.getServer().getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
       @Override
@@ -84,15 +85,23 @@ public class Infinite implements Listener {
         ItemStack current = player.getItemInHand();
         
         if (current != null && current.getType() == type) {
-          if (current.getAmount() < current.getMaxStackSize()) {
-            current.setAmount(current.getAmount() + 1);
+          // Refill to original stack size (never exceed max)
+          int amount = current.getAmount();
+          int max = current.getMaxStackSize();
+          if (amount < max) {
+            // Only add if not already at max — prevents "-128" overflow
+            if (amount + 1 <= max) {
+              current.setAmount(amount + 1);
+            }
           }
         } else {
           for (int i = 0; i < inv.getSize(); i++) {
             ItemStack slot = inv.getItem(i);
-            if (slot != null && slot.getType() == type) {
-              if (slot.getAmount() < slot.getMaxStackSize()) {
-                slot.setAmount(slot.getAmount() + 1);
+            if (slot != null && slot.getType() == type && slot.getDurability() == data) {
+              int amount = slot.getAmount();
+              int max = slot.getMaxStackSize();
+              if (amount < max && amount + 1 <= max) {
+                slot.setAmount(amount + 1);
               }
               break;
             }

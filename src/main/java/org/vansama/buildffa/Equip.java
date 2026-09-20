@@ -38,7 +38,6 @@ public class Equip implements Listener {
   }
   
   public void giveDiamondArmor(Player player) {
-    // Check for custom kit
     if (plugin.getConfig().getConfigurationSection("kits." + player.getUniqueId().toString()) != null) {
       applyCustomKit(player);
       return;
@@ -53,11 +52,11 @@ public class Equip implements Listener {
     player.getInventory().setLeggings(unbreakable(new ItemStack(Material.DIAMOND_LEGGINGS)));
     player.getInventory().setBoots(unbreakable(new ItemStack(Material.DIAMOND_BOOTS)));
     
-    // === SLOT 0: Stone Sword (no enchants) ===
+    // === SLOT 0: Stone Sword ===
     player.getInventory().setItem(0, unbreakable(new ItemStack(Material.STONE_SWORD)));
     
-    // === SLOT 1: Cyan Wool x 128 ===
-    ItemStack cyanWool = new ItemStack(Material.WOOL, 128, (short) 9);
+    // === SLOT 1: Cyan Wool x 64 ===
+    ItemStack cyanWool = new ItemStack(Material.WOOL, 64, (short) 9);
     player.getInventory().setItem(1, cyanWool);
     
     // === SLOT 2: Bow (Punch 1, Power 2) ===
@@ -76,15 +75,12 @@ public class Equip implements Listener {
     axe.addEnchantment(Enchantment.DIG_SPEED, 1);
     player.getInventory().setItem(4, unbreakable(axe));
     
-    // === Extra items in inventory ===
+    // === Extra ===
     player.getInventory().addItem(new ItemStack[] { new ItemStack(Material.ARROW, 12) });
     player.getInventory().addItem(new ItemStack[] { new ItemStack(Material.GOLDEN_APPLE, 3) });
     player.getInventory().addItem(new ItemStack[] { new ItemStack(Material.ENDER_PEARL) });
   }
   
-  /**
-   * Marks an ItemStack as unbreakable in 1.8.8.
-   */
   public static ItemStack unbreakable(ItemStack item) {
     if (item == null) return null;
     ItemMeta meta = item.getItemMeta();
@@ -97,9 +93,7 @@ public class Equip implements Listener {
   private void applyCustomKit(Player player) {
     org.bukkit.configuration.ConfigurationSection section =
         plugin.getConfig().getConfigurationSection("kits." + player.getUniqueId().toString());
-    if (section == null) {
-      return;
-    }
+    if (section == null) return;
     
     player.getInventory().clear();
     player.getInventory().setArmorContents(null);
