@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -24,11 +25,16 @@ public class KillListener implements Listener {
   private Map<UUID, Long> lastVictimTimes = new ConcurrentHashMap<UUID, Long>();
   private JavaPlugin plugin;
   private FileConfiguration config;
-  
+  private String nmsVersion;
+
   public KillListener(JavaPlugin plugin) {
     this.plugin = plugin;
     this.config = plugin.getConfig();
     plugin.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
+    
+    // دریافت خودکار نسخه NMS سرور (مثلاً v1_8_R3) برای جلوگیری از ارور
+    String packageName = plugin.getServer().getClass().getPackage().getName();
+    this.nmsVersion = packageName.substring(packageName.lastIndexOf('.') + 1);
   }
   
   @EventHandler
@@ -39,14 +45,13 @@ public class KillListener implements Listener {
     
     long currentTime = System.currentTimeMillis();
     
-    // Victim cooldown: no repeated kill credit for the same victim within 3s
+    // جلوگیری از حساب شدن کیل تکراری در کمتر از 3 ثانیه
     long lastVictimTime = ((Long) this.lastVictimTimes.getOrDefault(deathPlayer.getUniqueId(), Long.valueOf(0L))).longValue();
     if (currentTime - lastVictimTime < 3000L) {
       return;
     }
     this.lastVictimTimes.put(deathPlayer.getUniqueId(), Long.valueOf(currentTime));
     
-    // Killer cooldown: 80ms between kills
     long lastKillTime = ((Long) this.lastKillTimes.getOrDefault(killer.getUniqueId(), Long.valueOf(0L))).longValue();
     if (currentTime - lastKillTime < 80L) {
       return;
@@ -57,30 +62,39 @@ public class KillListener implements Listener {
     int kills = ((Integer) this.killCounts.getOrDefault(killerId, Integer.valueOf(0))).intValue() + 1;
     this.killCounts.put(killerId, Integer.valueOf(kills));
     
-    String titleSuffix = this.config.getString("Title-Suffix", " &7Kill");
-    String subTitleKill = this.config.getString("SubTitle-kill", "&e+1 Kill");
+    boolean enableTitle = this.config.getBoolean("kill-screen.enable-title", true);
     
-    sendTitle(killer, "+" + kills + titleSuffix, subTitleKill);
+    if (enableTitle) {
+        String title = this.config.getString("kill-screen.title", "&e+%killcount% &7Kill");
+        String subtitle = this.config.getString("kill-screen.subtitle", "&e+1 Kill");
+        
+        title = title.replace("%killcount%", String.valueOf(kills));
+        subtitle = subtitle.replace("%killcount%", String.valueOf(kills));
+        
+        sendTitle(killer, title, subtitle, kills);
+    }
+    
     killer.playSound(killer.getLocation(), Sound.LEVEL_UP, 1.0F, 1.0F);
   }
   
   @SuppressWarnings({ "unchecked", "rawtypes" })
-  private void sendTitle(Player player, String title, String subtitle) {
+  private void sendTitle(Player player, String title, String subtitle, int kills) {
     try {
       title = colorize(title);
       subtitle = colorize(subtitle);
       
-      Class<?> craftPlayerClass = Class.forName("org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer");
+      // استفاده از nmsVersion داینامیک به جای هاردکد
+      Class<?> craftPlayerClass = Class.forName("org.bukkit.craftbukkit." + nmsVersion + ".entity.CraftPlayer");
       Object craftPlayer = craftPlayerClass.cast(player);
       Object entityPlayer = craftPlayerClass.getMethod("getHandle").invoke(craftPlayer);
       Object playerConnection = entityPlayer.getClass().getField("playerConnection").get(entityPlayer);
       
-      Class<?> chatComponentClass = Class.forName("net.minecraft.server.v1_8_R3.ChatComponentText");
+      Class<?> chatComponentClass = Class.forName("net.minecraft.server." + nmsVersion + ".ChatComponentText");
       Object titleComponent = chatComponentClass.getConstructor(String.class).newInstance(title);
       Object subtitleComponent = chatComponentClass.getConstructor(String.class).newInstance(subtitle);
       
-      Class<?> packetTitleClass = Class.forName("net.minecraft.server.v1_8_R3.PacketPlayOutTitle");
-      Class<?> enumTitleActionClass = Class.forName("net.minecraft.server.v1_8_R3.PacketPlayOutTitle$EnumTitleAction");
+      Class<?> packetTitleClass = Class.forName("net.minecraft.server." + nmsVersion + ".PacketPlayOutTitle");
+      Class<?> enumTitleActionClass = Class.forName("net.minecraft.server." + nmsVersion + ".PacketPlayOutTitle$EnumTitleAction");
       
       Object actionTitle = Enum.valueOf((Class<Enum>) enumTitleActionClass, "TITLE");
       Object actionSubtitle = Enum.valueOf((Class<Enum>) enumTitleActionClass, "SUBTITLE");
@@ -89,7 +103,7 @@ public class KillListener implements Listener {
       Object packetTitle = titleConstructor.newInstance(actionTitle, titleComponent);
       Object packetSubtitle = titleConstructor.newInstance(actionSubtitle, subtitleComponent);
       
-      Class<?> packetClass = Class.forName("net.minecraft.server.v1_8_R3.Packet");
+      Class<?> packetClass = Class.forName("net.minecraft.server." + nmsVersion + ".Packet");
       Method sendPacketMethod = playerConnection.getClass().getMethod("sendPacket", packetClass);
       
       sendPacketMethod.invoke(playerConnection, packetTitle);
@@ -98,8 +112,13 @@ public class KillListener implements Listener {
       Constructor<?> timingConstructor = packetTitleClass.getConstructor(int.class, int.class, int.class);
       Object packetTiming = timingConstructor.newInstance(Integer.valueOf(0), Integer.valueOf(40), Integer.valueOf(0));
       sendPacketMethod.invoke(playerConnection, packetTiming);
+      
     } catch (Exception e) {
-      player.sendMessage(title + " " + subtitle);
+      // در صورت ارور، به جای فرستادن متن خام، از تنظیمات فال‌بک کانفیگ استفاده می‌کند
+      if (this.config.getBoolean("kill-screen.enable-chat-fallback", false)) {
+          String fallback = this.config.getString("kill-screen.chat-message", "&a+1 Kill!");
+          player.sendMessage(colorize(fallback.replace("%killcount%", String.valueOf(kills))));
+      }
     }
   }
   

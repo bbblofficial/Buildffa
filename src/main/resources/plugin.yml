@@ -1,12 +1,12 @@
 name: BuildFFA
 version: 4.0
 main: org.vansama.buildffa.BuildFFA
-author: VanSaMa
-description: BuildFFA plugin with GUI Kit Editor - Created by Muvixo
+author: muvixo
+description: BuildFFA - Created by Muvixo
 commands:
   buildffa:
     description: Main BuildFFA command
-    usage: /buildffa <help|kiteditor|setvoid|sethighlimit|setspawn|creator|reload>
+    usage: /buildffa <help|kiteditor|setvoid|sethighlimit|setspawn|buildmode|creator|reload>
     aliases:
       - bffa
 permissions:
@@ -28,3 +28,6 @@ permissions:
   buildffa.highlimit.bypass:
     description: Bypass the high-limit build restriction
     default: op
+  buildffa.buildmode:
+    description: Allows toggling build mode decorative command
+    default: true

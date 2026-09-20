@@ -17,34 +17,15 @@ kill-height: 0.0
 #  High Build Limit
 #  Players cannot place or break blocks at or above this Y.
 #  PvP is still allowed above this Y.
-#  OPs bypass this restriction automatically.
-#  Permission: buildffa.highlimit.bypass
 #  Set with /buildffa sethighlimit [y]
-#
-#  IMPORTANT: do not set this below ~5. A very low value (e.g. 0)
-#  means "Y >= 0" is restricted, which blocks non-OP players from
-#  building almost anywhere on the map. The plugin will auto-correct
-#  values under 5 back to 100 and log a warning, but keep it sane here
-#  too so that safeguard never has to kick in.
 # ----------------------------------------------------------
 high-limit: 100.0
 
 # ----------------------------------------------------------
-#  Kill Message
-#  Broadcast when a player kills another player.
-#  Placeholders:
-#    %killer%    - killer's name
-#    %loser%     - victim's name
-#    %killcount% - killer's total kills
+#  Messages
 # ----------------------------------------------------------
-kill: "&e%killer% &7killed &e%loser% &7(&e%killcount% &7kills)"
-
-# ----------------------------------------------------------
-#  Kill Titles
-#  Title shown to the killer on a successful kill.
-# ----------------------------------------------------------
-Title-Suffix: " &7Kill"
-SubTitle-kill: "&e+1 Kill"
+messages:
+  no-permission: "&cYou do not have permission to do this."
 
 # ----------------------------------------------------------
 #  Join / Quit Messages
@@ -52,8 +33,28 @@ SubTitle-kill: "&e+1 Kill"
 #    %player% - player's name
 #    %online% - current online count
 # ----------------------------------------------------------
-join-message: "&e%player% &7joined the game &8(&e%online%&7/&e100&8)"
-quit-message: "&e%player% &7left the game &8(&e%online%&7/&e100&8)"
+join-message: "&8[&a+&8] &7%player% &8(&a%online%&8/&a100&8)"
+quit-message: "&8[&c-&8] &7%player% &8(&c%online%&8/&c100&8)"
+
+# ----------------------------------------------------------
+#  Kill Broadcast Message
+#  Broadcast when a player kills another player.
+#  Placeholders: %killer%, %loser%, %killcount%
+# ----------------------------------------------------------
+kill: "&e%killer% &7killed &e%loser% &7(&e%killcount% &7kills)"
+
+# ----------------------------------------------------------
+#  Kill Screen Rewards (Titles & Chat)
+# ----------------------------------------------------------
+kill-screen:
+  # Show Title on screen?
+  enable-title: true
+  title: "&e+%killcount% &7Kill"
+  subtitle: "&e+1 Kill"
+  
+  # If the server doesn't support Titles, or you want a chat message instead
+  enable-chat-fallback: false
+  chat-message: "&a+1 Kill! &8(&e%killcount% total&8)"
 
 # ----------------------------------------------------------
 #  Infinite Features
@@ -63,6 +64,19 @@ quit-message: "&e%player% &7left the game &8(&e%online%&7/&e100&8)"
 infinite:
   food: true
   blocks: true
+
+# ----------------------------------------------------------
+#  Permissions Configuration
+#  Customize the permission nodes required for each action.
+# ----------------------------------------------------------
+permissions:
+  kiteditor: "buildffa.kiteditor"
+  setvoid: "buildffa.setvoid"
+  sethighlimit: "buildffa.sethighlimit"
+  setspawn: "buildffa.setspawn"
+  reload: "buildffa.reload"
+  highlimit-bypass: "buildffa.highlimit.bypass"
+  buildmode: "buildffa.buildmode"
 
 # ----------------------------------------------------------
 #  Spawn Point

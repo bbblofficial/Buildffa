@@ -19,6 +19,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class High implements Listener {
   private JavaPlugin plugin;
   private double highLimit;
+  private String bypassPermission;
   
   private final Map<UUID, Long> lastMessageTime = new HashMap<UUID, Long>();
   private static final long MESSAGE_COOLDOWN_MS = 1000L;
@@ -35,6 +36,9 @@ public class High implements Listener {
   private void loadConfiguration() {
     FileConfiguration config = this.plugin.getConfig();
     double value = config.getDouble("high-limit", DEFAULT_HIGH_LIMIT);
+    
+    // Load dynamic bypass permission
+    this.bypassPermission = config.getString("permissions.highlimit-bypass", "buildffa.highlimit.bypass");
     
     // Sanity Check: Fix the value if it's too low
     if (value < MIN_HIGH_LIMIT) {
@@ -68,12 +72,12 @@ public class High implements Listener {
    * Bypass only for:
    *   - Creative mode
    *   - OP players
-   *   - Players explicitly granted "buildffa.highlimit.bypass" (admin-only)
+   *   - Players explicitly granted the configured bypass permission
    */
   private boolean shouldBypass(Player player) {
     if (player.getGameMode() == GameMode.CREATIVE) return true;
     if (player.isOp()) return true;
-    if (player.hasPermission("buildffa.highlimit.bypass")) return true;
+    if (this.bypassPermission != null && !this.bypassPermission.isEmpty() && player.hasPermission(this.bypassPermission)) return true;
     return false;
   }
   

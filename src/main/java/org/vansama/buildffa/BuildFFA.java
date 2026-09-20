@@ -49,7 +49,7 @@ public final class BuildFFA extends JavaPlugin {
     // Log startup
     getLogger().info("Plugin made by PixelValley");
     getLogger().info("You are running on 4.0 (1.8.8 Compatible)");
-    getLogger().info("BuildFFA author: VanSaMa");
+    getLogger().info("BuildFFA author: muvixo");
     getLogger().info("Created by Muvixo");
     
     // ============================================================
