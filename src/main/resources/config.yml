@@ -20,6 +20,12 @@ kill-height: 0.0
 #  OPs bypass this restriction automatically.
 #  Permission: buildffa.highlimit.bypass
 #  Set with /buildffa sethighlimit [y]
+#
+#  IMPORTANT: do not set this below ~5. A very low value (e.g. 0)
+#  means "Y >= 0" is restricted, which blocks non-OP players from
+#  building almost anywhere on the map. The plugin will auto-correct
+#  values under 5 back to 100 and log a warning, but keep it sane here
+#  too so that safeguard never has to kick in.
 # ----------------------------------------------------------
 high-limit: 100.0
 
