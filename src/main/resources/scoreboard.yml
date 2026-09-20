@@ -26,22 +26,22 @@ title:
 
 # ----------------------------------------------------------
 #  Scoreboard Lines
-#  IMPORTANT: Max 16 visible characters per line on 1.8.8!
-#  Use &-codes for colors. No unicode emoji (❤ ★ ✔) — they break.
+#  Max 16 visible chars per line on 1.8.8
+#  No unicode emoji — use text or symbols like :
 #  Placeholders: %player% %kills% %deaths% %online%
 #                %max_online% %world% %ping% %health%
 #                %food% %y% %highlimit% %void%
 # ----------------------------------------------------------
 lines:
   - '&7&m----------------'
-  - '&fPlayer &8» &e%player%'
-  - '&fKills  &8» &a%kills%'
-  - '&fDeaths &8» &c%deaths%'
+  - '&fPlayer: &e%player%'
+  - '&fKills: &a%kills%'
+  - '&fDeaths: &c%deaths%'
   - '&7&m----------------'
-  - '&fOnline &8» &b%online%&7/&b%max_online%'
-  - '&fWorld  &8» &d%world%'
-  - '&fPing   &8» &e%ping%ms'
-  - '&fHealth &8» &c%health%'
+  - '&fOnline: &b%online%&7/&b%max_online%'
+  - '&fWorld: &d%world%'
+  - '&fPing: &e%ping%ms'
+  - '&fHealth: &c%health%'
   - '&7&m----------------'
   - '&6play.pixelvalley.gg'
   - '&7&m----------------'
@@ -56,11 +56,11 @@ per-world:
       - '&7&m----------------'
       - '&a&lOVERWORLD'
       - '&7&m----------------'
-      - '&fPlayer &8» &e%player%'
-      - '&fKills  &8» &a%kills%'
-      - '&fDeaths &8» &c%deaths%'
+      - '&fPlayer: &e%player%'
+      - '&fKills: &a%kills%'
+      - '&fDeaths: &c%deaths%'
       - '&7&m----------------'
-      - '&fOnline &8» &b%online%'
+      - '&fOnline: &b%online%'
       - '&7&m----------------'
       - '&6play.pixelvalley.gg'
       - '&7&m----------------'
@@ -68,11 +68,11 @@ per-world:
       - '&7&m----------------'
       - '&c&lNETHER'
       - '&7&m----------------'
-      - '&fPlayer &8» &e%player%'
-      - '&fKills  &8» &a%kills%'
-      - '&fDeaths &8» &c%deaths%'
+      - '&fPlayer: &e%player%'
+      - '&fKills: &a%kills%'
+      - '&fDeaths: &c%deaths%'
       - '&7&m----------------'
-      - '&fOnline &8» &b%online%'
+      - '&fOnline: &b%online%'
       - '&7&m----------------'
       - '&6play.pixelvalley.gg'
       - '&7&m----------------'

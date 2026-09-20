@@ -5,13 +5,15 @@
 #  Made by PixelValley
 #  Version: 4.0 (1.8.8 Compatible)
 # ==========================================================
-# 
+
 # ----------------------------------------------------------
 #  Void Kill Height
-#  Players who fall below this Y level will die.
-#  Set with /buildffa setvoid [y]
 # ----------------------------------------------------------
 kill-height: 0.0
+
+# ----------------------------------------------------------
+#  High Build Limit
+# ----------------------------------------------------------
 high-limit: 100.0
 
 # ----------------------------------------------------------
@@ -22,6 +24,7 @@ high-limit: 100.0
 ypvp:
   enabled: false
   y-level: 150.0
+  block-projectiles: true
 
 # ----------------------------------------------------------
 #  Messages
@@ -37,9 +40,38 @@ quit-message: '&a%player% &7left the game &8(&e%online%&7/&e100&8)'
 infinite:
   food: true
   blocks: true
-permissions: {}
-kill-screen: {}
 
+# ----------------------------------------------------------
+#  Permissions
+# ----------------------------------------------------------
+permissions:
+  ypvp: 'buildffa.ypvp'
+  ypvp-bypass: 'buildffa.ypvp.bypass'
+  kiteditor: 'buildffa.kiteditor'
+  setvoid: 'buildffa.setvoid'
+  sethighlimit: 'buildffa.sethighlimit'
+  setspawn: 'buildffa.setspawn'
+  buildmode: 'buildffa.buildmode'
+  reload: 'buildffa.reload'
+  scoreboard-toggle: 'buildffa.scoreboard.toggle'
+  highlimit-bypass: 'buildffa.highlimit.bypass'
+
+messages:
+  no-permission: '&cYou do not have permission to do this.'
+
+# ----------------------------------------------------------
+#  Kill Screen
+# ----------------------------------------------------------
+kill-screen:
+  enable-title: true
+  title: '&e+%killcount% &7Kill'
+  subtitle: '&e+1 Kill'
+  enable-chat-fallback: false
+  chat-message: '&a+1 Kill!'
+
+# ----------------------------------------------------------
+#  Spawn
+# ----------------------------------------------------------
 spawn:
   world: world
   x: 0.5152370197481
