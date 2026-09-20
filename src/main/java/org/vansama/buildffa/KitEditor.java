@@ -138,18 +138,18 @@ public class KitEditor implements Listener {
     // Slot 1: Cyan Wool x 64
     contents[1] = new ItemStack(Material.WOOL, 64, (short) 9);
     
-    // Slot 2: Iron Axe (Efficiency I, Unbreakable)
+    // Slot 2: Shears (Unbreakable)
+    contents[2] = unbreakable(new ItemStack(Material.SHEARS));
+    
+    // Slot 3: Iron Axe (Efficiency I, Unbreakable)
     ItemStack axe = new ItemStack(Material.IRON_AXE);
     axe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 1);
-    contents[2] = unbreakable(axe);
+    contents[3] = unbreakable(axe);
     
-    // Slot 3: Iron Pickaxe (Efficiency II, Unbreakable)
+    // Slot 4: Iron Pickaxe (Efficiency II, Unbreakable)
     ItemStack pickaxe = new ItemStack(Material.IRON_PICKAXE);
     pickaxe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 2);
-    contents[3] = unbreakable(pickaxe);
-    
-    // Slot 4: Shears (Unbreakable)
-    contents[4] = unbreakable(new ItemStack(Material.SHEARS));
+    contents[4] = unbreakable(pickaxe);
     
     // Slots 5-26: empty
     
@@ -245,6 +245,11 @@ public class KitEditor implements Listener {
     return this.editingKit.containsKey(player.getUniqueId()) && this.editingKit.get(player.getUniqueId()).booleanValue();
   }
   
+  /**
+   * Handle clicks:
+   * - Clicks in the editor GUI: allow all except button slots
+   * - Clicks in the PLAYER inventory while editor open: cancel (prevents desync)
+   */
   @EventHandler
   public void onInventoryClick(InventoryClickEvent event) {
     if (!(event.getWhoClicked() instanceof Player)) {
@@ -259,6 +264,7 @@ public class KitEditor implements Listener {
     Inventory editor = this.openEditors.get(player.getUniqueId());
     if (editor == null) return;
     
+    // Click in player's own inventory → cancel
     if (event.getInventory() != editor) {
       event.setCancelled(true);
       return;
@@ -266,6 +272,7 @@ public class KitEditor implements Listener {
     
     int slot = event.getRawSlot();
     
+    // Buttons
     if (slot == SLOT_SAVE) {
       event.setCancelled(true);
       saveKit(player);
@@ -290,12 +297,18 @@ public class KitEditor implements Listener {
       return;
     }
     
+    // Shift-click from editor moves to player inv → cancel to prevent smuggling
     if (event.isShiftClick()) {
       event.setCancelled(true);
       return;
     }
+    
+    // Slots 0-30: fully allowed. Pick up, place, swap, etc.
   }
   
+  /**
+   * Handle drags: cancel if any part is in the button row or player inv.
+   */
   @EventHandler
   public void onInventoryDrag(InventoryDragEvent event) {
     if (!(event.getWhoClicked() instanceof Player)) {
@@ -309,7 +322,12 @@ public class KitEditor implements Listener {
     
     for (Integer rawSlot : event.getRawSlots()) {
       int s = rawSlot.intValue();
-      if (s >= SLOT_SPACER || s >= SIZE) {
+      // If any drag slot is outside the editor's allow-region → cancel
+      if (s >= SIZE) {
+        event.setCancelled(true);
+        return;
+      }
+      if (s >= SLOT_SPACER) {
         event.setCancelled(true);
         return;
       }

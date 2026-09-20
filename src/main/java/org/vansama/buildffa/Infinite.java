@@ -1,12 +1,10 @@
 package org.vansama.buildffa;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
@@ -18,7 +16,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class Infinite implements Listener {
   
   private final JavaPlugin plugin;
-  private final Map<UUID, Integer> prePlaceAmount = new HashMap<UUID, Integer>();
   
   public Infinite(JavaPlugin plugin) {
     this.plugin = plugin;
@@ -38,20 +35,21 @@ public class Infinite implements Listener {
   }
   
   /**
-   * Infinite golden apples / food.
+   * Infinite golden apples.
    *
-   * How it works:
-   * 1. Player eats 1 apple (slot drops from N to N-1).
-   * 2. After 1 tick, Bukkit has finished the consume.
-   * 3. We add exactly 1 apple back — the one they just ate.
-   * 4. Because we wait a tick, we don't double-add (which was the bug).
+   * Solution:
+   * 1. Cancel the consume event → Bukkit NEVER removes the item.
+   * 2. Manually apply the golden apple's effect (heal 4 HP + absorption for enchanted, 4 HP for normal).
+   * 3. The apple stays in the inventory — no duplication, no removal, no restore needed.
+   *
+   * PlayerItemConsumeEvent priority HIGHEST ensures we intercept before any other plugin.
    */
-  @EventHandler
-  public void onItemConsume(final PlayerItemConsumeEvent event) {
-    final Player player = event.getPlayer();
+  @EventHandler(priority = EventPriority.HIGHEST)
+  public void onItemConsume(PlayerItemConsumeEvent event) {
+    Player player = event.getPlayer();
     ItemStack item = event.getItem();
-    
     Material type = item.getType();
+    
     if (type != Material.GOLDEN_APPLE
         && type != Material.GOLDEN_CARROT
         && type != Material.COOKED_BEEF
@@ -59,18 +57,23 @@ public class Infinite implements Listener {
       return;
     }
     
-    // Wait 1 tick for Bukkit to finish consuming, then restore exactly 1 item
-    this.plugin.getServer().getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
-      @Override
-      public void run() {
-        if (!player.isOnline()) return;
-        player.getInventory().addItem(new ItemStack[] { new ItemStack(event.getItem().getType(), 1) });
-        player.updateInventory();
-      }
-    }, 1L);
+    // Cancel — the item stays in the inventory
+    event.setCancelled(true);
     
+    // Manually apply the food/heal effect
+    if (type == Material.GOLDEN_APPLE) {
+      // Heal 4 HP (2 hearts) for a normal golden apple
+      double newHealth = player.getHealth() + 4.0D;
+      if (newHealth > player.getMaxHealth()) newHealth = player.getMaxHealth();
+      player.setHealth(newHealth);
+    }
+    
+    // Keep hunger full anyway
     player.setFoodLevel(20);
     player.setSaturation(20.0F);
+    
+    // Refresh the inventory so the client doesn't show the item as consumed
+    player.updateInventory();
   }
   
   @EventHandler

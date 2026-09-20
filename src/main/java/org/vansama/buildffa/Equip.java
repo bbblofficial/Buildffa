@@ -61,18 +61,18 @@ public class Equip implements Listener {
     ItemStack cyanWool = new ItemStack(Material.WOOL, 64, (short) 9);
     player.getInventory().setItem(1, cyanWool);
     
-    // === SLOT 2: Iron Axe (Efficiency I, Unbreakable) ===
+    // === SLOT 2: Shears (Unbreakable) ===
+    player.getInventory().setItem(2, unbreakable(new ItemStack(Material.SHEARS)));
+    
+    // === SLOT 3: Iron Axe (Efficiency I, Unbreakable) ===
     ItemStack axe = new ItemStack(Material.IRON_AXE);
     axe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 1);
-    player.getInventory().setItem(2, unbreakable(axe));
+    player.getInventory().setItem(3, unbreakable(axe));
     
-    // === SLOT 3: Iron Pickaxe (Efficiency II, Unbreakable) ===
+    // === SLOT 4: Iron Pickaxe (Efficiency II, Unbreakable) ===
     ItemStack pickaxe = new ItemStack(Material.IRON_PICKAXE);
     pickaxe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 2);
-    player.getInventory().setItem(3, unbreakable(pickaxe));
-    
-    // === SLOT 4: Shears (Unbreakable) ===
-    player.getInventory().setItem(4, unbreakable(new ItemStack(Material.SHEARS)));
+    player.getInventory().setItem(4, unbreakable(pickaxe));
     
     // No bow, no arrows, no ender pearl, no golden apples
   }
