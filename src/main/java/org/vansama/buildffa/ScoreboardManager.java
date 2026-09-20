@@ -1,6 +1,7 @@
 package org.vansama.buildffa;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -20,8 +21,8 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 
 public class ScoreboardManager implements Listener {
 
@@ -37,6 +38,9 @@ public class ScoreboardManager implements Listener {
 
   private int animationFrame = 0;
   private int taskId = -1;
+
+  // 1.8.8 sidebar supports up to 15 lines
+  private static final int MAX_LINES = 15;
 
   public ScoreboardManager(JavaPlugin plugin, KillListener killListener) {
     this.plugin = plugin;
@@ -63,15 +67,13 @@ public class ScoreboardManager implements Listener {
   public void reloadConfig() {
     loadScoreboardConfig();
     this.animationFrame = 0;
-
-    // Recreate every player's board so changes take effect immediately
     for (Player player : Bukkit.getOnlinePlayers()) {
       createScoreboard(player);
     }
   }
 
   // ============================================================
-  //  Task
+  //  Update Task
   // ============================================================
 
   private void startUpdateTask() {
@@ -101,6 +103,7 @@ public class ScoreboardManager implements Listener {
   @EventHandler
   public void onPlayerJoin(PlayerJoinEvent event) {
     final Player player = event.getPlayer();
+    int delay = this.scoreboardConfig.getInt("join-delay", 5);
     Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
       @Override
       public void run() {
@@ -108,7 +111,7 @@ public class ScoreboardManager implements Listener {
           createScoreboard(player);
         }
       }
-    }, 5L);
+    }, delay);
   }
 
   @EventHandler
@@ -119,7 +122,7 @@ public class ScoreboardManager implements Listener {
   }
 
   // ============================================================
-  //  Scoreboard Creation / Update
+  //  Scoreboard Creation
   // ============================================================
 
   public void createScoreboard(Player player) {
@@ -129,11 +132,24 @@ public class ScoreboardManager implements Listener {
     Scoreboard board = Bukkit.getScoreboardManager().getNewScoreboard();
     Objective objective = board.registerNewObjective("buildffa", "dummy");
     objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+    objective.setDisplayName(colorize(getTitle()));
+
+    // Create 15 teams (one per possible line)
+    for (int i = 0; i < MAX_LINES; i++) {
+      Team team = board.registerNewTeam("line_" + i);
+      // Each team has an invisible unique entry so the number hides
+      String entry = getUniqueEntry(i);
+      team.addEntry(entry);
+    }
 
     this.playerBoards.put(player.getUniqueId(), board);
     player.setScoreboard(board);
     updateScoreboard(player);
   }
+
+  // ============================================================
+  //  Scoreboard Update
+  // ============================================================
 
   public void updateScoreboard(Player player) {
     if (!this.scoreboardConfig.getBoolean("enabled", true)) {
@@ -158,57 +174,69 @@ public class ScoreboardManager implements Listener {
       objective.setDisplaySlot(DisplaySlot.SIDEBAR);
     }
 
-    // ---- Title ----
-    String title;
+    // Update title (animated or static)
+    objective.setDisplayName(colorize(getTitle()));
+
+    // Get lines for this player
+    List<String> lines = getLinesForPlayer(player);
+    if (lines == null) lines = new ArrayList<String>();
+
+    // Limit to 15 lines
+    if (lines.size() > MAX_LINES) {
+      lines = lines.subList(0, MAX_LINES);
+    }
+
+    // Apply placeholders to all lines first
+    List<String> processed = new ArrayList<String>();
+    for (String raw : lines) {
+      processed.add(applyPlaceholders(player, raw));
+    }
+
+    // Update each team
+    for (int i = 0; i < MAX_LINES; i++) {
+      Team team = board.getTeam("line_" + i);
+      if (team == null) {
+        team = board.registerNewTeam("line_" + i);
+        team.addEntry(getUniqueEntry(i));
+      }
+
+      if (i < processed.size()) {
+        String line = processed.get(i);
+        // splitLine handles 16-char limit and color codes properly
+        String[] parts = splitLine(line);
+        team.setPrefix(parts[0]);
+        team.setSuffix(parts[1]);
+      } else {
+        // Empty line — hide it by setting empty prefix/suffix
+        team.setPrefix("");
+        team.setSuffix("");
+      }
+    }
+
+    // Add all entries to the objective with descending scores
+    // but ONLY if we haven't already added them (avoids flicker)
+    for (int i = 0; i < MAX_LINES; i++) {
+      String entry = getUniqueEntry(i);
+      if (!objective.getScore(entry).isScoreSet()) {
+        // Score from 15 (top) down to 1 (bottom)
+        objective.getScore(entry).setScore(MAX_LINES - i);
+      }
+    }
+  }
+
+  // ============================================================
+  //  Title
+  // ============================================================
+
+  private String getTitle() {
     if (this.scoreboardConfig.getBoolean("title.animated", true)) {
       List<String> frames = this.scoreboardConfig.getStringList("title.frames");
       if (frames == null || frames.isEmpty()) {
-        title = "&6&lBuildFFA";
-      } else {
-        title = frames.get(this.animationFrame % frames.size());
+        return "&6&lBuildFFA";
       }
-    } else {
-      title = this.scoreboardConfig.getString("title.static", "&6&lBuildFFA");
+      return frames.get(this.animationFrame % frames.size());
     }
-    objective.setDisplayName(colorize(title));
-
-    // ---- Lines ----
-    List<String> lines = getLinesForPlayer(player);
-    if (lines == null) lines = new java.util.ArrayList<String>();
-
-    // Reset old entries
-    for (String entry : board.getEntries()) {
-      board.resetScores(entry);
-    }
-
-    // In 1.8 the max line length is 16 chars per entry.
-    int max = Math.min(lines.size(), 15); // 1.8 sidebar limit is 15 lines
-
-    for (int i = 0; i < max; i++) {
-      String raw = lines.get(i);
-      String processed = applyPlaceholders(player, raw);
-
-      String entry;
-      String prefix;
-      String suffix;
-
-      if (processed.length() > 16) {
-        prefix = processed.substring(0, 16);
-        suffix = processed.substring(16);
-        String lastColors = ChatColor.getLastColors(prefix);
-        if (lastColors != null && !lastColors.isEmpty()) {
-          suffix = lastColors + suffix;
-        }
-        entry = prefix + uniqueCode(i);
-      } else {
-        entry = processed + uniqueCode(i);
-      }
-
-      Score score = objective.getScore(entry);
-      score.setScore(max - i);
-    }
-
-    player.setScoreboard(board);
+    return this.scoreboardConfig.getString("title.static", "&6&lBuildFFA");
   }
 
   private List<String> getLinesForPlayer(Player player) {
@@ -223,6 +251,65 @@ public class ScoreboardManager implements Listener {
   }
 
   // ============================================================
+  //  Line Splitting (for 1.8.8's 16-char prefix limit)
+  // ============================================================
+
+  /**
+   * Splits a line into prefix (max 16 chars) and suffix (max 16 chars).
+   * Handles color codes correctly so colors carry over.
+   */
+  private String[] splitLine(String line) {
+    if (line == null) return new String[]{"", ""};
+    if (line.isEmpty()) return new String[]{"", ""};
+
+    // If the whole line fits in 16 visible chars, no split needed
+    if (line.length() <= 16) {
+      return new String[]{line, ""};
+    }
+
+    // Find the split point (16 chars, but don't split mid-color-code)
+    int splitAt = 16;
+
+    // If character at splitAt-1 is '§' (section sign), back up one
+    if (line.length() > 0 && line.charAt(splitAt - 1) == ChatColor.COLOR_CHAR) {
+      splitAt--;
+    }
+
+    String prefix = line.substring(0, splitAt);
+    String suffix = line.substring(splitAt);
+
+    // Get last color code from prefix and prepend to suffix
+    String lastColors = ChatColor.getLastColors(prefix);
+    if (lastColors != null && !lastColors.isEmpty()) {
+      suffix = lastColors + suffix;
+    }
+
+    // Trim suffix to 16 chars max (1.8.8 limit)
+    if (suffix.length() > 16) {
+      // Make sure we don't cut in the middle of a color code
+      int end = 16;
+      if (suffix.length() > 0 && suffix.charAt(end - 1) == ChatColor.COLOR_CHAR) {
+        end--;
+      }
+      suffix = suffix.substring(0, end);
+    }
+
+    return new String[]{prefix, suffix};
+  }
+
+  /**
+   * Returns a unique invisible entry for a given line index.
+   * Uses section-sign + color code so the entry is invisible.
+   * Every team needs a unique entry so 1.8.8 doesn't merge them.
+   */
+  private String getUniqueEntry(int index) {
+    ChatColor[] colors = ChatColor.values();
+    ChatColor c1 = colors[index % colors.length];
+    ChatColor c2 = colors[(index / colors.length) % colors.length];
+    return c1.toString() + c2.toString() + ChatColor.RESET;
+  }
+
+  // ============================================================
   //  Placeholders
   // ============================================================
 
@@ -232,7 +319,7 @@ public class ScoreboardManager implements Listener {
     int kills = this.killListener.getKillCount(player);
     int deaths = this.playerDeaths.containsKey(player.getUniqueId())
         ? this.playerDeaths.get(player.getUniqueId()).intValue() : 0;
-    int online = Bukkit.getOnlinePlayers().size();   // <-- FIXED (was .length)
+    int online = Bukkit.getOnlinePlayers().size();
     int maxOnline = Bukkit.getMaxPlayers();
     String world = player.getWorld().getName();
     int ping = getPing(player);
@@ -275,7 +362,7 @@ public class ScoreboardManager implements Listener {
   }
 
   // ============================================================
-  //  Toggle Visibility
+  //  Toggle
   // ============================================================
 
   public boolean isHidden(Player player) {
@@ -287,25 +374,18 @@ public class ScoreboardManager implements Listener {
     if (this.hiddenPlayers.contains(id)) {
       this.hiddenPlayers.remove(id);
       createScoreboard(player);
-      return true; // now visible
+      return true;
     } else {
       this.hiddenPlayers.add(id);
       this.playerBoards.remove(id);
       player.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
-      return false; // now hidden
+      return false;
     }
   }
 
   // ============================================================
   //  Utilities
   // ============================================================
-
-  private String uniqueCode(int index) {
-    ChatColor[] colors = ChatColor.values();
-    ChatColor c1 = colors[index % colors.length];
-    ChatColor c2 = colors[(index / colors.length) % colors.length];
-    return c1.toString() + c2.toString();
-  }
 
   private int getPing(Player player) {
     try {
