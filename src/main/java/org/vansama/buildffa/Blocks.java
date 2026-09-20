@@ -18,9 +18,9 @@ public class Blocks implements Listener {
   private JavaPlugin plugin;
   private Map<Location, Long> placedBlocks = new HashMap<Location, Long>();
   
-  // 9 seconds = 180 ticks (20 ticks per second)
+  // 9 seconds = 180 ticks
   private static final long RESTORE_DELAY_TICKS = 180L;
-  // Player-placed blocks decay faster (5 seconds)
+  // Player-placed blocks decay after 5 seconds
   private static final long DECAY_DELAY_TICKS = 100L;
   
   public Blocks(JavaPlugin plugin) {
@@ -37,6 +37,7 @@ public class Blocks implements Listener {
     
     final Location loc = block.getLocation().clone();
     final Material originalType = block.getType();
+    final byte originalData = block.getData();
     
     this.placedBlocks.put(loc, Long.valueOf(System.currentTimeMillis()));
     
@@ -62,31 +63,25 @@ public class Blocks implements Listener {
     final Block block = event.getBlock();
     final Location loc = block.getLocation().clone();
     final Material blockType = block.getType();
+    // *** THE FIX: capture the data value (color/variant) ***
+    final byte blockData = block.getData();
     
-    // ============================================================
-    // 1) Cancel the event so NO items drop from the broken block.
-    // 2) Manually remove the block so it disappears visually.
-    // ============================================================
+    // Cancel the event so no items drop; manually remove the block
     event.setCancelled(true);
     block.setType(Material.AIR);
     
-    // If the broken block was a player-placed one, just remove it from tracking
-    // (it wouldn't have been restored anyway).
+    // If this was a player-placed block, don't restore it
     if (this.placedBlocks.containsKey(loc)) {
       this.placedBlocks.remove(loc);
       return;
     }
     
-    // ============================================================
-    // 3) Natural block — schedule restore after 9 seconds (180 ticks)
-    // ============================================================
+    // Natural block — restore after 9 seconds WITH the original data value
     Bukkit.getScheduler().scheduleSyncDelayedTask((Plugin) this.plugin, new Runnable() {
       @Override
       public void run() {
         Block b = loc.getBlock();
         if (b.getType() == Material.AIR) {
-          // Restore the block exactly where it was
-          // Skip some materials that shouldn't come back (safety)
           if (blockType != Material.REDSTONE_BLOCK
               && blockType != Material.BEDROCK
               && blockType != Material.AIR
@@ -94,11 +89,11 @@ public class Blocks implements Listener {
               && blockType != Material.STATIONARY_WATER
               && blockType != Material.LAVA
               && blockType != Material.STATIONARY_LAVA) {
+            // *** Restore material AND data (e.g. red wool keeps value 14) ***
             b.setType(blockType);
+            b.setData(blockData);
           }
         } else {
-          // Block was replaced by something else (e.g. player placed a block there).
-          // Retry every 10 ticks until it's AIR again, then restore.
           Bukkit.getScheduler().scheduleSyncDelayedTask((Plugin) Blocks.this.plugin, this, 10L);
         }
       }
