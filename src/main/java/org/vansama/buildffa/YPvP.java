@@ -26,13 +26,13 @@ public class YPvP implements Listener {
     private String bypassPermission;
     private boolean blockProjectiles;
 
-    private final Map<UUID, Double> lastHealth = new HashMap<UUID, Double>();
+    private final Map<UUID, Long> lastMessageTime = new HashMap<UUID, Long>();
+    private static final long MESSAGE_COOLDOWN = 1500L;
 
     public YPvP(JavaPlugin plugin) {
         this.plugin = plugin;
         loadConfiguration();
         Bukkit.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
-        startHealthTracker();
     }
 
     private void loadConfiguration() {
@@ -65,17 +65,6 @@ public class YPvP implements Listener {
         return false;
     }
 
-    private void startHealthTracker() {
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(this.plugin, new Runnable() {
-            @Override
-            public void run() {
-                for (Player p : Bukkit.getOnlinePlayers()) {
-                    lastHealth.put(p.getUniqueId(), p.getHealth());
-                }
-            }
-        }, 1L, 1L);
-    }
-
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onDamageLowest(EntityDamageByEntityEvent event) {
         applyProtection(event, true);
@@ -97,7 +86,6 @@ public class YPvP implements Listener {
             if (!shouldBypass(victim) && isAboveLimit(victim)) {
                 event.setCancelled(true);
                 event.setDamage(0);
-                if (!firstPass) restoreHealth(victim);
             }
             return;
         }
@@ -108,14 +96,11 @@ public class YPvP implements Listener {
         if (attackerBypass && victimBypass) return;
 
         boolean shouldBlock = false;
-        String reason = null;
 
         if (!attackerBypass && isAboveLimit(attacker)) {
             shouldBlock = true;
-            reason = "&cYou cannot hit players while above Y=" + (int) this.yPvPLimit + "!";
         } else if (!victimBypass && isAboveLimit(victim)) {
             shouldBlock = true;
-            reason = "&cThat player is above the YPvP limit!";
         }
 
         if (!shouldBlock) return;
@@ -124,33 +109,7 @@ public class YPvP implements Listener {
         event.setDamage(0);
 
         if (firstPass && attacker != null) {
-            sendMessage(attacker, reason);
-        }
-
-        if (!firstPass) {
-            restoreHealth(victim);
-        }
-    }
-
-    private void restoreHealth(final Player victim) {
-        final UUID id = victim.getUniqueId();
-        final Double previous = this.lastHealth.get(id);
-
-        if (previous == null) return;
-
-        if (victim.getHealth() < previous.doubleValue()) {
-            Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
-                @Override
-                public void run() {
-                    if (victim.isOnline() && victim.getHealth() > 0) {
-                        double max = victim.getMaxHealth();
-                        double restored = Math.min(previous.doubleValue(), max);
-                        if (victim.getHealth() < restored) {
-                            victim.setHealth(restored);
-                        }
-                    }
-                }
-            }, 1L);
+            sendMessage(attacker);
         }
     }
 
@@ -169,7 +128,6 @@ public class YPvP implements Listener {
             if (isAboveLimit(victim)) {
                 event.setCancelled(true);
                 event.setDamage(0);
-                restoreHealth(victim);
             }
         }
     }
@@ -187,7 +145,7 @@ public class YPvP implements Listener {
 
         if (isAboveLimit(shooter)) {
             event.setCancelled(true);
-            sendMessage(shooter, "&cYou cannot shoot projectiles above Y=" + (int) this.yPvPLimit + "!");
+            sendMessage(shooter);
         }
     }
 
@@ -208,9 +166,20 @@ public class YPvP implements Listener {
         return null;
     }
 
-    private void sendMessage(Player player, String message) {
+    private void sendMessage(Player player) {
         if (player == null || !player.isOnline()) return;
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
+
+        long now = System.currentTimeMillis();
+        long last = this.lastMessageTime.containsKey(player.getUniqueId())
+                ? this.lastMessageTime.get(player.getUniqueId()).longValue() : 0L;
+
+        if (now - last < MESSAGE_COOLDOWN) return;
+        this.lastMessageTime.put(player.getUniqueId(), Long.valueOf(now));
+
+        player.sendMessage("");
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "  &6&lYPvP"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "  &7You cannot PvP above &eY=" + (int) this.yPvPLimit));
+        player.sendMessage("");
     }
 
     public boolean isEnabled() {
