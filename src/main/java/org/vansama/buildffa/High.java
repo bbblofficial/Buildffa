@@ -8,14 +8,11 @@ import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -23,8 +20,7 @@ public class High implements Listener {
   private JavaPlugin plugin;
   private double highLimit;
   
-  // Cooldown: only send the "cannot place blocks here" message once per second
-  // per player, so the player never sees it twice in a row.
+  // Cooldown so the "cannot place blocks" message only shows once per second
   private final Map<UUID, Long> lastMessageTime = new HashMap<UUID, Long>();
   private static final long MESSAGE_COOLDOWN_MS = 1000L;
   
@@ -54,20 +50,10 @@ public class High implements Listener {
     player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
   }
   
-  @EventHandler
-  public void onProjectileLaunch(ProjectileLaunchEvent event) {
-    if (event.getEntity().getShooter() instanceof LivingEntity) {
-      LivingEntity shooter = (LivingEntity) event.getEntity().getShooter();
-      if (shooter instanceof Player) {
-        Player player = (Player) shooter;
-        if (player.getGameMode() != GameMode.CREATIVE
-            && player.getLocation().getY() >= this.highLimit) {
-          event.setCancelled(true);
-        }
-      }
-    }
-  }
-  
+  /**
+   * Block placement above the high limit is BLOCKED.
+   * Only the placed block's Y is checked — the player's Y is irrelevant.
+   */
   @EventHandler
   public void onBlockPlace(BlockPlaceEvent event) {
     Player player = event.getPlayer();
@@ -80,6 +66,9 @@ public class High implements Listener {
     }
   }
   
+  /**
+   * Block break above the high limit is BLOCKED.
+   */
   @EventHandler
   public void onBlockBreak(BlockBreakEvent event) {
     Player player = event.getPlayer();
@@ -92,14 +81,12 @@ public class High implements Listener {
     }
   }
   
-  @EventHandler
-  public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-    if (event.getEntity() instanceof Player) {
-      Player player = (Player) event.getEntity();
-      if (player.getGameMode() != GameMode.CREATIVE
-          && player.getLocation().getY() >= this.highLimit) {
-        event.setCancelled(true);
-      }
-    }
-  }
+  // ============================================================
+  // PvP above the high limit is ALLOWED
+  // Projectile use above the high limit is ALLOWED
+  //
+  // The EntityDamageByEntityEvent and ProjectileLaunchEvent handlers
+  // have been intentionally removed so players can fight freely
+  // above the build limit.
+  // ============================================================
 }
