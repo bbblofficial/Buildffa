@@ -1,0 +1,109 @@
+package org.vansama.buildffa;
+
+import org.bukkit.GameMode;
+import org.bukkit.Material;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.java.JavaPlugin;
+
+public class Infinite implements Listener {
+  
+  private final JavaPlugin plugin;
+  
+  public Infinite(JavaPlugin plugin) {
+    this.plugin = plugin;
+    plugin.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
+  }
+  
+  // INFINITE FOOD - Food level never decreases
+  @EventHandler
+  public void onFoodLevelChange(FoodLevelChangeEvent event) {
+    if (!(event.getEntity() instanceof Player)) {
+      return;
+    }
+    Player player = (Player) event.getEntity();
+    if (event.getFoodLevel() < 20) {
+      event.setCancelled(true);
+      player.setFoodLevel(20);
+      player.setSaturation(20.0F);
+      player.setExhaustion(0.0F);
+    }
+  }
+  
+  // INFINITE FOOD - Eating golden apples doesn't consume them
+  @EventHandler
+  public void onItemConsume(PlayerItemConsumeEvent event) {
+    final Player player = event.getPlayer();
+    ItemStack item = event.getItem();
+    
+    if (item.getType() == Material.GOLDEN_APPLE
+        || item.getType() == Material.GOLDEN_CARROT
+        || item.getType() == Material.COOKED_BEEF
+        || item.getType() == Material.BREAD) {
+      
+      final ItemStack consumedItem = item.clone();
+      consumedItem.setAmount(1);
+      
+      this.plugin.getServer().getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
+        @Override
+        public void run() {
+          player.getInventory().addItem(new ItemStack[] { consumedItem });
+        }
+      }, 1L);
+    }
+    
+    player.setFoodLevel(20);
+    player.setSaturation(20.0F);
+  }
+  
+  // INFINITE BLOCKS - Blocks are never consumed when placed
+  @EventHandler
+  public void onBlockPlace(BlockPlaceEvent event) {
+    final Player player = event.getPlayer();
+    
+    if (player.getGameMode() == GameMode.CREATIVE) {
+      return;
+    }
+    
+    // 1.8.8 uses getItemInHand(), not getItemInMainHand()
+    final ItemStack itemInHand = player.getItemInHand();
+    
+    if (itemInHand == null || itemInHand.getType() == Material.AIR) {
+      return;
+    }
+    
+    final Material type = itemInHand.getType();
+    
+    this.plugin.getServer().getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
+      @Override
+      public void run() {
+        PlayerInventory inv = player.getInventory();
+        // 1.8.8: getItemInHand()
+        ItemStack current = player.getItemInHand();
+        
+        if (current != null && current.getType() == type) {
+          if (current.getAmount() < current.getMaxStackSize()) {
+            current.setAmount(current.getAmount() + 1);
+          }
+        } else {
+          for (int i = 0; i < inv.getSize(); i++) {
+            ItemStack slot = inv.getItem(i);
+            if (slot != null && slot.getType() == type) {
+              if (slot.getAmount() < slot.getMaxStackSize()) {
+                slot.setAmount(slot.getAmount() + 1);
+              }
+              break;
+            }
+          }
+        }
+      }
+    }, 1L);
+  }
+}

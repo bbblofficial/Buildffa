@@ -1,0 +1,24 @@
+name: BuildFFA
+version: 3.3
+main: org.vansama.buildffa.BuildFFA
+author: VanSaMa
+description: BuildFFA plugin with Kit Editor - Created by Muvixo
+commands:
+  buildffa:
+    description: Main BuildFFA command
+    usage: /buildffa <help|kiteditor|setvoid|sethighlimit|creator|reload>
+    aliases:
+      - bffa
+permissions:
+  buildffa.kiteditor:
+    description: Allows using the Kit Editor
+    default: true
+  buildffa.setvoid:
+    description: Allows setting the void kill height
+    default: op
+  buildffa.sethighlimit:
+    description: Allows setting the high build limit
+    default: op
+  buildffa.reload:
+    description: Allows reloading the config
+    default: op
