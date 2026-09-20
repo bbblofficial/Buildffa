@@ -34,7 +34,7 @@ public final class BuildFFA extends JavaPlugin {
     getServer().getPluginManager().registerEvents(new Void(this), (Plugin) this);
     getServer().getPluginManager().registerEvents(new Welcome(this), (Plugin) this);
     getServer().getPluginManager().registerEvents(new Kill(this, new KillListener(this)), (Plugin) this);
-    getServer().getPluginManager().registerEvents(new Items(this), (Plugin) this);
+    getServer().getPluginManager().registerEvents(new Items(this, this.kitEditor), (Plugin) this);
     getServer().getPluginManager().registerEvents(new Fall(this), (Plugin) this);
     getServer().getPluginManager().registerEvents(new KillListener(this), (Plugin) this);
     getServer().getPluginManager().registerEvents(this.kitEditor, (Plugin) this);
@@ -48,7 +48,6 @@ public final class BuildFFA extends JavaPlugin {
     getLogger().info("BuildFFA author: VanSaMa");
     getLogger().info("Created by Muvixo");
     
-    // Clean dropped items every 3 seconds
     Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) this, new Runnable() {
       @Override
       public void run() {
@@ -62,7 +61,6 @@ public final class BuildFFA extends JavaPlugin {
       }
     }, 0L, 60L);
     
-    // Monitor inventory every second — if empty (e.g. after /clear), re-apply kit
     Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) this, new Runnable() {
       @Override
       public void run() {
@@ -82,7 +80,6 @@ public final class BuildFFA extends JavaPlugin {
   }
   
   private boolean isEmpty(Player player) {
-    // Check armor + inventory
     if (player.getInventory().getHelmet() != null) return false;
     if (player.getInventory().getChestplate() != null) return false;
     if (player.getInventory().getLeggings() != null) return false;

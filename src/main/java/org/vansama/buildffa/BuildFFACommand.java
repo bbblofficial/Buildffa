@@ -75,52 +75,88 @@ public class BuildFFACommand implements CommandExecutor {
     return true;
   }
   
+  /**
+   * /buildffa setvoid          → uses current Y
+   * /buildffa setvoid [y]      → uses provided Y value
+   */
   private boolean handleSetVoid(CommandSender sender, String[] args) {
-    if (!(sender instanceof Player)) {
-      sender.sendMessage(colorize("&cOnly players can use this command."));
-      return true;
-    }
     if (!sender.hasPermission("buildffa.setvoid")) {
       sender.sendMessage(colorize("&cYou do not have permission to use this command."));
       return true;
     }
-    Player player = (Player) sender;
+    
+    double y;
+    
+    if (args.length >= 2) {
+      // Parse the provided Y value
+      try {
+        y = Double.parseDouble(args[1]);
+      } catch (NumberFormatException e) {
+        sender.sendMessage(colorize("&cInvalid number: &e" + args[1]));
+        sender.sendMessage(colorize("&7Usage: &e/buildffa setvoid [y]"));
+        return true;
+      }
+    } else {
+      // No argument — fall back to player's current Y
+      if (!(sender instanceof Player)) {
+        sender.sendMessage(colorize("&cYou must be a player to use setvoid without a value."));
+        sender.sendMessage(colorize("&7From console: &e/buildffa setvoid [y]"));
+        return true;
+      }
+      Player player = (Player) sender;
+      y = player.getLocation().getY();
+    }
+    
     FileConfiguration config = this.plugin.getConfig();
-    double y = player.getLocation().getY();
     config.set("kill-height", Double.valueOf(y));
     this.plugin.saveConfig();
     
     reloadListeners();
     
-    player.sendMessage(colorize("&aVoid kill height set to &e" + y + " &a(Y level)."));
+    sender.sendMessage(colorize("&aVoid kill height set to &e" + y + " &a(Y level)."));
     return true;
   }
   
+  /**
+   * /buildffa sethighlimit          → uses current Y
+   * /buildffa sethighlimit [y]      → uses provided Y value
+   */
   private boolean handleSetHighLimit(CommandSender sender, String[] args) {
-    if (!(sender instanceof Player)) {
-      sender.sendMessage(colorize("&cOnly players can use this command."));
-      return true;
-    }
     if (!sender.hasPermission("buildffa.sethighlimit")) {
       sender.sendMessage(colorize("&cYou do not have permission to use this command."));
       return true;
     }
-    Player player = (Player) sender;
+    
+    double y;
+    
+    if (args.length >= 2) {
+      try {
+        y = Double.parseDouble(args[1]);
+      } catch (NumberFormatException e) {
+        sender.sendMessage(colorize("&cInvalid number: &e" + args[1]));
+        sender.sendMessage(colorize("&7Usage: &e/buildffa sethighlimit [y]"));
+        return true;
+      }
+    } else {
+      if (!(sender instanceof Player)) {
+        sender.sendMessage(colorize("&cYou must be a player to use sethighlimit without a value."));
+        sender.sendMessage(colorize("&7From console: &e/buildffa sethighlimit [y]"));
+        return true;
+      }
+      Player player = (Player) sender;
+      y = player.getLocation().getY();
+    }
+    
     FileConfiguration config = this.plugin.getConfig();
-    double y = player.getLocation().getY();
     config.set("high-limit", Double.valueOf(y));
     this.plugin.saveConfig();
     
     reloadListeners();
     
-    player.sendMessage(colorize("&aHigh limit set to &e" + y + " &a(Y level)."));
+    sender.sendMessage(colorize("&aHigh limit set to &e" + y + " &a(Y level)."));
     return true;
   }
   
-  /**
-   * Reloads Void and High listeners so they pick up new config values.
-   * In 1.8.8, getRegisteredListeners() returns an ArrayList<RegisteredListener>.
-   */
   private void reloadListeners() {
     ArrayList<RegisteredListener> listeners = HandlerList.getRegisteredListeners(this.plugin);
     for (RegisteredListener rl : listeners) {
@@ -160,8 +196,10 @@ public class BuildFFACommand implements CommandExecutor {
     sender.sendMessage(colorize("&6&lBuildFFA &7- &fCommands"));
     sender.sendMessage(colorize("&e/buildffa kiteditor &7- Open the Kit Editor GUI"));
     sender.sendMessage(colorize("&e/buildffa kiteditor reset &7- Reset your kit"));
-    sender.sendMessage(colorize("&e/buildffa setvoid &7- Set void kill height"));
-    sender.sendMessage(colorize("&e/buildffa sethighlimit &7- Set high build limit"));
+    sender.sendMessage(colorize("&e/buildffa setvoid &7- Set void Y to your current Y"));
+    sender.sendMessage(colorize("&e/buildffa setvoid [y] &7- Set void Y to a specific value"));
+    sender.sendMessage(colorize("&e/buildffa sethighlimit &7- Set high limit to your current Y"));
+    sender.sendMessage(colorize("&e/buildffa sethighlimit [y] &7- Set high limit to a value"));
     sender.sendMessage(colorize("&e/buildffa creator &7- Show plugin credits"));
     sender.sendMessage(colorize("&e/buildffa reload &7- Reload configuration"));
     sender.sendMessage(colorize("&8&m----------------------------------"));
