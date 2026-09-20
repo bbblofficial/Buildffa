@@ -151,8 +151,6 @@ public class KitEditor implements Listener {
     pickaxe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 2);
     contents[4] = unbreakable(pickaxe);
     
-    // Slots 5-26: empty
-    
     return contents;
   }
   
@@ -247,8 +245,10 @@ public class KitEditor implements Listener {
   
   /**
    * Handle clicks:
-   * - Clicks in the editor GUI: allow all except button slots
-   * - Clicks in the PLAYER inventory while editor open: cancel (prevents desync)
+   * - Click in editor GUI slots 0-30: ALLOW (move, pick up, place)
+   * - Click in editor GUI slots 31-35: cancel (buttons/spacer)
+   * - Click in PLAYER inventory: cancel (prevents items leaking out)
+   * - Shift-clicks from editor: cancel (prevents smuggling out)
    */
   @EventHandler
   public void onInventoryClick(InventoryClickEvent event) {
@@ -272,7 +272,7 @@ public class KitEditor implements Listener {
     
     int slot = event.getRawSlot();
     
-    // Buttons
+    // Buttons + spacer
     if (slot == SLOT_SAVE) {
       event.setCancelled(true);
       saveKit(player);
@@ -288,26 +288,24 @@ public class KitEditor implements Listener {
       resetKit(player);
       return;
     }
-    if (slot == SLOT_INFO) {
-      event.setCancelled(true);
-      return;
-    }
-    if (slot == SLOT_SPACER) {
+    if (slot == SLOT_INFO || slot == SLOT_SPACER) {
       event.setCancelled(true);
       return;
     }
     
-    // Shift-click from editor moves to player inv → cancel to prevent smuggling
+    // Shift-click from editor → cancel (prevents smuggling)
     if (event.isShiftClick()) {
       event.setCancelled(true);
       return;
     }
     
-    // Slots 0-30: fully allowed. Pick up, place, swap, etc.
+    // Slots 0-30: FULLY ALLOWED — pick up, place, swap, move, cursor pickup
+    // No further code needed — Bukkit handles it by default
   }
   
   /**
-   * Handle drags: cancel if any part is in the button row or player inv.
+   * Handle drags — allow all drags that stay within slots 0-30.
+   * Cancel only if a drag slot is a button/spacer (31-35) or in the player inventory (>=36).
    */
   @EventHandler
   public void onInventoryDrag(InventoryDragEvent event) {
@@ -322,16 +320,18 @@ public class KitEditor implements Listener {
     
     for (Integer rawSlot : event.getRawSlots()) {
       int s = rawSlot.intValue();
-      // If any drag slot is outside the editor's allow-region → cancel
+      // Player inventory slot during a drag over the editor = raw slot >= 36
       if (s >= SIZE) {
         event.setCancelled(true);
         return;
       }
+      // Buttons + spacer
       if (s >= SLOT_SPACER) {
         event.setCancelled(true);
         return;
       }
     }
+    // Otherwise allow the drag
   }
   
   @EventHandler

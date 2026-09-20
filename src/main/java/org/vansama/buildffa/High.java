@@ -1,5 +1,8 @@
 package org.vansama.buildffa;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
@@ -20,6 +23,11 @@ public class High implements Listener {
   private JavaPlugin plugin;
   private double highLimit;
   
+  // Cooldown: only send the "cannot place blocks here" message once per second
+  // per player, so the player never sees it twice in a row.
+  private final Map<UUID, Long> lastMessageTime = new HashMap<UUID, Long>();
+  private static final long MESSAGE_COOLDOWN_MS = 1000L;
+  
   public High(JavaPlugin plugin) {
     this.plugin = plugin;
     loadConfiguration();
@@ -33,6 +41,17 @@ public class High implements Listener {
   
   public void reloadConfig() {
     loadConfiguration();
+  }
+  
+  private void sendMessageOnce(Player player, String message) {
+    UUID id = player.getUniqueId();
+    long now = System.currentTimeMillis();
+    long last = this.lastMessageTime.containsKey(id) ? this.lastMessageTime.get(id).longValue() : 0L;
+    if (now - last < MESSAGE_COOLDOWN_MS) {
+      return;
+    }
+    this.lastMessageTime.put(id, Long.valueOf(now));
+    player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
   }
   
   @EventHandler
@@ -49,11 +68,6 @@ public class High implements Listener {
     }
   }
   
-  /**
-   * Only blocks placement if the placed block itself ends up at or above
-   * the high limit. The player's Y is NOT used as a blocker, so standing
-   * at Y=100 doesn't prevent you from placing blocks at Y=99.
-   */
   @EventHandler
   public void onBlockPlace(BlockPlaceEvent event) {
     Player player = event.getPlayer();
@@ -62,8 +76,7 @@ public class High implements Listener {
     Location blockLoc = event.getBlockPlaced().getLocation();
     if (blockLoc.getY() >= this.highLimit) {
       event.setCancelled(true);
-      player.sendMessage(ChatColor.translateAlternateColorCodes('&',
-          "&cYou cannot place blocks here!"));
+      sendMessageOnce(player, "&cYou cannot place blocks here!");
     }
   }
   
@@ -75,8 +88,7 @@ public class High implements Listener {
     Location blockLoc = event.getBlock().getLocation();
     if (blockLoc.getY() >= this.highLimit) {
       event.setCancelled(true);
-      player.sendMessage(ChatColor.translateAlternateColorCodes('&',
-          "&cYou cannot break blocks here!"));
+      sendMessageOnce(player, "&cYou cannot break blocks here!");
     }
   }
   
