@@ -6,7 +6,7 @@ description: BuildFFA plugin with GUI Kit Editor - Created by Muvixo
 commands:
   buildffa:
     description: Main BuildFFA command
-    usage: /buildffa <help|kiteditor|setvoid|sethighlimit|creator|reload>
+    usage: /buildffa <help|kiteditor|setvoid|sethighlimit|setspawn|creator|reload>
     aliases:
       - bffa
 permissions:
@@ -19,6 +19,12 @@ permissions:
   buildffa.sethighlimit:
     description: Allows setting the high build limit
     default: op
+  buildffa.setspawn:
+    description: Allows setting the respawn point
+    default: op
   buildffa.reload:
     description: Allows reloading the config
+    default: op
+  buildffa.highlimit.bypass:
+    description: Bypass the high-limit build restriction
     default: op

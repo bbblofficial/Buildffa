@@ -2,6 +2,7 @@ package org.vansama.buildffa;
 
 import java.util.ArrayList;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -40,6 +41,9 @@ public class BuildFFACommand implements CommandExecutor {
     if (sub.equals("sethighlimit")) {
       return handleSetHighLimit(sender, args);
     }
+    if (sub.equals("setspawn")) {
+      return handleSetSpawn(sender);
+    }
     if (sub.equals("creator")) {
       return handleCreator(sender);
     }
@@ -75,10 +79,6 @@ public class BuildFFACommand implements CommandExecutor {
     return true;
   }
   
-  /**
-   * /buildffa setvoid          → uses current Y
-   * /buildffa setvoid [y]      → uses provided Y value
-   */
   private boolean handleSetVoid(CommandSender sender, String[] args) {
     if (!sender.hasPermission("buildffa.setvoid")) {
       sender.sendMessage(colorize("&cYou do not have permission to use this command."));
@@ -88,7 +88,6 @@ public class BuildFFACommand implements CommandExecutor {
     double y;
     
     if (args.length >= 2) {
-      // Parse the provided Y value
       try {
         y = Double.parseDouble(args[1]);
       } catch (NumberFormatException e) {
@@ -97,7 +96,6 @@ public class BuildFFACommand implements CommandExecutor {
         return true;
       }
     } else {
-      // No argument — fall back to player's current Y
       if (!(sender instanceof Player)) {
         sender.sendMessage(colorize("&cYou must be a player to use setvoid without a value."));
         sender.sendMessage(colorize("&7From console: &e/buildffa setvoid [y]"));
@@ -117,10 +115,6 @@ public class BuildFFACommand implements CommandExecutor {
     return true;
   }
   
-  /**
-   * /buildffa sethighlimit          → uses current Y
-   * /buildffa sethighlimit [y]      → uses provided Y value
-   */
   private boolean handleSetHighLimit(CommandSender sender, String[] args) {
     if (!sender.hasPermission("buildffa.sethighlimit")) {
       sender.sendMessage(colorize("&cYou do not have permission to use this command."));
@@ -154,6 +148,34 @@ public class BuildFFACommand implements CommandExecutor {
     reloadListeners();
     
     sender.sendMessage(colorize("&aHigh limit set to &e" + y + " &a(Y level)."));
+    return true;
+  }
+  
+  /**
+   * /buildffa setspawn — saves the player's current position as the respawn point.
+   */
+  private boolean handleSetSpawn(CommandSender sender) {
+    if (!(sender instanceof Player)) {
+      sender.sendMessage(colorize("&cOnly players can use setspawn."));
+      return true;
+    }
+    if (!sender.hasPermission("buildffa.setspawn")) {
+      sender.sendMessage(colorize("&cYou do not have permission to use this command."));
+      return true;
+    }
+    
+    Player player = (Player) sender;
+    Location loc = player.getLocation();
+    
+    SpawnManager spawnManager = new SpawnManager(this.plugin);
+    spawnManager.setSpawn(loc);
+    
+    String world = loc.getWorld().getName();
+    int x = loc.getBlockX();
+    int y = loc.getBlockY();
+    int z = loc.getBlockZ();
+    
+    player.sendMessage(colorize("&aRespawn point set to &e" + world + " " + x + " " + y + " " + z + "&a."));
     return true;
   }
   
@@ -200,6 +222,7 @@ public class BuildFFACommand implements CommandExecutor {
     sender.sendMessage(colorize("&e/buildffa setvoid [y] &7- Set void Y to a specific value"));
     sender.sendMessage(colorize("&e/buildffa sethighlimit &7- Set high limit to your current Y"));
     sender.sendMessage(colorize("&e/buildffa sethighlimit [y] &7- Set high limit to a value"));
+    sender.sendMessage(colorize("&e/buildffa setspawn &7- Set respawn point to your location"));
     sender.sendMessage(colorize("&e/buildffa creator &7- Show plugin credits"));
     sender.sendMessage(colorize("&e/buildffa reload &7- Reload configuration"));
     sender.sendMessage(colorize("&8&m----------------------------------"));

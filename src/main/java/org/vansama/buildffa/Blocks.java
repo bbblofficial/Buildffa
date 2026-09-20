@@ -7,7 +7,9 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -18,7 +20,7 @@ public class Blocks implements Listener {
   private JavaPlugin plugin;
   private Map<Location, Long> placedBlocks = new HashMap<Location, Long>();
   
-  // 9 seconds = 180 ticks
+  // 9 seconds = 180 ticks for natural block restore
   private static final long RESTORE_DELAY_TICKS = 180L;
   // Player-placed blocks decay after 5 seconds
   private static final long DECAY_DELAY_TICKS = 100L;
@@ -28,7 +30,7 @@ public class Blocks implements Listener {
     Bukkit.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
   }
   
-  @EventHandler
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onBlockPlace(BlockPlaceEvent event) {
     if (event.getPlayer().getGameMode() == GameMode.CREATIVE) return;
     
@@ -41,7 +43,6 @@ public class Blocks implements Listener {
     
     this.placedBlocks.put(loc, Long.valueOf(System.currentTimeMillis()));
     
-    // Player-placed blocks decay after 5 seconds
     Bukkit.getScheduler().scheduleSyncDelayedTask((Plugin) this.plugin, new Runnable() {
       @Override
       public void run() {
@@ -63,20 +64,16 @@ public class Blocks implements Listener {
     final Block block = event.getBlock();
     final Location loc = block.getLocation().clone();
     final Material blockType = block.getType();
-    // *** THE FIX: capture the data value (color/variant) ***
     final byte blockData = block.getData();
     
-    // Cancel the event so no items drop; manually remove the block
     event.setCancelled(true);
     block.setType(Material.AIR);
     
-    // If this was a player-placed block, don't restore it
     if (this.placedBlocks.containsKey(loc)) {
       this.placedBlocks.remove(loc);
       return;
     }
     
-    // Natural block — restore after 9 seconds WITH the original data value
     Bukkit.getScheduler().scheduleSyncDelayedTask((Plugin) this.plugin, new Runnable() {
       @Override
       public void run() {
@@ -89,7 +86,6 @@ public class Blocks implements Listener {
               && blockType != Material.STATIONARY_WATER
               && blockType != Material.LAVA
               && blockType != Material.STATIONARY_LAVA) {
-            // *** Restore material AND data (e.g. red wool keeps value 14) ***
             b.setType(blockType);
             b.setData(blockData);
           }

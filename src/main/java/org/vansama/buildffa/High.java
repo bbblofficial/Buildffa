@@ -20,7 +20,6 @@ public class High implements Listener {
   private JavaPlugin plugin;
   private double highLimit;
   
-  // Cooldown so the "cannot place blocks" message only shows once per second
   private final Map<UUID, Long> lastMessageTime = new HashMap<UUID, Long>();
   private static final long MESSAGE_COOLDOWN_MS = 1000L;
   
@@ -43,21 +42,29 @@ public class High implements Listener {
     UUID id = player.getUniqueId();
     long now = System.currentTimeMillis();
     long last = this.lastMessageTime.containsKey(id) ? this.lastMessageTime.get(id).longValue() : 0L;
-    if (now - last < MESSAGE_COOLDOWN_MS) {
-      return;
-    }
+    if (now - last < MESSAGE_COOLDOWN_MS) return;
     this.lastMessageTime.put(id, Long.valueOf(now));
     player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
   }
   
   /**
-   * Block placement above the high limit is BLOCKED.
-   * Only the placed block's Y is checked — the player's Y is irrelevant.
+   * Check if this player should bypass the high limit.
+   * Bypass if:
+   *   - In creative mode
+   *   - Has permission "buildffa.highlimit.bypass"
+   *   - Is OP
    */
+  private boolean shouldBypass(Player player) {
+    if (player.getGameMode() == GameMode.CREATIVE) return true;
+    if (player.isOp()) return true;
+    if (player.hasPermission("buildffa.highlimit.bypass")) return true;
+    return false;
+  }
+  
   @EventHandler
   public void onBlockPlace(BlockPlaceEvent event) {
     Player player = event.getPlayer();
-    if (player.getGameMode() == GameMode.CREATIVE) return;
+    if (shouldBypass(player)) return;
     
     Location blockLoc = event.getBlockPlaced().getLocation();
     if (blockLoc.getY() >= this.highLimit) {
@@ -66,13 +73,10 @@ public class High implements Listener {
     }
   }
   
-  /**
-   * Block break above the high limit is BLOCKED.
-   */
   @EventHandler
   public void onBlockBreak(BlockBreakEvent event) {
     Player player = event.getPlayer();
-    if (player.getGameMode() == GameMode.CREATIVE) return;
+    if (shouldBypass(player)) return;
     
     Location blockLoc = event.getBlock().getLocation();
     if (blockLoc.getY() >= this.highLimit) {
@@ -80,13 +84,4 @@ public class High implements Listener {
       sendMessageOnce(player, "&cYou cannot break blocks here!");
     }
   }
-  
-  // ============================================================
-  // PvP above the high limit is ALLOWED
-  // Projectile use above the high limit is ALLOWED
-  //
-  // The EntityDamageByEntityEvent and ProjectileLaunchEvent handlers
-  // have been intentionally removed so players can fight freely
-  // above the build limit.
-  // ============================================================
 }

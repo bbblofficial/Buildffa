@@ -28,6 +28,7 @@ public final class BuildFFA extends JavaPlugin {
     this.kitEditor = new KitEditor(this);
     this.equip = new Equip(this);
     
+    // Register all listeners
     getServer().getPluginManager().registerEvents(this.blocks, (Plugin) this);
     getServer().getPluginManager().registerEvents(this.equip, (Plugin) this);
     getServer().getPluginManager().registerEvents(new High(this), (Plugin) this);
@@ -40,15 +41,20 @@ public final class BuildFFA extends JavaPlugin {
     getServer().getPluginManager().registerEvents(this.kitEditor, (Plugin) this);
     getServer().getPluginManager().registerEvents(new Infinite(this), (Plugin) this);
     getServer().getPluginManager().registerEvents(new KitRestore(this, this.equip, this.kitEditor), (Plugin) this);
+    getServer().getPluginManager().registerEvents(new SpawnManager(this), (Plugin) this);
     
+    // Register command executor
     getCommand("buildffa").setExecutor(new BuildFFACommand(this, this.kitEditor));
     
+    // Log startup
     getLogger().info("Plugin made by PixelValley");
     getLogger().info("You are running on 4.0 (1.8.8 Compatible)");
     getLogger().info("BuildFFA author: VanSaMa");
     getLogger().info("Created by Muvixo");
     
-    // Clean dropped items every 3 seconds
+    // ============================================================
+    //  Task 1: Clean up dropped items every 3 seconds
+    // ============================================================
     Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) this, new Runnable() {
       @Override
       public void run() {
@@ -62,17 +68,16 @@ public final class BuildFFA extends JavaPlugin {
       }
     }, 0L, 60L);
     
-    // Monitor inventory every 2 seconds — if empty (e.g. after /clear), re-apply kit
+    // ============================================================
+    //  Task 2: Monitor inventory every 2 seconds — if empty, re-give kit
+    //  (also catches /clear, /kill, /suicide, etc.)
+    // ============================================================
     Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) this, new Runnable() {
       @Override
       public void run() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-          if (player.getGameMode() == org.bukkit.GameMode.CREATIVE) {
-            continue;
-          }
-          if (kitEditor.isEditing(player)) {
-            continue;
-          }
+          if (player.getGameMode() == org.bukkit.GameMode.CREATIVE) continue;
+          if (kitEditor.isEditing(player)) continue;
           if (isEmpty(player)) {
             equip.giveDiamondArmor(player);
           }
@@ -81,6 +86,10 @@ public final class BuildFFA extends JavaPlugin {
     }, 20L, 40L);
   }
   
+  /**
+   * Returns true if the player has nothing in their armor slots
+   * AND nothing in their main inventory.
+   */
   private boolean isEmpty(Player player) {
     if (player.getInventory().getHelmet() != null) return false;
     if (player.getInventory().getChestplate() != null) return false;
@@ -94,6 +103,9 @@ public final class BuildFFA extends JavaPlugin {
     return true;
   }
   
+  /**
+   * If the plugin data folder doesn't exist, create it and write a default config.yml.
+   */
   private void createConfigIfMissing() {
     if (!getDataFolder().exists()) {
       getDataFolder().mkdirs();
@@ -132,6 +144,7 @@ public final class BuildFFA extends JavaPlugin {
     if (this.blocks != null) {
       this.blocks.onDisable();
     }
+    getLogger().info("BuildFFA disabled.");
   }
   
   public KitEditor getKitEditor() {

@@ -1,31 +1,73 @@
-# BuildFFA Configuration
-# Created by Muvixo
-# Plugin author: VanSaMa
-# Made by PixelValley
-# Version: 4.0 (1.8.8 Compatible)
+# ==========================================================
+#  BuildFFA Configuration
+#  Created by Muvixo
+#  Plugin author: VanSaMa
+#  Made by PixelValley
+#  Version: 4.0 (1.8.8 Compatible)
+# ==========================================================
 
-# The Y level at which players die (void kill height)
+# ----------------------------------------------------------
+#  Void Kill Height
+#  Players who fall below this Y level will die.
+#  Set with /buildffa setvoid [y]
+# ----------------------------------------------------------
 kill-height: 0.0
 
-# The Y level above which building and PvP is disabled
+# ----------------------------------------------------------
+#  High Build Limit
+#  Players cannot place or break blocks at or above this Y.
+#  PvP is still allowed above this Y.
+#  OPs bypass this restriction automatically.
+#  Permission: buildffa.highlimit.bypass
+#  Set with /buildffa sethighlimit [y]
+# ----------------------------------------------------------
 high-limit: 100.0
 
-# Message sent when a player kills another player
+# ----------------------------------------------------------
+#  Kill Message
+#  Broadcast when a player kills another player.
+#  Placeholders:
+#    %killer%    - killer's name
+#    %loser%     - victim's name
+#    %killcount% - killer's total kills
+# ----------------------------------------------------------
 kill: "&e%killer% &7killed &e%loser% &7(&e%killcount% &7kills)"
 
-# Title suffix shown to killer
+# ----------------------------------------------------------
+#  Kill Titles
+#  Title shown to the killer on a successful kill.
+# ----------------------------------------------------------
 Title-Suffix: " &7Kill"
-
-# Subtitle shown to killer
 SubTitle-kill: "&e+1 Kill"
 
-# Message sent when a player joins
+# ----------------------------------------------------------
+#  Join / Quit Messages
+#  Placeholders:
+#    %player% - player's name
+#    %online% - current online count
+# ----------------------------------------------------------
 join-message: "&e%player% &7joined the game &8(&e%online%&7/&e100&8)"
-
-# Message sent when a player quits
 quit-message: "&e%player% &7left the game &8(&e%online%&7/&e100&8)"
 
-# Infinite features
+# ----------------------------------------------------------
+#  Infinite Features
+#  food   - hunger bar never decreases
+#  blocks - placed blocks are refilled in inventory
+# ----------------------------------------------------------
 infinite:
   food: true
   blocks: true
+
+# ----------------------------------------------------------
+#  Spawn Point
+#  Set with /buildffa setspawn while standing where you want
+#  players to respawn after death or void death.
+#  This section is auto-filled by the plugin.
+# ----------------------------------------------------------
+# spawn:
+#   world: world
+#   x: 0.0
+#   y: 64.0
+#   z: 0.0
+#   yaw: 0.0
+#   pitch: 0.0
