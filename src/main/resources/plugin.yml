@@ -15,16 +15,16 @@ permissions:
     default: true
   buildffa.setvoid:
     description: Allows setting the void kill height
-    default: op
+    default: true
   buildffa.sethighlimit:
     description: Allows setting the high build limit
-    default: op
+    default: true
   buildffa.setspawn:
     description: Allows setting the respawn point
-    default: op
+    default: true
   buildffa.reload:
     description: Allows reloading the config
-    default: op
+    default: true
   buildffa.highlimit.bypass:
     description: Bypass the high-limit build restriction
-    default: op
+    default: true
