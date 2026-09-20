@@ -5,89 +5,36 @@
 #  Made by PixelValley
 #  Version: 4.0 (1.8.8 Compatible)
 # ==========================================================
-
+# 
 # ----------------------------------------------------------
 #  Void Kill Height
 #  Players who fall below this Y level will die.
 #  Set with /buildffa setvoid [y]
 # ----------------------------------------------------------
 kill-height: 0.0
-
-# ----------------------------------------------------------
-#  High Build Limit
-#  Players cannot place or break blocks at or above this Y.
-#  PvP is still allowed above this Y.
-#  Set with /buildffa sethighlimit [y]
-# ----------------------------------------------------------
 high-limit: 100.0
 
 # ----------------------------------------------------------
 #  Messages
 # ----------------------------------------------------------
-messages:
-  no-permission: "&cYou do not have permission to do this."
+void-message: '&c%player% &7fell into the void'
+kill: '&c%killer% &7killed &a%loser%'
 
-# ----------------------------------------------------------
-#  Join / Quit Messages
-#  Placeholders:
-#    %player% - player's name
-#    %online% - current online count
-# ----------------------------------------------------------
-join-message: "&8[&a+&8] &7%player% &8(&a%online%&8/&a100&8)"
-quit-message: "&8[&c-&8] &7%player% &8(&c%online%&8/&c100&8)"
+Title-Suffix: ' &7Kill'
+SubTitle-kill: '&e+1 Kill'
+join-message: '&a%player% &7joined the game &8(&e%online%&7/&e100&8)'
+quit-message: '&a%player% &7left the game &8(&e%online%&7/&e100&8)'
 
-# ----------------------------------------------------------
-#  Kill Broadcast Message
-#  Broadcast when a player kills another player.
-#  Placeholders: %killer%, %loser%, %killcount%
-# ----------------------------------------------------------
-kill: "&e%killer% &7killed &e%loser% &7(&e%killcount% &7kills)"
-
-# ----------------------------------------------------------
-#  Kill Screen Rewards (Titles & Chat)
-# ----------------------------------------------------------
-kill-screen:
-  # Show Title on screen?
-  enable-title: true
-  title: "&e+%killcount% &7Kill"
-  subtitle: "&e+1 Kill"
-  
-  # If the server doesn't support Titles, or you want a chat message instead
-  enable-chat-fallback: false
-  chat-message: "&a+1 Kill! &8(&e%killcount% total&8)"
-
-# ----------------------------------------------------------
-#  Infinite Features
-#  food   - hunger bar never decreases
-#  blocks - placed blocks are refilled in inventory
-# ----------------------------------------------------------
 infinite:
   food: true
   blocks: true
+permissions: {}
+kill-screen: {}
 
-# ----------------------------------------------------------
-#  Permissions Configuration
-#  Customize the permission nodes required for each action.
-# ----------------------------------------------------------
-permissions:
-  kiteditor: "buildffa.kiteditor"
-  setvoid: "buildffa.setvoid"
-  sethighlimit: "buildffa.sethighlimit"
-  setspawn: "buildffa.setspawn"
-  reload: "buildffa.reload"
-  highlimit-bypass: "buildffa.highlimit.bypass"
-  buildmode: "buildffa.buildmode"
-
-# ----------------------------------------------------------
-#  Spawn Point
-#  Set with /buildffa setspawn while standing where you want
-#  players to respawn after death or void death.
-#  This section is auto-filled by the plugin.
-# ----------------------------------------------------------
-# spawn:
-#   world: world
-#   x: 0.0
-#   y: 64.0
-#   z: 0.0
-#   yaw: 0.0
-#   pitch: 0.0
+spawn:
+  world: world
+  x: 0.5152370197481
+  y: 147.0
+  z: -4.358150765211774
+  yaw: 0.60649663
+  pitch: -2.2577302
