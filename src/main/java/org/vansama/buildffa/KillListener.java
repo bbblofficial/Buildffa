@@ -1,6 +1,7 @@
 package org.vansama.buildffa;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -82,7 +83,9 @@ public class KillListener implements Listener {
       Object packetTitle = titleConstructor.newInstance(actionTitle, titleComponent);
       Object packetSubtitle = titleConstructor.newInstance(actionSubtitle, subtitleComponent);
       
-      Object sendPacketMethod = playerConnection.getClass().getMethod("sendPacket", Class.forName("net.minecraft.server.v1_8_R3.Packet"));
+      Class<?> packetClass = Class.forName("net.minecraft.server.v1_8_R3.Packet");
+      Method sendPacketMethod = playerConnection.getClass().getMethod("sendPacket", packetClass);
+      
       sendPacketMethod.invoke(playerConnection, packetTitle);
       sendPacketMethod.invoke(playerConnection, packetSubtitle);
       
