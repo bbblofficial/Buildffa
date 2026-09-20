@@ -1,8 +1,5 @@
 package org.vansama.buildffa;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -19,7 +16,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class Infinite implements Listener {
   
   private final JavaPlugin plugin;
-  private final Map<UUID, Integer> preEatAmount = new HashMap<UUID, Integer>();
   
   public Infinite(JavaPlugin plugin) {
     this.plugin = plugin;
@@ -39,18 +35,18 @@ public class Infinite implements Listener {
   }
   
   /**
-   * Infinite golden apples + full heal.
+   * Infinite golden apple.
    *
-   * When the player eats a golden apple:
-   * 1. Fully heal to max HP
-   * 2. Full hunger + saturation
-   * 3. Restore the apple after 2 ticks (so count stays the same)
+   * The apple is NOT consumed — the event is cancelled.
+   * We manually heal the player.
+   *
+   * No restore task, no duplication possible, count never changes.
    */
-  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onItemConsume(final PlayerItemConsumeEvent event) {
-    final Player player = event.getPlayer();
-    final ItemStack item = event.getItem();
-    final Material type = item.getType();
+  @EventHandler(priority = EventPriority.HIGHEST)
+  public void onItemConsume(PlayerItemConsumeEvent event) {
+    Player player = event.getPlayer();
+    ItemStack item = event.getItem();
+    Material type = item.getType();
     
     if (type != Material.GOLDEN_APPLE
         && type != Material.GOLDEN_CARROT
@@ -59,53 +55,17 @@ public class Infinite implements Listener {
       return;
     }
     
-    final int amountBeforeEat = item.getAmount();
-    final short dataBeforeEat = item.getDurability();
+    // Prevent the item from being consumed
+    event.setCancelled(true);
     
-    // === FULL HEAL ===
+    // Manually heal to full
     player.setHealth(player.getMaxHealth());
     player.setFoodLevel(20);
     player.setSaturation(20.0F);
+    player.setExhaustion(0.0F);
     
-    // === Restore the apple after consume animation (2 ticks) ===
-    this.plugin.getServer().getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
-      @Override
-      public void run() {
-        if (!player.isOnline()) return;
-        
-        boolean restored = false;
-        
-        // Try hand slot
-        ItemStack hand = player.getItemInHand();
-        if (hand != null && hand.getType() == type && hand.getDurability() == dataBeforeEat) {
-          if (hand.getAmount() < amountBeforeEat) {
-            hand.setAmount(amountBeforeEat);
-            restored = true;
-          }
-        }
-        
-        // Search whole inventory
-        if (!restored) {
-          for (int i = 0; i < player.getInventory().getSize(); i++) {
-            ItemStack slot = player.getInventory().getItem(i);
-            if (slot != null && slot.getType() == type && slot.getDurability() == dataBeforeEat) {
-              if (slot.getAmount() < amountBeforeEat) {
-                slot.setAmount(amountBeforeEat);
-                restored = true;
-                break;
-              }
-            }
-          }
-        }
-        
-        // Add one back if not found
-        if (!restored) {
-          player.getInventory().addItem(new ItemStack[] { new ItemStack(type, 1, dataBeforeEat) });
-        }
-        
-        player.updateInventory();
-      }
-    }, 2L);
+    // Make the client update the inventory display (so they don't see a ghost consumed)
+    player.updateInventory();
   }
   
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -132,6 +92,7 @@ public class Infinite implements Listener {
           return;
         }
         
+        // Search the entire inventory only if the item was actually consumed
         for (int i = 0; i < player.getInventory().getSize(); i++) {
           ItemStack slot = player.getInventory().getItem(i);
           if (slot != null && slot.getType() == type && slot.getDurability() == data) {

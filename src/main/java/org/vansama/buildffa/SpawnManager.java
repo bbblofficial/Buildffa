@@ -6,7 +6,9 @@ import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -57,8 +59,7 @@ public class SpawnManager implements Listener {
   }
   
   /**
-   * Force a player to respawn at the custom spawn location.
-   * Uses PlayerRespawnEvent.setRespawnLocation() which is available in 1.8.8.
+   * On respawn (death, void): use the saved spawn.
    */
   @EventHandler
   public void onPlayerRespawn(PlayerRespawnEvent event) {
@@ -66,5 +67,25 @@ public class SpawnManager implements Listener {
     if (spawn != null) {
       event.setRespawnLocation(spawn);
     }
+  }
+  
+  /**
+   * On join (relog): teleport player to the saved spawn.
+   * Runs 1 tick later so the player is fully loaded.
+   */
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void onPlayerJoin(final PlayerJoinEvent event) {
+    final Location spawn = getSpawn();
+    if (spawn == null) return;
+    
+    Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
+      @Override
+      public void run() {
+        Player player = event.getPlayer();
+        if (player.isOnline()) {
+          player.teleport(spawn);
+        }
+      }
+    }, 1L);
   }
 }

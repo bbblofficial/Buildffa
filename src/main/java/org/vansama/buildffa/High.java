@@ -23,7 +23,6 @@ public class High implements Listener {
   private final Map<UUID, Long> lastMessageTime = new HashMap<UUID, Long>();
   private static final long MESSAGE_COOLDOWN_MS = 1000L;
   
-  // Reject any high-limit value below this (defensive — prevents accidental lockout)
   private static final double MIN_HIGH_LIMIT = 1.0D;
   
   public High(JavaPlugin plugin) {
@@ -36,14 +35,14 @@ public class High implements Listener {
     FileConfiguration config = this.plugin.getConfig();
     double value = config.getDouble("high-limit", 100.0D);
     
-    // Sanity check: if someone accidentally set it to 0 or negative,
-    // fall back to 100 so the map isn't locked down for everyone.
     if (value < MIN_HIGH_LIMIT) {
-      this.plugin.getLogger().warning("high-limit is set to " + value + " — that would block the entire map. Using 100.0 instead.");
+      this.plugin.getLogger().warning("high-limit is set to " + value + " — using 100.0 instead.");
       this.highLimit = 100.0D;
     } else {
       this.highLimit = value;
     }
+    
+    this.plugin.getLogger().info("BuildFFA high-limit loaded: Y >= " + this.highLimit + " is restricted");
   }
   
   public void reloadConfig() {
@@ -60,10 +59,10 @@ public class High implements Listener {
   }
   
   /**
-   * Bypass the high-limit if:
-   *   - Player is OP
-   *   - Player has permission buildffa.highlimit.bypass
-   *   - Player is in Creative mode
+   * Full bypass for:
+   *   - OPs
+   *   - Anyone with "buildffa.highlimit.bypass"
+   *   - Creative mode
    */
   private boolean shouldBypass(Player player) {
     if (player.getGameMode() == GameMode.CREATIVE) return true;
