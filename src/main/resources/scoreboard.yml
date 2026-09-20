@@ -1,0 +1,94 @@
+# ==========================================================
+#  BuildFFA Scoreboard Configuration
+#  Created by Muvixo
+#  Plugin author: VanSaMa
+#  Made by PixelValley
+# ==========================================================
+
+# Enable or disable the scoreboard
+enabled: true
+
+# Update interval in ticks (20 ticks = 1 second)
+# Lower = smoother but more resource usage
+# Recommended: 10-20
+update-interval: 10
+
+# ----------------------------------------------------------
+#  Title Animation
+#  Set to false to use a static title
+#  Set to true to cycle through the frames below
+# ----------------------------------------------------------
+title:
+  animated: true
+  static: '&6&lBuildFFA'
+  frames:
+    - '&6&lB&e&luildFFA'
+    - '&e&lB&6&luildFFA'
+    - '&6&lBu&e&lildFFA'
+    - '&6&lBui&e&lldFFA'
+    - '&6&lBuil&e&ldFFA'
+    - '&6&lBuild&e&lFFA'
+    - '&6&lBuildF&e&lFA'
+    - '&6&lBuildFF&e&lA'
+    - '&6&lBuildFFA&e&l'
+    - '&e&lBuildFFA&6&l'
+
+# ----------------------------------------------------------
+#  Scoreboard Lines
+#  Placeholders:
+#    %player%      - Player name
+#    %kills%       - Player's kill count
+#    %deaths%      - Player's death count
+#    %online%      - Online player count
+#    %max_online%  - Max players
+#    %world%       - Current world name
+#    %ping%        - Player's ping
+#    %health%      - Player's health
+#    %food%        - Player's food level
+#    %y%           - Player's Y coordinate
+#    %highlimit%   - Configured high limit
+#    %void%        - Configured void kill height
+#  Top to bottom order — first line is at the top of the sidebar
+# ----------------------------------------------------------
+lines:
+  - '&7&m----------------'
+  - '&fPlayer: &e%player%'
+  - '&fKills: &a%kills%'
+  - '&fDeaths: &c%deaths%'
+  - '&fOnline: &b%online%&7/&b%max_online%'
+  - '&fWorld: &d%world%'
+  - '&fPing: &e%ping%ms'
+  - '&fHealth: &c%health%❤'
+  - '&7&m----------------'
+  - '&6play.pixelvalley.gg'
+  - '&7&m----------------'
+
+# ----------------------------------------------------------
+#  Per-World Scoreboards
+#  Set to true to use different scoreboards per world
+#  If false, the lines above are used for all worlds
+# ----------------------------------------------------------
+per-world:
+  enabled: false
+  worlds:
+    world:
+      - '&7&m----------------'
+      - '&6&lOverworld'
+      - '&fPlayer: &e%player%'
+      - '&fKills: &a%kills%'
+      - '&fOnline: &b%online%'
+      - '&7&m----------------'
+    world_nether:
+      - '&7&m----------------'
+      - '&c&lNether'
+      - '&fPlayer: &e%player%'
+      - '&fKills: &a%kills%'
+      - '&fOnline: &b%online%'
+      - '&7&m----------------'
+
+# ----------------------------------------------------------
+#  Toggle Scoreboard Visibility
+#  Players can use /buildffa sb toggle to hide/show
+# ----------------------------------------------------------
+allow-toggle: true
+toggle-permission: 'buildffa.scoreboard.toggle'

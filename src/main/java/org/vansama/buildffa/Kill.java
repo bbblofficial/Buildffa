@@ -40,6 +40,14 @@ public class Kill implements Listener {
     }
     this.lastVictimDeathTimestamps.put(victimId, Long.valueOf(now));
     
+    // === Track death for scoreboard ===
+    if (this.plugin instanceof BuildFFA) {
+      ScoreboardManager sb = ((BuildFFA) this.plugin).getScoreboardManager();
+      if (sb != null) {
+        sb.addDeath(deathPlayer);
+      }
+    }
+    
     if (deathPlayer.getKiller() == null) return;
     
     Player killer = deathPlayer.getKiller();
@@ -63,9 +71,9 @@ public class Kill implements Listener {
     killer.getInventory().addItem(new ItemStack[] { new ItemStack(Material.GOLDEN_APPLE, 1) });
     
     // === Broadcast ===
-    String joinMessage = this.plugin.getConfig().getString("kill");
-    if (joinMessage != null) {
-      String broadcastMessage = colorize(joinMessage)
+    String killMessage = this.plugin.getConfig().getString("kill");
+    if (killMessage != null) {
+      String broadcastMessage = colorize(killMessage)
           .replaceAll("%killer%", killer.getName())
           .replaceAll("%loser%", deathPlayer.getName())
           .replaceAll("%killcount%", String.valueOf(killCount));

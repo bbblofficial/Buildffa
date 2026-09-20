@@ -22,13 +22,15 @@ public class BuildFFACommand implements CommandExecutor {
   
   private final JavaPlugin plugin;
   private final KitEditor kitEditor;
+  private final ScoreboardManager scoreboardManager;
   
   // ذخیره وضعیت Build Mode بازیکنان
   private final Set<UUID> buildModePlayers = new HashSet<UUID>();
   
-  public BuildFFACommand(JavaPlugin plugin, KitEditor kitEditor) {
+  public BuildFFACommand(JavaPlugin plugin, KitEditor kitEditor, ScoreboardManager scoreboardManager) {
     this.plugin = plugin;
     this.kitEditor = kitEditor;
+    this.scoreboardManager = scoreboardManager;
   }
   
   private String getPerm(String action, String defaultPerm) {
@@ -67,6 +69,9 @@ public class BuildFFACommand implements CommandExecutor {
     if (sub.equals("ypvp")) {
       return handleYPvP(sender, args);
     }
+    if (sub.equals("scoreboard") || sub.equals("sb")) {
+      return handleScoreboard(sender, args);
+    }
     if (sub.equals("creator")) {
       return handleCreator(sender);
     }
@@ -78,6 +83,51 @@ public class BuildFFACommand implements CommandExecutor {
       return true;
     }
     sender.sendMessage(colorize("&cUnknown subcommand. Use /buildffa help"));
+    return true;
+  }
+
+  // ==========================================
+  // Scoreboard Command
+  // ==========================================
+  private boolean handleScoreboard(CommandSender sender, String[] args) {
+    if (!(sender instanceof Player)) {
+      sender.sendMessage(colorize("&cOnly players can use the scoreboard command."));
+      return true;
+    }
+    Player player = (Player) sender;
+    
+    // /buildffa sb reload
+    if (args.length >= 2 && args[1].equalsIgnoreCase("reload")) {
+      if (!player.hasPermission(getPerm("reload", "buildffa.reload"))) {
+        sendNoPerm(player);
+        return true;
+      }
+      if (this.scoreboardManager == null) {
+        player.sendMessage(colorize("&cError: ScoreboardManager not found."));
+        return true;
+      }
+      this.scoreboardManager.reloadConfig();
+      player.sendMessage(colorize("&aScoreboard configuration reloaded."));
+      return true;
+    }
+    
+    // /buildffa sb toggle
+    if (!player.hasPermission(getPerm("scoreboard-toggle", "buildffa.scoreboard.toggle"))) {
+      sendNoPerm(player);
+      return true;
+    }
+    
+    if (this.scoreboardManager == null) {
+      player.sendMessage(colorize("&cError: ScoreboardManager not found."));
+      return true;
+    }
+    
+    boolean nowVisible = this.scoreboardManager.toggleScoreboard(player);
+    if (nowVisible) {
+      player.sendMessage(colorize("&aScoreboard &lENABLED&a."));
+    } else {
+      player.sendMessage(colorize("&cScoreboard &lDISABLED&c."));
+    }
     return true;
   }
 
@@ -184,11 +234,9 @@ public class BuildFFACommand implements CommandExecutor {
     UUID uuid = player.getUniqueId();
     
     if (this.buildModePlayers.contains(uuid)) {
-      // خاموش کردن
       this.buildModePlayers.remove(uuid);
       sendActionBar(player, "&fYou are currently &aNORMAL MODE");
     } else {
-      // روشن کردن
       this.buildModePlayers.add(uuid);
       sendActionBar(player, "&fYou are currently &cBUILD MODE");
     }
@@ -196,7 +244,7 @@ public class BuildFFACommand implements CommandExecutor {
   }
 
   // ==========================================
-  // متد ارسال پیام اکشن بار با Reflection برای 1.8.x
+  // Action bar via reflection for 1.8.x
   // ==========================================
   private void sendActionBar(Player player, String message) {
     try {
@@ -214,7 +262,6 @@ public class BuildFFACommand implements CommandExecutor {
       Class<?> packetChatClass = Class.forName("net.minecraft.server." + nmsVersion + ".PacketPlayOutChat");
       Class<?> iChatBaseClass = Class.forName("net.minecraft.server." + nmsVersion + ".IChatBaseComponent");
       
-      // موقعیت 2 در پکت چت یعنی Action Bar
       Object packet = packetChatClass.getConstructor(iChatBaseClass, byte.class).newInstance(chatComponent, (byte) 2);
       
       Class<?> packetClass = Class.forName("net.minecraft.server." + nmsVersion + ".Packet");
@@ -222,7 +269,6 @@ public class BuildFFACommand implements CommandExecutor {
       
       sendPacketMethod.invoke(playerConnection, packet);
     } catch (Exception e) {
-      // اگر سرور پلاگین اکشن‌بار را ساپورت نکرد، پیام را در چت می‌فرستد
       player.sendMessage(colorize(message));
     }
   }
@@ -375,6 +421,9 @@ public class BuildFFACommand implements CommandExecutor {
       return true;
     }
     this.plugin.reloadConfig();
+    if (this.scoreboardManager != null) {
+      this.scoreboardManager.reloadConfig();
+    }
     reloadListeners();
     sender.sendMessage(colorize("&aBuildFFA configuration reloaded."));
     return true;
@@ -394,6 +443,8 @@ public class BuildFFACommand implements CommandExecutor {
     sender.sendMessage(colorize("&e/buildffa ypvp toggle &7- Enable/Disable YPvP"));
     sender.sendMessage(colorize("&e/buildffa ypvp off &7- Disable YPvP"));
     sender.sendMessage(colorize("&e/buildffa setspawn &7- Set respawn point to your location"));
+    sender.sendMessage(colorize("&e/buildffa sb &7- Toggle scoreboard visibility"));
+    sender.sendMessage(colorize("&e/buildffa sb reload &7- Reload scoreboard.yml"));
     sender.sendMessage(colorize("&e/buildffa creator &7- Show plugin credits"));
     sender.sendMessage(colorize("&e/buildffa reload &7- Reload configuration"));
     sender.sendMessage(colorize("&8&m----------------------------------"));

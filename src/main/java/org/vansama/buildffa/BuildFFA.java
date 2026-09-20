@@ -17,6 +17,8 @@ public final class BuildFFA extends JavaPlugin {
   private Blocks blocks;
   private KitEditor kitEditor;
   private Equip equip;
+  private KillListener killListener;
+  private ScoreboardManager scoreboardManager;
   
   @Override
   public void onEnable() {
@@ -24,9 +26,14 @@ public final class BuildFFA extends JavaPlugin {
     saveDefaultConfig();
     reloadConfig();
     
+    // Save default scoreboard.yml if missing
+    saveResource("scoreboard.yml", false);
+    
     this.blocks = new Blocks(this);
     this.kitEditor = new KitEditor(this);
     this.equip = new Equip(this);
+    this.killListener = new KillListener(this);
+    this.scoreboardManager = new ScoreboardManager(this, this.killListener);
     
     // Register all listeners
     getServer().getPluginManager().registerEvents(this.blocks, (Plugin) this);
@@ -34,18 +41,19 @@ public final class BuildFFA extends JavaPlugin {
     getServer().getPluginManager().registerEvents(new High(this), (Plugin) this);
     getServer().getPluginManager().registerEvents(new Void(this), (Plugin) this);
     getServer().getPluginManager().registerEvents(new Welcome(this), (Plugin) this);
-    getServer().getPluginManager().registerEvents(new Kill(this, new KillListener(this)), (Plugin) this);
+    getServer().getPluginManager().registerEvents(new Kill(this, this.killListener), (Plugin) this);
     getServer().getPluginManager().registerEvents(new Items(this, this.kitEditor), (Plugin) this);
     getServer().getPluginManager().registerEvents(new Fall(this), (Plugin) this);
-    getServer().getPluginManager().registerEvents(new KillListener(this), (Plugin) this);
+    getServer().getPluginManager().registerEvents(this.killListener, (Plugin) this);
     getServer().getPluginManager().registerEvents(this.kitEditor, (Plugin) this);
     getServer().getPluginManager().registerEvents(new Infinite(this), (Plugin) this);
     getServer().getPluginManager().registerEvents(new KitRestore(this, this.equip, this.kitEditor), (Plugin) this);
     getServer().getPluginManager().registerEvents(new SpawnManager(this), (Plugin) this);
     getServer().getPluginManager().registerEvents(new YPvP(this), (Plugin) this);
+    getServer().getPluginManager().registerEvents(this.scoreboardManager, (Plugin) this);
     
     // Register command executor
-    getCommand("buildffa").setExecutor(new BuildFFACommand(this, this.kitEditor));
+    getCommand("buildffa").setExecutor(new BuildFFACommand(this, this.kitEditor, this.scoreboardManager));
     
     // Log startup
     getLogger().info("Plugin made by PixelValley");
@@ -71,7 +79,6 @@ public final class BuildFFA extends JavaPlugin {
     
     // ============================================================
     //  Task 2: Monitor inventory every 2 seconds — if empty, re-give kit
-    //  (also catches /clear, /kill, /suicide, etc.)
     // ============================================================
     Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) this, new Runnable() {
       @Override
@@ -87,10 +94,6 @@ public final class BuildFFA extends JavaPlugin {
     }, 20L, 40L);
   }
   
-  /**
-   * Returns true if the player has nothing in their armor slots
-   * AND nothing in their main inventory.
-   */
   private boolean isEmpty(Player player) {
     if (player.getInventory().getHelmet() != null) return false;
     if (player.getInventory().getChestplate() != null) return false;
@@ -104,9 +107,6 @@ public final class BuildFFA extends JavaPlugin {
     return true;
   }
   
-  /**
-   * If the plugin data folder doesn't exist, create it and write a default config.yml.
-   */
   private void createConfigIfMissing() {
     if (!getDataFolder().exists()) {
       getDataFolder().mkdirs();
@@ -147,6 +147,9 @@ public final class BuildFFA extends JavaPlugin {
     if (this.blocks != null) {
       this.blocks.onDisable();
     }
+    if (this.scoreboardManager != null) {
+      this.scoreboardManager.shutdown();
+    }
     getLogger().info("BuildFFA disabled.");
   }
   
@@ -156,5 +159,13 @@ public final class BuildFFA extends JavaPlugin {
   
   public Equip getEquip() {
     return this.equip;
+  }
+  
+  public KillListener getKillListener() {
+    return this.killListener;
+  }
+  
+  public ScoreboardManager getScoreboardManager() {
+    return this.scoreboardManager;
   }
 }
