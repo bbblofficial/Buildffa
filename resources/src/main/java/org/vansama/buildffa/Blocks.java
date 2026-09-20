@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -17,7 +18,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class Blocks implements Listener {
   private JavaPlugin plugin;
   
-  private Map<Block, Long> placedBlocks = new HashMap<>();
+  // Use Location instead of Block as key (Block objects can become invalid)
+  private Map<Location, Long> placedBlocks = new HashMap<>();
   
   public Blocks(JavaPlugin plugin) {
     this.plugin = plugin;
@@ -29,17 +31,27 @@ public class Blocks implements Listener {
     if (event.getPlayer().getGameMode() == GameMode.CREATIVE) {
       return;
     }
-    Block block = event.getBlockPlaced();
-    if (block.getType() != Material.AIR) {
-      block.setType(Material.REDSTONE_BLOCK);
-      Bukkit.getScheduler().scheduleSyncDelayedTask((Plugin) this.plugin, () -> {
-        if (this.placedBlocks.containsKey(block) && block.getType() != Material.AIR) {
-          block.setType(Material.AIR);
-          this.placedBlocks.remove(block);
-        }
-      }, 50L);
-      this.placedBlocks.put(block, Long.valueOf(System.currentTimeMillis()));
+    
+    final Block block = event.getBlockPlaced();
+    if (block.getType() == Material.AIR) {
+      return;
     }
+    
+    final Location loc = block.getLocation().clone();
+    final Material originalType = block.getType();
+    
+    this.placedBlocks.put(loc, Long.valueOf(System.currentTimeMillis()));
+    
+    // Schedule block removal (the block placed by player decays after 5 seconds)
+    Bukkit.getScheduler().scheduleSyncDelayedTask((Plugin) this.plugin, () -> {
+      if (this.placedBlocks.containsKey(loc)) {
+        Block b = loc.getBlock();
+        if (b.getType() != Material.AIR) {
+          b.setType(Material.AIR);
+        }
+        this.placedBlocks.remove(loc);
+      }
+    }, 100L);
   }
   
   @EventHandler
@@ -47,28 +59,40 @@ public class Blocks implements Listener {
     if (event.getPlayer().getGameMode() == GameMode.CREATIVE) {
       return;
     }
+    
     Player player = event.getPlayer();
     final Block block = event.getBlock();
+    final Location loc = block.getLocation().clone();
     final Material blockType = block.getType();
-    if (!this.placedBlocks.containsKey(block)) {
-      Bukkit.getScheduler().scheduleSyncDelayedTask((Plugin) this.plugin, new Runnable() {
-        @Override
-        public void run() {
-          if (block.getType() == Material.AIR) {
-            if (blockType != Material.REDSTONE_BLOCK) {
-              block.setType(blockType);
-            }
-          } else {
-            Bukkit.getScheduler().scheduleSyncDelayedTask((Plugin) Blocks.this.plugin, this, 10L);
-          }
-        }
-      }, 360L);
+    
+    // If this is a player-placed block, don't restore it (it's temporary)
+    if (this.placedBlocks.containsKey(loc)) {
+      this.placedBlocks.remove(loc);
+      return;
     }
+    
+    // Restore naturally-generated blocks after breaking
+    Bukkit.getScheduler().scheduleSyncDelayedTask((Plugin) this.plugin, new Runnable() {
+      @Override
+      public void run() {
+        Block b = loc.getBlock();
+        if (b.getType() == Material.AIR) {
+          if (blockType != Material.REDSTONE_BLOCK && blockType != Material.BEDROCK) {
+            b.setType(blockType);
+          }
+        } else {
+          Bukkit.getScheduler().scheduleSyncDelayedTask((Plugin) Blocks.this.plugin, this, 10L);
+        }
+      }
+    }, 360L);
   }
   
   public void onDisable() {
-    for (Block block : this.placedBlocks.keySet()) {
-      block.setType(Material.AIR);
+    for (Location loc : this.placedBlocks.keySet()) {
+      Block b = loc.getBlock();
+      if (b.getType() != Material.AIR) {
+        b.setType(Material.AIR);
+      }
     }
     this.placedBlocks.clear();
   }

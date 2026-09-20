@@ -30,11 +30,12 @@ public final class BuildFFA extends JavaPlugin {
     getServer().getPluginManager().registerEvents(new Fall(this), (Plugin) this);
     getServer().getPluginManager().registerEvents(new KillListener(this), (Plugin) this);
     getServer().getPluginManager().registerEvents(this.kitEditor, (Plugin) this);
+    getServer().getPluginManager().registerEvents(new Infinite(this), (Plugin) this);
     
     getCommand("buildffa").setExecutor(new BuildFFACommand(this, this.kitEditor));
     
     getLogger().info("Plugin made by PixelValley");
-    getLogger().info("You are running on 3.1");
+    getLogger().info("You are running on 3.2");
     getLogger().info("BuildFFA author: VanSaMa");
     getLogger().info("Created by Muvixo");
     

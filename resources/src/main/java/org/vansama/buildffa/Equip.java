@@ -39,6 +39,11 @@ public class Equip implements Listener {
   }
   
   public void giveDiamondArmor(Player player) {
+    // Check if player has a custom kit saved
+    if (plugin.getConfig().getConfigurationSection("kits." + player.getUniqueId().toString()) != null) {
+      return; // KitEditor will handle loading
+    }
+    
     player.getInventory().clear();
     player.getInventory().setHelmet(new ItemStack(Material.DIAMOND_HELMET));
     player.getInventory().setChestplate(new ItemStack(Material.CHAINMAIL_CHESTPLATE));

@@ -18,9 +18,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -209,7 +207,6 @@ public class KitEditor implements Listener {
     }
     Player player = (Player) event.getWhoClicked();
     if (isEditing(player)) {
-      // Allow free editing of inventory
       return;
     }
   }
@@ -218,11 +215,6 @@ public class KitEditor implements Listener {
   public void onInventoryClose(InventoryCloseEvent event) {
     if (!(event.getPlayer() instanceof Player)) {
       return;
-    }
-    Player player = (Player) event.getPlayer();
-    if (isEditing(player)) {
-      // Don't restore inventory on close - let player continue editing
-      // They must use save or cancel
     }
   }
   

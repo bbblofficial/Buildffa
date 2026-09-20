@@ -68,7 +68,7 @@ public class KillListener implements Listener {
   
   private void resetKillCount(Player player) {
     this.killCounts.remove(player.getUniqueId());
-    this.lastKillTimes.remove(player.getUniqueId());
+    this.killTimes.remove(player.getUniqueId());
   }
   
   public int getKillCount(Player player) {
