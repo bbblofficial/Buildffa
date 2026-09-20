@@ -1,10 +1,9 @@
 name: BuildFFA
-version: 3.1
+version: 3.2
 main: org.vansama.buildffa.BuildFFA
 api-version: 1.13
 author: VanSaMa
 description: BuildFFA plugin with Kit Editor - Created by Muvixo
-website: https://github.com/Muvixo
 commands:
   buildffa:
     description: Main BuildFFA command

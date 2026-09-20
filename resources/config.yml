@@ -30,3 +30,8 @@ kit-editor:
   allow-armor-edit: true
   allow-enchant-edit: true
   max-kits-per-player: 1
+
+# Infinite features
+infinite:
+  food: true
+  blocks: true
