@@ -1,5 +1,6 @@
 package org.vansama.buildffa;
 
+import java.util.ArrayList;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -118,11 +119,10 @@ public class BuildFFACommand implements CommandExecutor {
   
   /**
    * Reloads Void and High listeners so they pick up new config values.
-   * getRegisteredListeners() returns RegisteredListener[] — we must call getListener()
-   * on each element to get the actual Listener instance.
+   * In 1.8.8, getRegisteredListeners() returns an ArrayList<RegisteredListener>.
    */
   private void reloadListeners() {
-    RegisteredListener[] listeners = HandlerList.getRegisteredListeners(this.plugin);
+    ArrayList<RegisteredListener> listeners = HandlerList.getRegisteredListeners(this.plugin);
     for (RegisteredListener rl : listeners) {
       Listener l = rl.getListener();
       if (l instanceof Void) {
