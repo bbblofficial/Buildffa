@@ -141,15 +141,17 @@ public class KitEditor implements Listener {
     // Slot 2: Shears (Unbreakable)
     contents[2] = unbreakable(new ItemStack(Material.SHEARS));
     
-    // Slot 3: Iron Axe (Efficiency I, Unbreakable)
-    ItemStack axe = new ItemStack(Material.IRON_AXE);
-    axe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 1);
-    contents[3] = unbreakable(axe);
+    // Slot 3: (empty)
     
     // Slot 4: Iron Pickaxe (Efficiency II, Unbreakable)
     ItemStack pickaxe = new ItemStack(Material.IRON_PICKAXE);
     pickaxe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 2);
     contents[4] = unbreakable(pickaxe);
+    
+    // Slot 5: Iron Axe (Efficiency I, Unbreakable)
+    ItemStack axe = new ItemStack(Material.IRON_AXE);
+    axe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 1);
+    contents[5] = unbreakable(axe);
     
     return contents;
   }
@@ -243,13 +245,6 @@ public class KitEditor implements Listener {
     return this.editingKit.containsKey(player.getUniqueId()) && this.editingKit.get(player.getUniqueId()).booleanValue();
   }
   
-  /**
-   * Handle clicks:
-   * - Click in editor GUI slots 0-30: ALLOW (move, pick up, place)
-   * - Click in editor GUI slots 31-35: cancel (buttons/spacer)
-   * - Click in PLAYER inventory: cancel (prevents items leaking out)
-   * - Shift-clicks from editor: cancel (prevents smuggling out)
-   */
   @EventHandler
   public void onInventoryClick(InventoryClickEvent event) {
     if (!(event.getWhoClicked() instanceof Player)) {
@@ -272,41 +267,44 @@ public class KitEditor implements Listener {
     
     int slot = event.getRawSlot();
     
-    // Buttons + spacer
+    // Save button
     if (slot == SLOT_SAVE) {
       event.setCancelled(true);
       saveKit(player);
       return;
     }
+    // Cancel button
     if (slot == SLOT_CANCEL) {
       event.setCancelled(true);
       cancelKit(player);
       return;
     }
+    // Reset button
     if (slot == SLOT_RESET) {
       event.setCancelled(true);
       resetKit(player);
       return;
     }
-    if (slot == SLOT_INFO || slot == SLOT_SPACER) {
+    // Info button
+    if (slot == SLOT_INFO) {
+      event.setCancelled(true);
+      return;
+    }
+    // Spacer
+    if (slot == SLOT_SPACER) {
       event.setCancelled(true);
       return;
     }
     
-    // Shift-click from editor → cancel (prevents smuggling)
+    // Block shift-click (prevents smuggling out)
     if (event.isShiftClick()) {
       event.setCancelled(true);
       return;
     }
     
-    // Slots 0-30: FULLY ALLOWED — pick up, place, swap, move, cursor pickup
-    // No further code needed — Bukkit handles it by default
+    // Slots 0-30: fully allowed
   }
   
-  /**
-   * Handle drags — allow all drags that stay within slots 0-30.
-   * Cancel only if a drag slot is a button/spacer (31-35) or in the player inventory (>=36).
-   */
   @EventHandler
   public void onInventoryDrag(InventoryDragEvent event) {
     if (!(event.getWhoClicked() instanceof Player)) {
@@ -320,18 +318,15 @@ public class KitEditor implements Listener {
     
     for (Integer rawSlot : event.getRawSlots()) {
       int s = rawSlot.intValue();
-      // Player inventory slot during a drag over the editor = raw slot >= 36
       if (s >= SIZE) {
         event.setCancelled(true);
         return;
       }
-      // Buttons + spacer
       if (s >= SLOT_SPACER) {
         event.setCancelled(true);
         return;
       }
     }
-    // Otherwise allow the drag
   }
   
   @EventHandler
@@ -339,6 +334,7 @@ public class KitEditor implements Listener {
     if (!(event.getPlayer() instanceof Player)) return;
     Player player = (Player) event.getPlayer();
     
+    // Skip cleanup if we're mid-save
     if (this.saving.containsKey(player.getUniqueId()) && this.saving.get(player.getUniqueId()).booleanValue()) {
       return;
     }
