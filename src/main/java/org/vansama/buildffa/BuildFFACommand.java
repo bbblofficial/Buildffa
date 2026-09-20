@@ -6,6 +6,9 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
+import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class BuildFFACommand implements CommandExecutor {
@@ -61,12 +64,10 @@ public class BuildFFACommand implements CommandExecutor {
     }
     Player player = (Player) sender;
     
-    if (args.length >= 2) {
-      if (args[1].equalsIgnoreCase("reset")) {
-        this.kitEditor.resetKit(player);
-        player.sendMessage(colorize("&aYour kit has been reset to the default kit."));
-        return true;
-      }
+    if (args.length >= 2 && args[1].equalsIgnoreCase("reset")) {
+      this.kitEditor.resetKit(player);
+      player.sendMessage(colorize("&aYour kit has been reset to the default kit."));
+      return true;
     }
     
     this.kitEditor.openKitEditorGUI(player);
@@ -87,6 +88,9 @@ public class BuildFFACommand implements CommandExecutor {
     double y = player.getLocation().getY();
     config.set("kill-height", Double.valueOf(y));
     this.plugin.saveConfig();
+    
+    reloadListeners();
+    
     player.sendMessage(colorize("&aVoid kill height set to &e" + y + " &a(Y level)."));
     return true;
   }
@@ -106,15 +110,28 @@ public class BuildFFACommand implements CommandExecutor {
     config.set("high-limit", Double.valueOf(y));
     this.plugin.saveConfig();
     
-    // Reload High limit dynamically
-    for (org.bukkit.event.Listener l : org.bukkit.event.HandlerList.getRegisteredListeners(this.plugin)) {
+    reloadListeners();
+    
+    player.sendMessage(colorize("&aHigh limit set to &e" + y + " &a(Y level)."));
+    return true;
+  }
+  
+  /**
+   * Reloads Void and High listeners so they pick up new config values.
+   * getRegisteredListeners() returns RegisteredListener[] — we must call getListener()
+   * on each element to get the actual Listener instance.
+   */
+  private void reloadListeners() {
+    RegisteredListener[] listeners = HandlerList.getRegisteredListeners(this.plugin);
+    for (RegisteredListener rl : listeners) {
+      Listener l = rl.getListener();
+      if (l instanceof Void) {
+        ((Void) l).reloadConfig();
+      }
       if (l instanceof High) {
         ((High) l).reloadConfig();
       }
     }
-    
-    player.sendMessage(colorize("&aHigh limit set to &e" + y + " &a(Y level)."));
-    return true;
   }
   
   private boolean handleCreator(CommandSender sender) {
@@ -133,6 +150,7 @@ public class BuildFFACommand implements CommandExecutor {
       return true;
     }
     this.plugin.reloadConfig();
+    reloadListeners();
     sender.sendMessage(colorize("&aBuildFFA configuration reloaded."));
     return true;
   }

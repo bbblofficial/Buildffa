@@ -1,7 +1,6 @@
 package org.vansama.buildffa;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -27,10 +26,17 @@ public class Void implements Listener {
     this.killHeight = config.getDouble("kill-height", 0.0D);
   }
   
+  // Public so command can refresh
+  public void reloadConfig() {
+    loadConfiguration();
+  }
+  
   @EventHandler
   public void onPlayerMove(PlayerMoveEvent event) {
     Player player = event.getPlayer();
     Location to = event.getTo();
+    
+    // Only check if player actually moved Y
     if (to.getY() < this.killHeight) {
       player.setHealth(0.0D);
     }
