@@ -19,8 +19,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class Infinite implements Listener {
   
   private final JavaPlugin plugin;
-  
-  // Track the item amount BEFORE eating, to restore the exact same amount after
   private final Map<UUID, Integer> preEatAmount = new HashMap<UUID, Integer>();
   
   public Infinite(JavaPlugin plugin) {
@@ -41,13 +39,12 @@ public class Infinite implements Listener {
   }
   
   /**
-   * Infinite golden apples.
+   * Infinite golden apples + full heal.
    *
-   * 1. Record how many apples the player had BEFORE eating.
-   * 2. Let the event fire normally (animation plays, effect applies).
-   * 3. After 2 ticks, restore the amount to what it was.
-   *
-   * This avoids both duplication AND loss of the animation.
+   * When the player eats a golden apple:
+   * 1. Fully heal to max HP
+   * 2. Full hunger + saturation
+   * 3. Restore the apple after 2 ticks (so count stays the same)
    */
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onItemConsume(final PlayerItemConsumeEvent event) {
@@ -65,17 +62,20 @@ public class Infinite implements Listener {
     final int amountBeforeEat = item.getAmount();
     final short dataBeforeEat = item.getDurability();
     
-    // Restore the item after the consume animation finishes (2 ticks later)
+    // === FULL HEAL ===
+    player.setHealth(player.getMaxHealth());
+    player.setFoodLevel(20);
+    player.setSaturation(20.0F);
+    
+    // === Restore the apple after consume animation (2 ticks) ===
     this.plugin.getServer().getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
       @Override
       public void run() {
         if (!player.isOnline()) return;
         
-        // Look for a slot with fewer items than expected, then top it up
-        // Because the player may have moved things around
         boolean restored = false;
         
-        // Try the hand slot first
+        // Try hand slot
         ItemStack hand = player.getItemInHand();
         if (hand != null && hand.getType() == type && hand.getDurability() == dataBeforeEat) {
           if (hand.getAmount() < amountBeforeEat) {
@@ -84,8 +84,8 @@ public class Infinite implements Listener {
           }
         }
         
+        // Search whole inventory
         if (!restored) {
-          // Search whole inventory
           for (int i = 0; i < player.getInventory().getSize(); i++) {
             ItemStack slot = player.getInventory().getItem(i);
             if (slot != null && slot.getType() == type && slot.getDurability() == dataBeforeEat) {
@@ -98,20 +98,17 @@ public class Infinite implements Listener {
           }
         }
         
+        // Add one back if not found
         if (!restored) {
-          // Slot had exactly this many, or the item was fully consumed — add one back
           player.getInventory().addItem(new ItemStack[] { new ItemStack(type, 1, dataBeforeEat) });
         }
         
         player.updateInventory();
       }
     }, 2L);
-    
-    player.setFoodLevel(20);
-    player.setSaturation(20.0F);
   }
   
-  @EventHandler
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onBlockPlace(BlockPlaceEvent event) {
     final Player player = event.getPlayer();
     

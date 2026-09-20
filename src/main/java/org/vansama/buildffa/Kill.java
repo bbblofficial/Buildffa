@@ -17,6 +17,7 @@ public class Kill implements Listener {
   private JavaPlugin plugin;
   private KillListener killListener;
   
+  // Anti-spam cooldowns
   private Map<UUID, Long> lastKillTimestamps = new HashMap<UUID, Long>();
   private Map<UUID, Long> lastVictimDeathTimestamps = new HashMap<UUID, Long>();
   
@@ -30,8 +31,9 @@ public class Kill implements Listener {
     Player deathPlayer = event.getEntity();
     UUID victimId = deathPlayer.getUniqueId();
     
-    // Anti-spam: same victim within 3s → ignore
     long now = System.currentTimeMillis();
+    
+    // Anti-spam: skip if same victim died < 3 seconds ago
     long lastVictimDeath = ((Long) this.lastVictimDeathTimestamps.getOrDefault(victimId, Long.valueOf(0L))).longValue();
     if (now - lastVictimDeath < 3000L) {
       return;
@@ -43,7 +45,7 @@ public class Kill implements Listener {
     Player killer = deathPlayer.getKiller();
     UUID killerId = killer.getUniqueId();
     
-    // Anti-spam: same killer within 1s → ignore
+    // Anti-spam: skip if same killer killed < 1 second ago
     long lastKillTime = ((Long) this.lastKillTimestamps.getOrDefault(killerId, Long.valueOf(0L))).longValue();
     if (now - lastKillTime < 1000L) {
       return;
@@ -52,9 +54,15 @@ public class Kill implements Listener {
     
     int killCount = this.killListener.getKillCount(killer);
     
-    // === Only give a golden apple as the kill reward ===
+    // === FULL HEAL ON KILL ===
+    killer.setHealth(killer.getMaxHealth());
+    killer.setFoodLevel(20);
+    killer.setSaturation(20.0F);
+    
+    // === Kill reward: 1 golden apple ===
     killer.getInventory().addItem(new ItemStack[] { new ItemStack(Material.GOLDEN_APPLE, 1) });
     
+    // === Broadcast ===
     String joinMessage = this.plugin.getConfig().getString("kill");
     if (joinMessage != null) {
       String broadcastMessage = colorize(joinMessage)
