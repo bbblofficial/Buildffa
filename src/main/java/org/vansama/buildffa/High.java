@@ -23,7 +23,8 @@ public class High implements Listener {
   private final Map<UUID, Long> lastMessageTime = new HashMap<UUID, Long>();
   private static final long MESSAGE_COOLDOWN_MS = 1000L;
   
-  private static final double MIN_HIGH_LIMIT = 1.0D;
+  private static final double MIN_HIGH_LIMIT = 5.0D;
+  private static final double DEFAULT_HIGH_LIMIT = 100.0D;
   
   public High(JavaPlugin plugin) {
     this.plugin = plugin;
@@ -33,11 +34,11 @@ public class High implements Listener {
   
   private void loadConfiguration() {
     FileConfiguration config = this.plugin.getConfig();
-    double value = config.getDouble("high-limit", 100.0D);
+    double value = config.getDouble("high-limit", DEFAULT_HIGH_LIMIT);
     
     if (value < MIN_HIGH_LIMIT) {
-      this.plugin.getLogger().warning("high-limit is set to " + value + " — using 100.0 instead.");
-      this.highLimit = 100.0D;
+      this.plugin.getLogger().warning("high-limit is set to " + value + " — too low, using " + DEFAULT_HIGH_LIMIT + " instead.");
+      this.highLimit = DEFAULT_HIGH_LIMIT;
     } else {
       this.highLimit = value;
     }
@@ -59,10 +60,10 @@ public class High implements Listener {
   }
   
   /**
-   * Bypass for:
+   * Bypass only for:
    *   - Creative mode
    *   - OP players
-   *   - Players with permission "buildffa.highlimit.bypass"
+   *   - Players explicitly granted "buildffa.highlimit.bypass" (admin-only)
    */
   private boolean shouldBypass(Player player) {
     if (player.getGameMode() == GameMode.CREATIVE) return true;
