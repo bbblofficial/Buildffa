@@ -21,6 +21,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class KillListener implements Listener {
   private Map<UUID, Integer> killCounts = new HashMap<UUID, Integer>();
   private Map<UUID, Long> lastKillTimes = new ConcurrentHashMap<UUID, Long>();
+  private Map<UUID, Long> lastVictimTimes = new ConcurrentHashMap<UUID, Long>();
   private JavaPlugin plugin;
   private FileConfiguration config;
   
@@ -34,23 +35,33 @@ public class KillListener implements Listener {
   public void onPlayerKill(PlayerDeathEvent event) {
     Player deathPlayer = event.getEntity();
     Player killer = deathPlayer.getKiller();
-    if (killer != null) {
-      long currentTime = System.currentTimeMillis();
-      long lastKillTime = ((Long) this.lastKillTimes.getOrDefault(killer.getUniqueId(), Long.valueOf(0L))).longValue();
-      if (currentTime - lastKillTime < 80L) {
-        return;
-      }
-      this.lastKillTimes.put(killer.getUniqueId(), Long.valueOf(currentTime));
-      UUID killerId = killer.getUniqueId();
-      int kills = ((Integer) this.killCounts.getOrDefault(killerId, Integer.valueOf(0))).intValue() + 1;
-      this.killCounts.put(killerId, Integer.valueOf(kills));
-      
-      String titleSuffix = this.config.getString("Title-Suffix", " &7Kill");
-      String subTitleKill = this.config.getString("SubTitle-kill", "&e+1 Kill");
-      
-      sendTitle(killer, "+" + kills + titleSuffix, subTitleKill);
-      killer.playSound(killer.getLocation(), Sound.LEVEL_UP, 1.0F, 1.0F);
+    if (killer == null) return;
+    
+    long currentTime = System.currentTimeMillis();
+    
+    // Victim cooldown: no repeated kill credit for the same victim within 3s
+    long lastVictimTime = ((Long) this.lastVictimTimes.getOrDefault(deathPlayer.getUniqueId(), Long.valueOf(0L))).longValue();
+    if (currentTime - lastVictimTime < 3000L) {
+      return;
     }
+    this.lastVictimTimes.put(deathPlayer.getUniqueId(), Long.valueOf(currentTime));
+    
+    // Killer cooldown: 80ms between kills
+    long lastKillTime = ((Long) this.lastKillTimes.getOrDefault(killer.getUniqueId(), Long.valueOf(0L))).longValue();
+    if (currentTime - lastKillTime < 80L) {
+      return;
+    }
+    this.lastKillTimes.put(killer.getUniqueId(), Long.valueOf(currentTime));
+    
+    UUID killerId = killer.getUniqueId();
+    int kills = ((Integer) this.killCounts.getOrDefault(killerId, Integer.valueOf(0))).intValue() + 1;
+    this.killCounts.put(killerId, Integer.valueOf(kills));
+    
+    String titleSuffix = this.config.getString("Title-Suffix", " &7Kill");
+    String subTitleKill = this.config.getString("SubTitle-kill", "&e+1 Kill");
+    
+    sendTitle(killer, "+" + kills + titleSuffix, subTitleKill);
+    killer.playSound(killer.getLocation(), Sound.LEVEL_UP, 1.0F, 1.0F);
   }
   
   @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -105,6 +116,7 @@ public class KillListener implements Listener {
   private void resetKillCount(Player player) {
     this.killCounts.remove(player.getUniqueId());
     this.lastKillTimes.remove(player.getUniqueId());
+    this.lastVictimTimes.remove(player.getUniqueId());
   }
   
   public int getKillCount(Player player) {

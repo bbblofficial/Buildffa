@@ -15,10 +15,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class Kill implements Listener {
   private JavaPlugin plugin;
-  
   private KillListener killListener;
   
+  // Killer cooldown (anti spam)
   private Map<UUID, Long> lastKillTimestamps = new HashMap<UUID, Long>();
+  // Victim cooldown (anti-spam when a player dies repeatedly e.g. void)
+  private Map<UUID, Long> lastVictimDeathTimestamps = new HashMap<UUID, Long>();
   
   public Kill(JavaPlugin plugin, KillListener killListener) {
     this.plugin = plugin;
@@ -28,26 +30,41 @@ public class Kill implements Listener {
   @EventHandler
   public void onPlayerDeath(PlayerDeathEvent event) {
     Player deathPlayer = event.getEntity();
-    if (deathPlayer.getKiller() != null) {
-      Player killer = deathPlayer.getKiller();
-      UUID killerId = killer.getUniqueId();
-      long currentTime = System.currentTimeMillis();
-      long lastKillTime = ((Long) this.lastKillTimestamps.getOrDefault(killerId, Long.valueOf(0L))).longValue();
-      if (currentTime - lastKillTime < 1000L) {
-        return;
-      }
-      int killCount = this.killListener.getKillCount(killer);
-      this.lastKillTimestamps.put(killerId, Long.valueOf(currentTime));
-      
-      killer.getInventory().addItem(new ItemStack[] { new ItemStack(Material.GOLDEN_APPLE, 1) });
-      killer.getInventory().addItem(new ItemStack[] { new ItemStack(Material.ENDER_PEARL, 1) });
-      killer.getInventory().addItem(new ItemStack[] { new ItemStack(Material.ARROW, 8) });
-      
-      String joinMessage = this.plugin.getConfig().getString("kill");
-      if (joinMessage != null) {
-        String broadcastMessage = colorize(joinMessage).replaceAll("%killer%", killer.getName()).replaceAll("%loser%", deathPlayer.getName()).replaceAll("%killcount%", String.valueOf(killCount));
-        Bukkit.broadcastMessage(broadcastMessage);
-      }
+    UUID victimId = deathPlayer.getUniqueId();
+    
+    // Anti-spam: if this victim died less than 3 seconds ago, ignore
+    long now = System.currentTimeMillis();
+    long lastVictimDeath = ((Long) this.lastVictimDeathTimestamps.getOrDefault(victimId, Long.valueOf(0L))).longValue();
+    if (now - lastVictimDeath < 3000L) {
+      return;
+    }
+    this.lastVictimDeathTimestamps.put(victimId, Long.valueOf(now));
+    
+    if (deathPlayer.getKiller() == null) return;
+    
+    Player killer = deathPlayer.getKiller();
+    UUID killerId = killer.getUniqueId();
+    
+    // Anti-spam: if this killer killed someone less than 1 second ago, ignore
+    long lastKillTime = ((Long) this.lastKillTimestamps.getOrDefault(killerId, Long.valueOf(0L))).longValue();
+    if (now - lastKillTime < 1000L) {
+      return;
+    }
+    this.lastKillTimestamps.put(killerId, Long.valueOf(now));
+    
+    int killCount = this.killListener.getKillCount(killer);
+    
+    killer.getInventory().addItem(new ItemStack[] { new ItemStack(Material.GOLDEN_APPLE, 1) });
+    killer.getInventory().addItem(new ItemStack[] { new ItemStack(Material.ENDER_PEARL, 1) });
+    killer.getInventory().addItem(new ItemStack[] { new ItemStack(Material.ARROW, 8) });
+    
+    String joinMessage = this.plugin.getConfig().getString("kill");
+    if (joinMessage != null) {
+      String broadcastMessage = colorize(joinMessage)
+          .replaceAll("%killer%", killer.getName())
+          .replaceAll("%loser%", deathPlayer.getName())
+          .replaceAll("%killcount%", String.valueOf(killCount));
+      Bukkit.broadcastMessage(broadcastMessage);
     }
   }
   
