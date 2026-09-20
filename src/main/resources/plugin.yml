@@ -27,4 +27,4 @@ permissions:
     default: true
   buildffa.highlimit.bypass:
     description: Bypass the high-limit build restriction
-    default: true
+    default: op

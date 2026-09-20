@@ -59,10 +59,10 @@ public class High implements Listener {
   }
   
   /**
-   * Full bypass for:
-   *   - OPs
-   *   - Anyone with "buildffa.highlimit.bypass"
+   * Bypass for:
    *   - Creative mode
+   *   - OP players
+   *   - Players with permission "buildffa.highlimit.bypass"
    */
   private boolean shouldBypass(Player player) {
     if (player.getGameMode() == GameMode.CREATIVE) return true;
