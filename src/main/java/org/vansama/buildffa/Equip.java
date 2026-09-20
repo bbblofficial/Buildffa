@@ -52,8 +52,8 @@ public class Equip implements Listener {
     player.getInventory().setLeggings(unbreakable(new ItemStack(Material.DIAMOND_LEGGINGS)));
     player.getInventory().setBoots(unbreakable(new ItemStack(Material.DIAMOND_BOOTS)));
     
-    // === SLOT 0: Stone Sword (Sharpness II, Unbreakable) ===
-    ItemStack sword = new ItemStack(Material.STONE_SWORD);
+    // === SLOT 0: Diamond Sword (Sharpness II, Unbreakable) ===
+    ItemStack sword = new ItemStack(Material.DIAMOND_SWORD);
     sword.addUnsafeEnchantment(Enchantment.DAMAGE_ALL, 2);
     player.getInventory().setItem(0, unbreakable(sword));
     
@@ -61,31 +61,19 @@ public class Equip implements Listener {
     ItemStack cyanWool = new ItemStack(Material.WOOL, 64, (short) 9);
     player.getInventory().setItem(1, cyanWool);
     
-    // === SLOT 2: Bow (Punch 1, Power 2) ===
-    ItemStack bow = new ItemStack(Material.BOW);
-    bow.addEnchantment(Enchantment.ARROW_KNOCKBACK, 1);
-    bow.addEnchantment(Enchantment.ARROW_DAMAGE, 2);
-    player.getInventory().setItem(2, unbreakable(bow));
+    // === SLOT 2: Iron Axe (Efficiency I, Unbreakable) ===
+    ItemStack axe = new ItemStack(Material.IRON_AXE);
+    axe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 1);
+    player.getInventory().setItem(2, unbreakable(axe));
     
-    // === SLOT 3: Iron Pickaxe (Efficiency I) ===
+    // === SLOT 3: Iron Pickaxe (Efficiency I, Unbreakable) ===
     ItemStack pickaxe = new ItemStack(Material.IRON_PICKAXE);
     pickaxe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 1);
     player.getInventory().setItem(3, unbreakable(pickaxe));
     
-    // === SLOT 4: Iron Axe (Efficiency I) ===
-    ItemStack axe = new ItemStack(Material.IRON_AXE);
-    axe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 1);
-    player.getInventory().setItem(4, unbreakable(axe));
-    
-    // === Extra ===
-    player.getInventory().addItem(new ItemStack[] { new ItemStack(Material.ARROW, 12) });
-    player.getInventory().addItem(new ItemStack[] { new ItemStack(Material.GOLDEN_APPLE, 3) });
-    player.getInventory().addItem(new ItemStack[] { new ItemStack(Material.ENDER_PEARL) });
+    // No bow, no arrows, no ender pearl, no golden apples
   }
   
-  /**
-   * Marks an ItemStack as unbreakable in 1.8.8.
-   */
   public static ItemStack unbreakable(ItemStack item) {
     if (item == null) return null;
     ItemMeta meta = item.getItemMeta();

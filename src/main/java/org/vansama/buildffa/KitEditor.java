@@ -18,8 +18,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -31,12 +29,10 @@ public class KitEditor implements Listener {
   private final JavaPlugin plugin;
   private final Map<UUID, Inventory> openEditors = new HashMap<UUID, Inventory>();
   private final Map<UUID, Boolean> editingKit = new HashMap<UUID, Boolean>();
-  // Track whether we are currently saving to avoid the close handler interfering
   private final Map<UUID, Boolean> saving = new HashMap<UUID, Boolean>();
   
   private static final int SIZE = 36;
   
-  // Button slots
   private static final int SLOT_SAVE = 32;
   private static final int SLOT_CANCEL = 33;
   private static final int SLOT_RESET = 34;
@@ -77,13 +73,11 @@ public class KitEditor implements Listener {
       }
     }
     
-    // Armor slots (27-30)
     inv.setItem(27, helmet);
     inv.setItem(28, chestplate);
     inv.setItem(29, leggings);
     inv.setItem(30, boots);
     
-    // Info/Save/Cancel/Reset buttons
     ItemStack saveBtn = createButton(Material.EMERALD_BLOCK, colorize("&a&lSave Kit"), Arrays.asList(
         colorize("&7Click to save your current kit")
     ));
@@ -135,28 +129,26 @@ public class KitEditor implements Listener {
   private ItemStack[] getDefaultKitContents() {
     ItemStack[] contents = new ItemStack[36];
     
-    ItemStack sword = new ItemStack(Material.STONE_SWORD);
+    // Slot 0: Diamond Sword (Sharpness II, Unbreakable)
+    ItemStack sword = new ItemStack(Material.DIAMOND_SWORD);
     sword.addUnsafeEnchantment(Enchantment.DAMAGE_ALL, 2);
     contents[0] = unbreakable(sword);
     
+    // Slot 1: Cyan Wool x 64
     contents[1] = new ItemStack(Material.WOOL, 64, (short) 9);
     
-    ItemStack bow = new ItemStack(Material.BOW);
-    bow.addEnchantment(Enchantment.ARROW_KNOCKBACK, 1);
-    bow.addEnchantment(Enchantment.ARROW_DAMAGE, 2);
-    contents[2] = unbreakable(bow);
+    // Slot 2: Iron Axe (Efficiency I, Unbreakable)
+    ItemStack axe = new ItemStack(Material.IRON_AXE);
+    axe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 1);
+    contents[2] = unbreakable(axe);
     
+    // Slot 3: Iron Pickaxe (Efficiency I, Unbreakable)
     ItemStack pickaxe = new ItemStack(Material.IRON_PICKAXE);
     pickaxe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 1);
     contents[3] = unbreakable(pickaxe);
     
-    ItemStack axe = new ItemStack(Material.IRON_AXE);
-    axe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 1);
-    contents[4] = unbreakable(axe);
-    
-    contents[5] = new ItemStack(Material.ARROW, 12);
-    contents[6] = new ItemStack(Material.GOLDEN_APPLE, 3);
-    contents[7] = new ItemStack(Material.ENDER_PEARL);
+    // Slot 4-26: empty
+    // No bow, no arrows, no ender pearl, no golden apples
     
     return contents;
   }
@@ -186,7 +178,6 @@ public class KitEditor implements Listener {
       return;
     }
     
-    // Mark as saving so onClose doesn't cancel
     this.saving.put(player.getUniqueId(), Boolean.valueOf(true));
     
     FileConfiguration config = this.plugin.getConfig();
@@ -205,7 +196,6 @@ public class KitEditor implements Listener {
     
     this.plugin.saveConfig();
     
-    // Clear state BEFORE closing
     this.editingKit.remove(player.getUniqueId());
     this.openEditors.remove(player.getUniqueId());
     this.saving.remove(player.getUniqueId());
@@ -214,18 +204,15 @@ public class KitEditor implements Listener {
     player.sendMessage(colorize("&aYour kit has been saved!"));
     player.playSound(player.getLocation(), Sound.LEVEL_UP, 1.0F, 1.0F);
     
-    // Apply the new kit
     Equip equip = new Equip(this.plugin);
     equip.giveDiamondArmor(player);
   }
   
   public void cancelKit(Player player) {
     this.saving.put(player.getUniqueId(), Boolean.valueOf(true));
-    
     this.editingKit.remove(player.getUniqueId());
     this.openEditors.remove(player.getUniqueId());
     this.saving.remove(player.getUniqueId());
-    
     player.closeInventory();
     player.sendMessage(colorize("&cKit editing cancelled."));
   }
@@ -266,74 +253,64 @@ public class KitEditor implements Listener {
       return;
     }
     
-    Inventory currentInv = this.openEditors.get(player.getUniqueId());
-    if (currentInv == null) {
-      return;
-    }
+    Inventory editor = this.openEditors.get(player.getUniqueId());
+    if (editor == null) return;
     
-    // Click was NOT in our editor GUI
-    if (event.getInventory() != currentInv) {
-      // Cancel any move from player inventory into the editor
+    if (event.getInventory() != editor) {
       event.setCancelled(true);
       return;
     }
     
     int slot = event.getRawSlot();
     
-    // Save button
     if (slot == SLOT_SAVE) {
       event.setCancelled(true);
       saveKit(player);
       return;
     }
-    // Cancel button
     if (slot == SLOT_CANCEL) {
       event.setCancelled(true);
       cancelKit(player);
       return;
     }
-    // Reset button
     if (slot == SLOT_RESET) {
       event.setCancelled(true);
       resetKit(player);
       return;
     }
-    // Info button
     if (slot == SLOT_INFO) {
       event.setCancelled(true);
       return;
     }
-    // Spacer slot
     if (slot == SLOT_SPACER) {
       event.setCancelled(true);
       return;
     }
     
-    // Block shift-click so items can't be smuggled out
     if (event.isShiftClick()) {
       event.setCancelled(true);
       return;
     }
-    
-    // All other slots in the editor (0-30): allow free movement
   }
   
   @EventHandler
-  public void onInventoryDrag(InventoryDragEvent event) {
+  public void onInventoryDrag(org.bukkit.event.inventory.InventoryDragEvent event) {
     if (!(event.getWhoClicked() instanceof Player)) {
       return;
     }
     Player player = (Player) event.getWhoClicked();
-    if (!isEditing(player)) {
-      return;
-    }
+    if (!isEditing(player)) return;
     
-    Inventory currentInv = this.openEditors.get(player.getUniqueId());
-    if (currentInv == null) return;
+    Inventory editor = this.openEditors.get(player.getUniqueId());
+    if (editor == null) return;
     
-    // Cancel any drag that touches button slots or player inventory
-    for (Integer slot : event.getRawSlots()) {
-      if (slot.intValue() >= SLOT_SPACER) {
+    for (Integer rawSlot : event.getRawSlots()) {
+      int s = rawSlot.intValue();
+      if (s >= SLOT_SPACER) {
+        event.setCancelled(true);
+        return;
+      }
+      if (s >= SIZE) {
         event.setCancelled(true);
         return;
       }
@@ -341,26 +318,14 @@ public class KitEditor implements Listener {
   }
   
   @EventHandler
-  public void onPlayerDropItem(PlayerDropItemEvent event) {
-    Player player = event.getPlayer();
-    if (isEditing(player)) {
-      event.setCancelled(true);
-    }
-  }
-  
-  @EventHandler
   public void onInventoryClose(InventoryCloseEvent event) {
-    if (!(event.getPlayer() instanceof Player)) {
-      return;
-    }
+    if (!(event.getPlayer() instanceof Player)) return;
     Player player = (Player) event.getPlayer();
     
-    // If we're in the middle of saving/cancelling, ignore
     if (this.saving.containsKey(player.getUniqueId()) && this.saving.get(player.getUniqueId()).booleanValue()) {
       return;
     }
     
-    // Player closed editor without clicking save/cancel → treat as cancel
     if (isEditing(player)) {
       this.editingKit.remove(player.getUniqueId());
       this.openEditors.remove(player.getUniqueId());

@@ -20,27 +20,26 @@ public class Items implements Listener {
     Bukkit.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
   }
   
-  // No item pickups (except while editing kit)
+  // No item pickups — except while editing kit
   @EventHandler
   public void onPlayerPickupItem(PlayerPickupItemEvent event) {
     Player player = event.getPlayer();
     if (this.kitEditor.isEditing(player)) {
-      return; // allow during kit editing
+      return;
     }
     event.setCancelled(true);
   }
   
-  // No item drops (except while editing kit)
+  // No item drops — except while editing kit
   @EventHandler
   public void onPlayerDropItem(PlayerDropItemEvent event) {
     Player player = event.getPlayer();
     if (this.kitEditor.isEditing(player)) {
-      return; // allow during kit editing so players can rearrange items
+      return;
     }
     event.setCancelled(true);
   }
   
-  // No creature spawns
   @EventHandler
   public void onCreatureSpawn(CreatureSpawnEvent event) {
     event.setCancelled(true);
