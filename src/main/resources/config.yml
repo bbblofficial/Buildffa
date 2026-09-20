@@ -1,0 +1,31 @@
+# BuildFFA Configuration
+# Created by Muvixo
+# Plugin author: VanSaMa
+# Made by PixelValley
+# Version: 4.0 (1.8.8 Compatible)
+
+# The Y level at which players die (void kill height)
+kill-height: 0.0
+
+# The Y level above which building and PvP is disabled
+high-limit: 100.0
+
+# Message sent when a player kills another player
+kill: "&e%killer% &7killed &e%loser% &7(&e%killcount% &7kills)"
+
+# Title suffix shown to killer
+Title-Suffix: " &7Kill"
+
+# Subtitle shown to killer
+SubTitle-kill: "&e+1 Kill"
+
+# Message sent when a player joins
+join-message: "&e%player% &7joined the game &8(&e%online%&7/&e100&8)"
+
+# Message sent when a player quits
+quit-message: "&e%player% &7left the game &8(&e%online%&7/&e100&8)"
+
+# Infinite features
+infinite:
+  food: true
+  blocks: true
