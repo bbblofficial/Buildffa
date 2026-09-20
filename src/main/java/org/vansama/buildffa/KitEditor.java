@@ -36,17 +36,10 @@ public class KitEditor implements Listener {
     Bukkit.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
   }
   
-  /**
-   * Opens a GUI menu for kit editing.
-   */
   public void openKitEditorGUI(final Player player) {
-    Inventory gui = Bukkit.createInventory(null, 27, colorize("&6&lKit Editor"));
-    
-    // Save current inventory so we can restore when done
     this.savedInventories.put(player.getUniqueId(), player.getInventory().getContents().clone());
     this.savedArmor.put(player.getUniqueId(), player.getInventory().getArmorContents().clone());
     
-    // Load current kit into player inventory for editing
     FileConfiguration config = this.plugin.getConfig();
     ConfigurationSection kitSection = config.getConfigurationSection("kits." + player.getUniqueId().toString());
     
@@ -59,7 +52,10 @@ public class KitEditor implements Listener {
       loadDefaultKit(player);
     }
     
-    // Fill GUI with action buttons
+    this.editingKit.put(player.getUniqueId(), Boolean.valueOf(true));
+    
+    Inventory gui = Bukkit.createInventory(null, 27, colorize("&6&lKit Editor"));
+    
     ItemStack saveBtn = createButton(Material.EMERALD_BLOCK, colorize("&a&lSave Kit"), Arrays.asList(
         colorize("&7Click to save your current kit")
     ));
@@ -81,10 +77,6 @@ public class KitEditor implements Listener {
     gui.setItem(15, cancelBtn);
     gui.setItem(22, resetBtn);
     
-    // Mark as editing
-    this.editingKit.put(player.getUniqueId(), Boolean.valueOf(true));
-    
-    // Delayed open so player inventory changes apply first
     Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
       @Override
       public void run() {
@@ -107,28 +99,48 @@ public class KitEditor implements Listener {
   }
   
   private void loadDefaultKit(Player player) {
-    player.getInventory().setHelmet(new ItemStack(Material.DIAMOND_HELMET));
-    player.getInventory().setChestplate(new ItemStack(Material.CHAINMAIL_CHESTPLATE));
-    player.getInventory().setLeggings(new ItemStack(Material.IRON_LEGGINGS));
-    player.getInventory().setBoots(new ItemStack(Material.IRON_BOOTS));
+    // === ARMOR ===
+    player.getInventory().setHelmet(unbreakable(new ItemStack(Material.IRON_HELMET)));
+    player.getInventory().setChestplate(unbreakable(new ItemStack(Material.IRON_CHESTPLATE)));
+    player.getInventory().setLeggings(unbreakable(new ItemStack(Material.DIAMOND_LEGGINGS)));
+    player.getInventory().setBoots(unbreakable(new ItemStack(Material.DIAMOND_BOOTS)));
     
-    ItemStack ironSword = new ItemStack(Material.IRON_SWORD);
-    ironSword.addEnchantment(Enchantment.KNOCKBACK, 2);
-    player.getInventory().addItem(new ItemStack[] { ironSword });
+    // === SLOT 0: Stone Sword ===
+    player.getInventory().setItem(0, unbreakable(new ItemStack(Material.STONE_SWORD)));
     
-    ItemStack dig = new ItemStack(Material.IRON_PICKAXE);
-    dig.addEnchantment(Enchantment.DIG_SPEED, 3);
-    player.getInventory().addItem(new ItemStack[] { dig });
+    // === SLOT 1: Cyan Wool x 128 ===
+    ItemStack cyanWool = new ItemStack(Material.WOOL, 128, (short) 9);
+    player.getInventory().setItem(1, cyanWool);
     
+    // === SLOT 2: Bow (Punch 1, Power 2) ===
     ItemStack bow = new ItemStack(Material.BOW);
     bow.addEnchantment(Enchantment.ARROW_KNOCKBACK, 1);
     bow.addEnchantment(Enchantment.ARROW_DAMAGE, 2);
-    player.getInventory().addItem(new ItemStack[] { bow });
+    player.getInventory().setItem(2, unbreakable(bow));
     
+    // === SLOT 3: Iron Pickaxe (Efficiency 2) ===
+    ItemStack pickaxe = new ItemStack(Material.IRON_PICKAXE);
+    pickaxe.addEnchantment(Enchantment.DIG_SPEED, 2);
+    player.getInventory().setItem(3, unbreakable(pickaxe));
+    
+    // === SLOT 4: Iron Axe (Efficiency 1) ===
+    ItemStack axe = new ItemStack(Material.IRON_AXE);
+    axe.addEnchantment(Enchantment.DIG_SPEED, 1);
+    player.getInventory().setItem(4, unbreakable(axe));
+    
+    // === Extra items ===
     player.getInventory().addItem(new ItemStack[] { new ItemStack(Material.ARROW, 12) });
     player.getInventory().addItem(new ItemStack[] { new ItemStack(Material.GOLDEN_APPLE, 3) });
-    player.getInventory().addItem(new ItemStack[] { new ItemStack(Material.SANDSTONE, 128) });
     player.getInventory().addItem(new ItemStack[] { new ItemStack(Material.ENDER_PEARL) });
+  }
+  
+  public static ItemStack unbreakable(ItemStack item) {
+    if (item == null) return null;
+    ItemMeta meta = item.getItemMeta();
+    if (meta == null) return item;
+    meta.spigot().setUnbreakable(true);
+    item.setItemMeta(meta);
+    return item;
   }
   
   private void loadKitFromConfig(Player player, ConfigurationSection section) {
@@ -170,25 +182,39 @@ public class KitEditor implements Listener {
     this.plugin.saveConfig();
     
     this.editingKit.remove(player.getUniqueId());
+    this.savedInventories.remove(player.getUniqueId());
+    this.savedArmor.remove(player.getUniqueId());
     
     player.sendMessage(colorize("&aYour kit has been saved!"));
     player.playSound(player.getLocation(), Sound.LEVEL_UP, 1.0F, 1.0F);
-    
     player.closeInventory();
-    restoreInventory(player);
   }
   
   public void cancelKit(Player player) {
     this.editingKit.remove(player.getUniqueId());
+    
+    ItemStack[] saved = this.savedInventories.remove(player.getUniqueId());
+    ItemStack[] savedArmorContents = this.savedArmor.remove(player.getUniqueId());
+    
+    player.getInventory().clear();
+    if (saved != null) {
+      player.getInventory().setContents(saved);
+    }
+    if (savedArmorContents != null) {
+      player.getInventory().setArmorContents(savedArmorContents);
+    }
+    
     player.sendMessage(colorize("&cKit editing cancelled."));
     player.closeInventory();
-    restoreInventory(player);
   }
   
   public void resetKit(Player player) {
     FileConfiguration config = this.plugin.getConfig();
     config.set("kits." + player.getUniqueId().toString(), null);
     this.plugin.saveConfig();
+    
+    this.savedInventories.remove(player.getUniqueId());
+    this.savedArmor.remove(player.getUniqueId());
     
     if (isEditing(player)) {
       player.getInventory().clear();
@@ -200,20 +226,6 @@ public class KitEditor implements Listener {
     }
     
     player.sendMessage(colorize("&aYour kit has been reset to the default kit."));
-  }
-  
-  private void restoreInventory(Player player) {
-    ItemStack[] saved = this.savedInventories.remove(player.getUniqueId());
-    ItemStack[] savedArmorContents = this.savedArmor.remove(player.getUniqueId());
-    
-    player.getInventory().clear();
-    
-    if (saved != null) {
-      player.getInventory().setContents(saved);
-    }
-    if (savedArmorContents != null) {
-      player.getInventory().setArmorContents(savedArmorContents);
-    }
   }
   
   public boolean isEditing(Player player) {
@@ -256,23 +268,18 @@ public class KitEditor implements Listener {
       return;
     }
     
-    // Save
     if (clicked.getType() == Material.EMERALD_BLOCK) {
       saveKit(player);
-    }
-    // Cancel
-    else if (clicked.getType() == Material.REDSTONE_BLOCK) {
+    } else if (clicked.getType() == Material.REDSTONE_BLOCK) {
       cancelKit(player);
-    }
-    // Reset
-    else if (clicked.getType() == Material.BARRIER) {
+    } else if (clicked.getType() == Material.BARRIER) {
       resetKit(player);
     }
   }
   
   @EventHandler
   public void onInventoryClose(InventoryCloseEvent event) {
-    // Nothing to do on close - they must use Save or Cancel
+    // Nothing
   }
   
   private String colorize(String message) {

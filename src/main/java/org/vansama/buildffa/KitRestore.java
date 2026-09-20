@@ -17,26 +17,28 @@ public class KitRestore implements Listener {
   
   private final JavaPlugin plugin;
   private final Equip equip;
+  private final KitEditor kitEditor;
   
-  public KitRestore(JavaPlugin plugin, Equip equip) {
+  public KitRestore(JavaPlugin plugin, Equip equip, KitEditor kitEditor) {
     this.plugin = plugin;
     this.equip = equip;
+    this.kitEditor = kitEditor;
     plugin.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
   }
   
-  // Restore kit after respawn
   @EventHandler
   public void onPlayerRespawn(PlayerRespawnEvent event) {
     final Player player = event.getPlayer();
     Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
       @Override
       public void run() {
-        equip.giveDiamondArmor(player);
+        if (!kitEditor.isEditing(player)) {
+          equip.giveDiamondArmor(player);
+        }
       }
     }, 10L);
   }
   
-  // Restore kit after death
   @EventHandler
   public void onPlayerDeath(PlayerDeathEvent event) {
     event.getDrops().clear();
@@ -44,27 +46,26 @@ public class KitRestore implements Listener {
     Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
       @Override
       public void run() {
-        equip.giveDiamondArmor(player);
+        if (!kitEditor.isEditing(player)) {
+          equip.giveDiamondArmor(player);
+        }
       }
     }, 5L);
   }
   
-  // Detect /clear command and restore kit afterward
   @EventHandler
   public void onCommand(PlayerCommandPreprocessEvent event) {
     String message = event.getMessage().toLowerCase();
     if (message.startsWith("/clear") || message.contains(" clear ")) {
       final Player player = event.getPlayer();
       
-      // Skip restoring our own kit right now - wait until command runs
       Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
         @Override
         public void run() {
-          if (player.isOnline() && player.getGameMode() != GameMode.CREATIVE) {
-            // If inventory is empty, give kit back
+          if (!kitEditor.isEditing(player) && player.isOnline() && player.getGameMode() != GameMode.CREATIVE) {
             if (isEmpty(player)) {
               equip.giveDiamondArmor(player);
-              player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', 
+              player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&',
                   "&aYour kit has been restored after /clear."));
             }
           }

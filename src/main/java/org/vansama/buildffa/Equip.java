@@ -5,10 +5,10 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -29,7 +29,6 @@ public class Equip implements Listener {
   @EventHandler
   public void onPlayerRespawn(PlayerRespawnEvent event) {
     final Player player = event.getPlayer();
-    // Delay to ensure inventory is ready after respawn
     this.plugin.getServer().getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
       @Override
       public void run() {
@@ -41,38 +40,62 @@ public class Equip implements Listener {
   public void giveDiamondArmor(Player player) {
     // Check for custom kit
     if (plugin.getConfig().getConfigurationSection("kits." + player.getUniqueId().toString()) != null) {
-      // Load custom kit from config
       applyCustomKit(player);
       return;
     }
     
     player.getInventory().clear();
-    player.getInventory().setHelmet(new ItemStack(Material.DIAMOND_HELMET));
-    player.getInventory().setChestplate(new ItemStack(Material.CHAINMAIL_CHESTPLATE));
-    player.getInventory().setLeggings(new ItemStack(Material.IRON_LEGGINGS));
-    player.getInventory().setBoots(new ItemStack(Material.IRON_BOOTS));
+    player.getInventory().setArmorContents(null);
     
-    ItemStack ironSword = new ItemStack(Material.IRON_SWORD);
-    ironSword.addEnchantment(Enchantment.KNOCKBACK, 2);
-    player.getInventory().addItem(new ItemStack[] { ironSword });
+    // === ARMOR ===
+    player.getInventory().setHelmet(unbreakable(new ItemStack(Material.IRON_HELMET)));
+    player.getInventory().setChestplate(unbreakable(new ItemStack(Material.IRON_CHESTPLATE)));
+    player.getInventory().setLeggings(unbreakable(new ItemStack(Material.DIAMOND_LEGGINGS)));
+    player.getInventory().setBoots(unbreakable(new ItemStack(Material.DIAMOND_BOOTS)));
     
-    ItemStack dig = new ItemStack(Material.IRON_PICKAXE);
-    dig.addEnchantment(Enchantment.DIG_SPEED, 3);
-    player.getInventory().addItem(new ItemStack[] { dig });
+    // === SLOT 0: Stone Sword (no enchants) ===
+    player.getInventory().setItem(0, unbreakable(new ItemStack(Material.STONE_SWORD)));
     
+    // === SLOT 1: Cyan Wool x 128 ===
+    ItemStack cyanWool = new ItemStack(Material.WOOL, 128, (short) 9);
+    player.getInventory().setItem(1, cyanWool);
+    
+    // === SLOT 2: Bow (Punch 1, Power 2) ===
     ItemStack bow = new ItemStack(Material.BOW);
     bow.addEnchantment(Enchantment.ARROW_KNOCKBACK, 1);
     bow.addEnchantment(Enchantment.ARROW_DAMAGE, 2);
-    player.getInventory().addItem(new ItemStack[] { bow });
+    player.getInventory().setItem(2, unbreakable(bow));
     
+    // === SLOT 3: Iron Pickaxe (Efficiency 2) ===
+    ItemStack pickaxe = new ItemStack(Material.IRON_PICKAXE);
+    pickaxe.addEnchantment(Enchantment.DIG_SPEED, 2);
+    player.getInventory().setItem(3, unbreakable(pickaxe));
+    
+    // === SLOT 4: Iron Axe (Efficiency 1) ===
+    ItemStack axe = new ItemStack(Material.IRON_AXE);
+    axe.addEnchantment(Enchantment.DIG_SPEED, 1);
+    player.getInventory().setItem(4, unbreakable(axe));
+    
+    // === Extra items in inventory ===
     player.getInventory().addItem(new ItemStack[] { new ItemStack(Material.ARROW, 12) });
     player.getInventory().addItem(new ItemStack[] { new ItemStack(Material.GOLDEN_APPLE, 3) });
-    player.getInventory().addItem(new ItemStack[] { new ItemStack(Material.SANDSTONE, 128) });
     player.getInventory().addItem(new ItemStack[] { new ItemStack(Material.ENDER_PEARL) });
   }
   
+  /**
+   * Marks an ItemStack as unbreakable in 1.8.8.
+   */
+  public static ItemStack unbreakable(ItemStack item) {
+    if (item == null) return null;
+    ItemMeta meta = item.getItemMeta();
+    if (meta == null) return item;
+    meta.spigot().setUnbreakable(true);
+    item.setItemMeta(meta);
+    return item;
+  }
+  
   private void applyCustomKit(Player player) {
-    org.bukkit.configuration.ConfigurationSection section = 
+    org.bukkit.configuration.ConfigurationSection section =
         plugin.getConfig().getConfigurationSection("kits." + player.getUniqueId().toString());
     if (section == null) {
       return;

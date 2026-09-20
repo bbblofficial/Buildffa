@@ -39,7 +39,7 @@ public final class BuildFFA extends JavaPlugin {
     getServer().getPluginManager().registerEvents(new KillListener(this), (Plugin) this);
     getServer().getPluginManager().registerEvents(this.kitEditor, (Plugin) this);
     getServer().getPluginManager().registerEvents(new Infinite(this), (Plugin) this);
-    getServer().getPluginManager().registerEvents(new KitRestore(this, this.equip), (Plugin) this);
+    getServer().getPluginManager().registerEvents(new KitRestore(this, this.equip, this.kitEditor), (Plugin) this);
     
     getCommand("buildffa").setExecutor(new BuildFFACommand(this, this.kitEditor));
     
@@ -48,6 +48,7 @@ public final class BuildFFA extends JavaPlugin {
     getLogger().info("BuildFFA author: VanSaMa");
     getLogger().info("Created by Muvixo");
     
+    // Clean dropped items every 3 seconds
     Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) this, new Runnable() {
       @Override
       public void run() {
@@ -61,6 +62,7 @@ public final class BuildFFA extends JavaPlugin {
       }
     }, 0L, 60L);
     
+    // Monitor inventory every 2 seconds — if empty (e.g. after /clear), re-apply kit
     Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) this, new Runnable() {
       @Override
       public void run() {
