@@ -138,8 +138,8 @@ public class KitEditor implements Listener {
     // Slot 1: Cyan Wool x 64
     contents[1] = new ItemStack(Material.WOOL, 64, (short) 9);
     
-    // Slot 2: Stone Axe (Efficiency I, Unbreakable)
-    ItemStack axe = new ItemStack(Material.STONE_AXE);
+    // Slot 2: Iron Axe (Efficiency I, Unbreakable)
+    ItemStack axe = new ItemStack(Material.IRON_AXE);
     axe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 1);
     contents[2] = unbreakable(axe);
     
@@ -148,7 +148,10 @@ public class KitEditor implements Listener {
     pickaxe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 2);
     contents[3] = unbreakable(pickaxe);
     
-    // Slots 4-26: empty
+    // Slot 4: Shears (Unbreakable)
+    contents[4] = unbreakable(new ItemStack(Material.SHEARS));
+    
+    // Slots 5-26: empty
     
     return contents;
   }
@@ -256,7 +259,6 @@ public class KitEditor implements Listener {
     Inventory editor = this.openEditors.get(player.getUniqueId());
     if (editor == null) return;
     
-    // Click was in player's own inventory → block
     if (event.getInventory() != editor) {
       event.setCancelled(true);
       return;
@@ -264,7 +266,6 @@ public class KitEditor implements Listener {
     
     int slot = event.getRawSlot();
     
-    // Buttons
     if (slot == SLOT_SAVE) {
       event.setCancelled(true);
       saveKit(player);
@@ -289,13 +290,10 @@ public class KitEditor implements Listener {
       return;
     }
     
-    // Block shift-click (prevents smuggling into player inv)
     if (event.isShiftClick()) {
       event.setCancelled(true);
       return;
     }
-    
-    // Slots 0-30: allow all normal moves
   }
   
   @EventHandler
@@ -311,7 +309,6 @@ public class KitEditor implements Listener {
     
     for (Integer rawSlot : event.getRawSlots()) {
       int s = rawSlot.intValue();
-      // Drag over button row or player inventory → cancel
       if (s >= SLOT_SPACER || s >= SIZE) {
         event.setCancelled(true);
         return;
@@ -324,7 +321,6 @@ public class KitEditor implements Listener {
     if (!(event.getPlayer() instanceof Player)) return;
     Player player = (Player) event.getPlayer();
     
-    // If we're in the middle of save/cancel/reset, don't clean up
     if (this.saving.containsKey(player.getUniqueId()) && this.saving.get(player.getUniqueId()).booleanValue()) {
       return;
     }

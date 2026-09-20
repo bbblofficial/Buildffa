@@ -50,12 +50,9 @@ public class High implements Listener {
   }
   
   /**
-   * Block placement is blocked if:
-   *   - The BLOCK's Y position is at or above the high limit
-   *   - OR the player is at or above the high limit (they're in the restricted zone)
-   *
-   * The block check prevents the "pillar up" glitch (player stands below limit,
-   * looks up, and places a block that ends up above the limit).
+   * Only blocks placement if the placed block itself ends up at or above
+   * the high limit. The player's Y is NOT used as a blocker, so standing
+   * at Y=100 doesn't prevent you from placing blocks at Y=99.
    */
   @EventHandler
   public void onBlockPlace(BlockPlaceEvent event) {
@@ -63,28 +60,13 @@ public class High implements Listener {
     if (player.getGameMode() == GameMode.CREATIVE) return;
     
     Location blockLoc = event.getBlockPlaced().getLocation();
-    double blockY = blockLoc.getY();
-    double playerY = player.getLocation().getY();
-    
-    // Block Y check — this is the important one for the pillar glitch
-    if (blockY >= this.highLimit) {
+    if (blockLoc.getY() >= this.highLimit) {
       event.setCancelled(true);
       player.sendMessage(ChatColor.translateAlternateColorCodes('&',
-          "&cYou cannot place blocks above Y &e" + (int) this.highLimit + "&c!"));
-      return;
-    }
-    
-    // Player Y check — belt & suspenders
-    if (playerY >= this.highLimit) {
-      event.setCancelled(true);
-      player.sendMessage(ChatColor.translateAlternateColorCodes('&',
-          "&cYou are above the build limit (Y &e" + (int) this.highLimit + "&c)!"));
+          "&cYou cannot place blocks here!"));
     }
   }
   
-  /**
-   * Block break is blocked if the block is above the high limit.
-   */
   @EventHandler
   public void onBlockBreak(BlockBreakEvent event) {
     Player player = event.getPlayer();
@@ -94,7 +76,7 @@ public class High implements Listener {
     if (blockLoc.getY() >= this.highLimit) {
       event.setCancelled(true);
       player.sendMessage(ChatColor.translateAlternateColorCodes('&',
-          "&cYou cannot break blocks above Y &e" + (int) this.highLimit + "&c!"));
+          "&cYou cannot break blocks here!"));
     }
   }
   

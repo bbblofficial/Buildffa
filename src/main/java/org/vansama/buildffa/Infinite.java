@@ -18,7 +18,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class Infinite implements Listener {
   
   private final JavaPlugin plugin;
-  // Track original item amounts so we restore the SAME amount, not +1
   private final Map<UUID, Integer> prePlaceAmount = new HashMap<UUID, Integer>();
   
   public Infinite(JavaPlugin plugin) {
@@ -38,40 +37,42 @@ public class Infinite implements Listener {
     }
   }
   
+  /**
+   * Infinite golden apples / food.
+   *
+   * How it works:
+   * 1. Player eats 1 apple (slot drops from N to N-1).
+   * 2. After 1 tick, Bukkit has finished the consume.
+   * 3. We add exactly 1 apple back — the one they just ate.
+   * 4. Because we wait a tick, we don't double-add (which was the bug).
+   */
   @EventHandler
-  public void onItemConsume(PlayerItemConsumeEvent event) {
+  public void onItemConsume(final PlayerItemConsumeEvent event) {
     final Player player = event.getPlayer();
     ItemStack item = event.getItem();
     
-    if (item.getType() == Material.GOLDEN_APPLE
-        || item.getType() == Material.GOLDEN_CARROT
-        || item.getType() == Material.COOKED_BEEF
-        || item.getType() == Material.BREAD) {
-      
-      final ItemStack consumedItem = item.clone();
-      consumedItem.setAmount(1);
-      
-      this.plugin.getServer().getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
-        @Override
-        public void run() {
-          player.getInventory().addItem(new ItemStack[] { consumedItem });
-        }
-      }, 1L);
+    Material type = item.getType();
+    if (type != Material.GOLDEN_APPLE
+        && type != Material.GOLDEN_CARROT
+        && type != Material.COOKED_BEEF
+        && type != Material.BREAD) {
+      return;
     }
+    
+    // Wait 1 tick for Bukkit to finish consuming, then restore exactly 1 item
+    this.plugin.getServer().getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
+      @Override
+      public void run() {
+        if (!player.isOnline()) return;
+        player.getInventory().addItem(new ItemStack[] { new ItemStack(event.getItem().getType(), 1) });
+        player.updateInventory();
+      }
+    }, 1L);
     
     player.setFoodLevel(20);
     player.setSaturation(20.0F);
   }
   
-  /**
-   * When a block is placed:
-   * 1. Record the item amount BEFORE the placement consumes one.
-   * 2. After Bukkit processes the placement (1 tick later), set the slot amount back
-   *    to the ORIGINAL amount. Never add +1 repeatedly.
-   *
-   * Result: the stack size stays the same. Placing a block does not decrease the count.
-   * No duplication, no overflow.
-   */
   @EventHandler
   public void onBlockPlace(BlockPlaceEvent event) {
     final Player player = event.getPlayer();
@@ -84,27 +85,24 @@ public class Infinite implements Listener {
     
     final Material type = itemInHand.getType();
     final short data = itemInHand.getDurability();
-    final int amountBeforePlace = itemInHand.getAmount(); // e.g. 64
+    final int amountBeforePlace = itemInHand.getAmount();
     
     this.plugin.getServer().getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
       @Override
       public void run() {
-        // Find the slot that had this item in hand and set it back to original amount
-        // The block was just placed from THIS slot, so amount is now (amountBeforePlace - 1)
-        // We want it to be amountBeforePlace again.
         ItemStack current = player.getItemInHand();
         if (current != null && current.getType() == type && current.getDurability() == data) {
           current.setAmount(amountBeforePlace);
+          player.updateInventory();
           return;
         }
         
-        // If the slot changed (auto-sort plugin etc), search the whole inventory for the same item
-        // and restore the amount only if it's one less than original
         for (int i = 0; i < player.getInventory().getSize(); i++) {
           ItemStack slot = player.getInventory().getItem(i);
           if (slot != null && slot.getType() == type && slot.getDurability() == data) {
             if (slot.getAmount() == amountBeforePlace - 1) {
               slot.setAmount(amountBeforePlace);
+              player.updateInventory();
               break;
             }
           }
