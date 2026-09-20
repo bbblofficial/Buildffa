@@ -49,20 +49,42 @@ public class High implements Listener {
     }
   }
   
+  /**
+   * Block placement is blocked if:
+   *   - The BLOCK's Y position is at or above the high limit
+   *   - OR the player is at or above the high limit (they're in the restricted zone)
+   *
+   * The block check prevents the "pillar up" glitch (player stands below limit,
+   * looks up, and places a block that ends up above the limit).
+   */
   @EventHandler
   public void onBlockPlace(BlockPlaceEvent event) {
     Player player = event.getPlayer();
     if (player.getGameMode() == GameMode.CREATIVE) return;
     
-    // Check the BLOCK'S Y position, not the player's
     Location blockLoc = event.getBlockPlaced().getLocation();
-    if (blockLoc.getY() >= this.highLimit) {
+    double blockY = blockLoc.getY();
+    double playerY = player.getLocation().getY();
+    
+    // Block Y check — this is the important one for the pillar glitch
+    if (blockY >= this.highLimit) {
       event.setCancelled(true);
       player.sendMessage(ChatColor.translateAlternateColorCodes('&',
-          "&cYou cannot build above &e" + (int) this.highLimit + "&c!"));
+          "&cYou cannot place blocks above Y &e" + (int) this.highLimit + "&c!"));
+      return;
+    }
+    
+    // Player Y check — belt & suspenders
+    if (playerY >= this.highLimit) {
+      event.setCancelled(true);
+      player.sendMessage(ChatColor.translateAlternateColorCodes('&',
+          "&cYou are above the build limit (Y &e" + (int) this.highLimit + "&c)!"));
     }
   }
   
+  /**
+   * Block break is blocked if the block is above the high limit.
+   */
   @EventHandler
   public void onBlockBreak(BlockBreakEvent event) {
     Player player = event.getPlayer();
@@ -72,7 +94,7 @@ public class High implements Listener {
     if (blockLoc.getY() >= this.highLimit) {
       event.setCancelled(true);
       player.sendMessage(ChatColor.translateAlternateColorCodes('&',
-          "&cYou cannot break blocks above &e" + (int) this.highLimit + "&c!"));
+          "&cYou cannot break blocks above Y &e" + (int) this.highLimit + "&c!"));
     }
   }
   
