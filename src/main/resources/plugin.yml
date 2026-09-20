@@ -6,7 +6,7 @@ description: BuildFFA - Created by Muvixo
 commands:
   buildffa:
     description: Main BuildFFA command
-    usage: /buildffa <help|kiteditor|setvoid|sethighlimit|setspawn|buildmode|ypvp|sb|creator|reload>
+    usage: /buildffa <help|kiteditor|setvoid|sethighlimit|setspawn|buildmode|ypvp|sb|stats|top|resetstats|creator|reload>
     aliases:
       - bffa
 permissions:
@@ -40,3 +40,6 @@ permissions:
   buildffa.scoreboard.toggle:
     description: Allows toggling the scoreboard visibility
     default: true
+  buildffa.resetstats:
+    description: Allows resetting player stats
+    default: op

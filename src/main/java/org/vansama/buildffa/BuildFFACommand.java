@@ -3,6 +3,7 @@ package org.vansama.buildffa;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.bukkit.Bukkit;
@@ -19,438 +20,573 @@ import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class BuildFFACommand implements CommandExecutor {
-  
-  private final JavaPlugin plugin;
-  private final KitEditor kitEditor;
-  private final ScoreboardManager scoreboardManager;
-  
-  // ذخیره وضعیت Build Mode بازیکنان
-  private final Set<UUID> buildModePlayers = new HashSet<UUID>();
-  
-  public BuildFFACommand(JavaPlugin plugin, KitEditor kitEditor, ScoreboardManager scoreboardManager) {
-    this.plugin = plugin;
-    this.kitEditor = kitEditor;
-    this.scoreboardManager = scoreboardManager;
-  }
-  
-  private String getPerm(String action, String defaultPerm) {
-    return this.plugin.getConfig().getString("permissions." + action, defaultPerm);
-  }
-  
-  private void sendNoPerm(CommandSender sender) {
-    String msg = this.plugin.getConfig().getString("messages.no-permission", "&cYou do not have permission to do this.");
-    sender.sendMessage(colorize(msg));
-  }
-  
-  @Override
-  public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-    if (args.length == 0) {
-      sendHelp(sender);
-      return true;
-    }
-    
-    String sub = args[0].toLowerCase();
-    
-    if (sub.equals("kiteditor")) {
-      return handleKitEditor(sender, args);
-    }
-    if (sub.equals("setvoid")) {
-      return handleSetVoid(sender, args);
-    }
-    if (sub.equals("sethighlimit")) {
-      return handleSetHighLimit(sender, args);
-    }
-    if (sub.equals("setspawn")) {
-      return handleSetSpawn(sender);
-    }
-    if (sub.equals("buildmode")) {
-      return handleBuildMode(sender);
-    }
-    if (sub.equals("ypvp")) {
-      return handleYPvP(sender, args);
-    }
-    if (sub.equals("scoreboard") || sub.equals("sb")) {
-      return handleScoreboard(sender, args);
-    }
-    if (sub.equals("creator")) {
-      return handleCreator(sender);
-    }
-    if (sub.equals("reload")) {
-      return handleReload(sender);
-    }
-    if (sub.equals("help")) {
-      sendHelp(sender);
-      return true;
-    }
-    sender.sendMessage(colorize("&cUnknown subcommand. Use /buildffa help"));
-    return true;
-  }
 
-  // ==========================================
-  // Scoreboard Command
-  // ==========================================
-  private boolean handleScoreboard(CommandSender sender, String[] args) {
-    if (!(sender instanceof Player)) {
-      sender.sendMessage(colorize("&cOnly players can use the scoreboard command."));
-      return true;
-    }
-    Player player = (Player) sender;
-    
-    // /buildffa sb reload
-    if (args.length >= 2 && args[1].equalsIgnoreCase("reload")) {
-      if (!player.hasPermission(getPerm("reload", "buildffa.reload"))) {
-        sendNoPerm(player);
-        return true;
-      }
-      if (this.scoreboardManager == null) {
-        player.sendMessage(colorize("&cError: ScoreboardManager not found."));
-        return true;
-      }
-      this.scoreboardManager.reloadConfig();
-      player.sendMessage(colorize("&aScoreboard configuration reloaded."));
-      return true;
-    }
-    
-    // /buildffa sb toggle
-    if (!player.hasPermission(getPerm("scoreboard-toggle", "buildffa.scoreboard.toggle"))) {
-      sendNoPerm(player);
-      return true;
-    }
-    
-    if (this.scoreboardManager == null) {
-      player.sendMessage(colorize("&cError: ScoreboardManager not found."));
-      return true;
-    }
-    
-    boolean nowVisible = this.scoreboardManager.toggleScoreboard(player);
-    if (nowVisible) {
-      player.sendMessage(colorize("&aScoreboard &lENABLED&a."));
-    } else {
-      player.sendMessage(colorize("&cScoreboard &lDISABLED&c."));
-    }
-    return true;
-  }
+    private final JavaPlugin plugin;
+    private final KitEditor kitEditor;
+    private final ScoreboardManager scoreboardManager;
+    private final DatabaseManager database;
 
-  // ==========================================
-  // YPvP Command
-  // ==========================================
-  private boolean handleYPvP(CommandSender sender, String[] args) {
-    if (!sender.hasPermission(getPerm("ypvp", "buildffa.ypvp"))) {
-      sendNoPerm(sender);
-      return true;
-    }
-    
-    YPvP ypvp = getYPvPListener();
-    if (ypvp == null) {
-      sender.sendMessage(colorize("&cError: YPvP listener not found. Try /buildffa reload"));
-      return true;
-    }
-    
-    // /buildffa ypvp (no args) → show current status
-    if (args.length < 2) {
-      sender.sendMessage(colorize("&8&m----------------------------------"));
-      sender.sendMessage(colorize("&6&lYPvP Status"));
-      sender.sendMessage(colorize("&7Enabled: " + (ypvp.isEnabled() ? "&aYES" : "&cNO")));
-      sender.sendMessage(colorize("&7Y-Level: &e" + ypvp.getYPvPLimit()));
-      sender.sendMessage(colorize("&7Usage: &e/buildffa ypvp [y] &7- Set Y level"));
-      sender.sendMessage(colorize("&7Usage: &e/buildffa ypvp toggle &7- Enable/Disable"));
-      sender.sendMessage(colorize("&7Usage: &e/buildffa ypvp off &7- Disable"));
-      sender.sendMessage(colorize("&8&m----------------------------------"));
-      return true;
-    }
-    
-    String arg = args[1].toLowerCase();
-    
-    // /buildffa ypvp toggle
-    if (arg.equals("toggle")) {
-      boolean newState = !ypvp.isEnabled();
-      ypvp.setEnabled(newState);
-      sender.sendMessage(colorize(newState 
-          ? "&aYPvP has been &lENABLED &aat Y >= &e" + ypvp.getYPvPLimit()
-          : "&cYPvP has been &lDISABLED"));
-      return true;
-    }
-    
-    // /buildffa ypvp off
-    if (arg.equals("off")) {
-      ypvp.setEnabled(false);
-      sender.sendMessage(colorize("&cYPvP has been &lDISABLED"));
-      return true;
-    }
-    
-    // /buildffa ypvp on
-    if (arg.equals("on")) {
-      ypvp.setEnabled(true);
-      sender.sendMessage(colorize("&aYPvP has been &lENABLED &aat Y >= &e" + ypvp.getYPvPLimit()));
-      return true;
-    }
-    
-    // /buildffa ypvp <number> → set Y level and enable
-    double y;
-    try {
-      y = Double.parseDouble(arg);
-    } catch (NumberFormatException e) {
-      sender.sendMessage(colorize("&cInvalid number: &e" + args[1]));
-      sender.sendMessage(colorize("&7Usage: &e/buildffa ypvp [y]"));
-      return true;
-    }
-    
-    ypvp.setYPvPLimit(y);
-    ypvp.setEnabled(true);
-    
-    sender.sendMessage(colorize("&aYPvP Y-level set to &e" + y + " &aand &lENABLED&a."));
-    sender.sendMessage(colorize("&7Players at Y >= &e" + y + " &7cannot hit or be hit."));
-    return true;
-  }
-  
-  /**
-   * Find the YPvP listener instance from registered listeners.
-   */
-  private YPvP getYPvPListener() {
-    ArrayList<RegisteredListener> listeners = HandlerList.getRegisteredListeners(this.plugin);
-    for (RegisteredListener rl : listeners) {
-      Listener l = rl.getListener();
-      if (l instanceof YPvP) {
-        return (YPvP) l;
-      }
-    }
-    return null;
-  }
+    private final Set<UUID> buildModePlayers = new HashSet<UUID>();
 
-  // ==========================================
-  // Toggle Build Mode (Decorative)
-  // ==========================================
-  private boolean handleBuildMode(CommandSender sender) {
-    if (!(sender instanceof Player)) {
-      sender.sendMessage(colorize("&cOnly players can use this command."));
-      return true;
+    public BuildFFACommand(JavaPlugin plugin, KitEditor kitEditor, ScoreboardManager scoreboardManager, DatabaseManager database) {
+        this.plugin = plugin;
+        this.kitEditor = kitEditor;
+        this.scoreboardManager = scoreboardManager;
+        this.database = database;
     }
-    if (!sender.hasPermission(getPerm("buildmode", "buildffa.buildmode"))) {
-      sendNoPerm(sender);
-      return true;
-    }
-    
-    Player player = (Player) sender;
-    UUID uuid = player.getUniqueId();
-    
-    if (this.buildModePlayers.contains(uuid)) {
-      this.buildModePlayers.remove(uuid);
-      sendActionBar(player, "&fYou are currently &aNORMAL MODE");
-    } else {
-      this.buildModePlayers.add(uuid);
-      sendActionBar(player, "&fYou are currently &cBUILD MODE");
-    }
-    return true;
-  }
 
-  // ==========================================
-  // Action bar via reflection for 1.8.x
-  // ==========================================
-  private void sendActionBar(Player player, String message) {
-    try {
-      String packageName = Bukkit.getServer().getClass().getPackage().getName();
-      String nmsVersion = packageName.substring(packageName.lastIndexOf('.') + 1);
-      
-      Class<?> craftPlayerClass = Class.forName("org.bukkit.craftbukkit." + nmsVersion + ".entity.CraftPlayer");
-      Object craftPlayer = craftPlayerClass.cast(player);
-      Object entityPlayer = craftPlayerClass.getMethod("getHandle").invoke(craftPlayer);
-      Object playerConnection = entityPlayer.getClass().getField("playerConnection").get(entityPlayer);
-      
-      Class<?> chatComponentClass = Class.forName("net.minecraft.server." + nmsVersion + ".ChatComponentText");
-      Object chatComponent = chatComponentClass.getConstructor(String.class).newInstance(colorize(message));
-      
-      Class<?> packetChatClass = Class.forName("net.minecraft.server." + nmsVersion + ".PacketPlayOutChat");
-      Class<?> iChatBaseClass = Class.forName("net.minecraft.server." + nmsVersion + ".IChatBaseComponent");
-      
-      Object packet = packetChatClass.getConstructor(iChatBaseClass, byte.class).newInstance(chatComponent, (byte) 2);
-      
-      Class<?> packetClass = Class.forName("net.minecraft.server." + nmsVersion + ".Packet");
-      Method sendPacketMethod = playerConnection.getClass().getMethod("sendPacket", packetClass);
-      
-      sendPacketMethod.invoke(playerConnection, packet);
-    } catch (Exception e) {
-      player.sendMessage(colorize(message));
+    private String getPerm(String action, String defaultPerm) {
+        return this.plugin.getConfig().getString("permissions." + action, defaultPerm);
     }
-  }
 
-  private boolean handleKitEditor(CommandSender sender, String[] args) {
-    if (!(sender instanceof Player)) {
-      sender.sendMessage(colorize("&cOnly players can use the Kit Editor."));
-      return true;
+    private void sendNoPerm(CommandSender sender) {
+        String msg = this.plugin.getConfig().getString("messages.no-permission", "&cYou do not have permission to do this.");
+        sender.sendMessage(colorize(msg));
     }
-    if (!sender.hasPermission(getPerm("kiteditor", "buildffa.kiteditor"))) {
-      sendNoPerm(sender);
-      return true;
-    }
-    Player player = (Player) sender;
-    
-    if (args.length >= 2 && args[1].equalsIgnoreCase("reset")) {
-      this.kitEditor.resetKit(player);
-      player.sendMessage(colorize("&aYour kit has been reset to the default kit."));
-      return true;
-    }
-    
-    this.kitEditor.openKitEditorGUI(player);
-    return true;
-  }
-  
-  private boolean handleSetVoid(CommandSender sender, String[] args) {
-    if (!sender.hasPermission(getPerm("setvoid", "buildffa.setvoid"))) {
-      sendNoPerm(sender);
-      return true;
-    }
-    
-    double y;
-    if (args.length >= 2) {
-      try {
-        y = Double.parseDouble(args[1]);
-      } catch (NumberFormatException e) {
-        sender.sendMessage(colorize("&cInvalid number: &e" + args[1]));
-        sender.sendMessage(colorize("&7Usage: &e/buildffa setvoid [y]"));
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length == 0) {
+            sendHelp(sender);
+            return true;
+        }
+
+        String sub = args[0].toLowerCase();
+
+        if (sub.equals("kiteditor")) return handleKitEditor(sender, args);
+        if (sub.equals("setvoid")) return handleSetVoid(sender, args);
+        if (sub.equals("sethighlimit")) return handleSetHighLimit(sender, args);
+        if (sub.equals("setspawn")) return handleSetSpawn(sender);
+        if (sub.equals("buildmode")) return handleBuildMode(sender);
+        if (sub.equals("ypvp")) return handleYPvP(sender, args);
+        if (sub.equals("scoreboard") || sub.equals("sb")) return handleScoreboard(sender, args);
+        if (sub.equals("stats")) return handleStats(sender, args);
+        if (sub.equals("top")) return handleTop(sender, args);
+        if (sub.equals("resetstats")) return handleResetStats(sender, args);
+        if (sub.equals("creator")) return handleCreator(sender);
+        if (sub.equals("reload")) return handleReload(sender);
+        if (sub.equals("help")) {
+            sendHelp(sender);
+            return true;
+        }
+
+        sender.sendMessage(colorize("&cUnknown subcommand. Use /buildffa help"));
         return true;
-      }
-    } else {
-      if (!(sender instanceof Player)) {
-        sender.sendMessage(colorize("&cYou must be a player to use setvoid without a value."));
-        sender.sendMessage(colorize("&7From console: &e/buildffa setvoid [y]"));
+    }
+
+    // ==========================================
+    // Stats Command
+    // ==========================================
+    private boolean handleStats(CommandSender sender, String[] args) {
+        Player target;
+
+        if (args.length >= 2) {
+            target = Bukkit.getPlayer(args[1]);
+            if (target == null) {
+                sender.sendMessage(colorize("&cPlayer not found: &e" + args[1]));
+                return true;
+            }
+        } else {
+            if (!(sender instanceof Player)) {
+                sender.sendMessage(colorize("&cUsage from console: /buildffa stats <player>"));
+                return true;
+            }
+            target = (Player) sender;
+        }
+
+        PlayerData data = this.database.getPlayer(target.getUniqueId());
+        if (data == null) {
+            sender.sendMessage(colorize("&cNo data found for &e" + target.getName()));
+            return true;
+        }
+
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+        sender.sendMessage(colorize("&6&lStats &7- &f" + data.getName()));
+        sender.sendMessage(colorize("&7Kills: &a" + data.getKills()));
+        sender.sendMessage(colorize("&7Deaths: &c" + data.getDeaths()));
+        sender.sendMessage(colorize("&7KDR: &e" + String.format("%.2f", data.getKDR())));
+        sender.sendMessage(colorize("&7Killstreak: &b" + data.getKillstreak()));
+        sender.sendMessage(colorize("&7Best Killstreak: &b" + data.getBestKillstreak()));
+        sender.sendMessage(colorize("&8&m----------------------------------"));
         return true;
-      }
-      Player player = (Player) sender;
-      y = player.getLocation().getY();
     }
-    
-    FileConfiguration config = this.plugin.getConfig();
-    config.set("kill-height", Double.valueOf(y));
-    this.plugin.saveConfig();
-    
-    reloadListeners();
-    
-    sender.sendMessage(colorize("&aVoid kill height set to &e" + y + " &a(Y level)."));
-    return true;
-  }
-  
-  private boolean handleSetHighLimit(CommandSender sender, String[] args) {
-    if (!sender.hasPermission(getPerm("sethighlimit", "buildffa.sethighlimit"))) {
-      sendNoPerm(sender);
-      return true;
-    }
-    
-    double y;
-    if (args.length >= 2) {
-      try {
-        y = Double.parseDouble(args[1]);
-      } catch (NumberFormatException e) {
-        sender.sendMessage(colorize("&cInvalid number: &e" + args[1]));
-        sender.sendMessage(colorize("&7Usage: &e/buildffa sethighlimit [y]"));
+
+    // ==========================================
+    // Top Command
+    // ==========================================
+    private boolean handleTop(CommandSender sender, String[] args) {
+        String type = "kills";
+        int limit = 10;
+
+        if (args.length >= 2) type = args[1].toLowerCase();
+        if (args.length >= 3) {
+            try {
+                limit = Integer.parseInt(args[2]);
+            } catch (NumberFormatException e) {
+                limit = 10;
+            }
+        }
+        if (limit < 1) limit = 1;
+        if (limit > 20) limit = 20;
+
+        List<PlayerData> top;
+
+        if (type.equals("deaths")) {
+            top = this.database.getTopDeaths(limit);
+        } else if (type.equals("kdr")) {
+            top = this.database.getTopKDR(limit);
+        } else if (type.equals("killstreak") || type.equals("streak")) {
+            top = this.database.getTopKillstreak(limit);
+        } else {
+            top = this.database.getTopKills(limit);
+            type = "kills";
+        }
+
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+        sender.sendMessage(colorize("&6&lTop " + limit + " &7- &f" + type.toUpperCase()));
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+
+        if (top.isEmpty()) {
+            sender.sendMessage(colorize("&7No data yet."));
+        } else {
+            int rank = 1;
+            for (PlayerData data : top) {
+                String prefix;
+                if (rank == 1) prefix = "&6&l#1 ";
+                else if (rank == 2) prefix = "&7&l#2 ";
+                else if (rank == 3) prefix = "&c&l#3 ";
+                else prefix = "&7#" + rank + " ";
+
+                String value;
+                if (type.equals("deaths")) {
+                    value = "&c" + data.getDeaths() + " deaths";
+                } else if (type.equals("kdr")) {
+                    value = "&e" + String.format("%.2f", data.getKDR()) + " KDR";
+                } else if (type.equals("killstreak")) {
+                    value = "&b" + data.getBestKillstreak() + " KS";
+                } else {
+                    value = "&a" + data.getKills() + " kills";
+                }
+
+                sender.sendMessage(colorize(prefix + "&f" + data.getName() + " &8- " + value));
+                rank++;
+            }
+        }
+
+        sender.sendMessage(colorize("&8&m----------------------------------"));
         return true;
-      }
-    } else {
-      if (!(sender instanceof Player)) {
-        sender.sendMessage(colorize("&cYou must be a player to use sethighlimit without a value."));
-        sender.sendMessage(colorize("&7From console: &e/buildffa sethighlimit [y]"));
+    }
+
+    // ==========================================
+    // Reset Stats Command
+    // ==========================================
+    private boolean handleResetStats(CommandSender sender, String[] args) {
+        if (!sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))) {
+            sendNoPerm(sender);
+            return true;
+        }
+
+        if (args.length < 2) {
+            sender.sendMessage(colorize("&cUsage: /buildffa resetstats <player>"));
+            return true;
+        }
+
+        Player target = Bukkit.getPlayer(args[1]);
+        if (target == null) {
+            sender.sendMessage(colorize("&cPlayer not found: &e" + args[1]));
+            return true;
+        }
+
+        PlayerData data = this.database.getPlayer(target.getUniqueId());
+        if (data == null) {
+            sender.sendMessage(colorize("&cNo data found."));
+            return true;
+        }
+
+        data.setKills(0);
+        data.setDeaths(0);
+        data.setKillstreak(0);
+        data.setBestKillstreak(0);
+        this.database.savePlayer(data);
+
+        sender.sendMessage(colorize("&aReset stats for &e" + target.getName()));
+        target.sendMessage(colorize("&cYour stats have been reset by an admin."));
         return true;
-      }
-      Player player = (Player) sender;
-      y = player.getLocation().getY();
     }
-    
-    FileConfiguration config = this.plugin.getConfig();
-    config.set("high-limit", Double.valueOf(y));
-    this.plugin.saveConfig();
-    
-    reloadListeners();
-    
-    sender.sendMessage(colorize("&aHigh limit set to &e" + y + " &a(Y level)."));
-    return true;
-  }
-  
-  private boolean handleSetSpawn(CommandSender sender) {
-    if (!(sender instanceof Player)) {
-      sender.sendMessage(colorize("&cOnly players can use setspawn."));
-      return true;
+
+    // ==========================================
+    // Scoreboard Command
+    // ==========================================
+    private boolean handleScoreboard(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(colorize("&cOnly players can use the scoreboard command."));
+            return true;
+        }
+        Player player = (Player) sender;
+
+        if (args.length >= 2 && args[1].equalsIgnoreCase("reload")) {
+            if (!player.hasPermission(getPerm("reload", "buildffa.reload"))) {
+                sendNoPerm(player);
+                return true;
+            }
+            if (this.scoreboardManager == null) {
+                player.sendMessage(colorize("&cError: ScoreboardManager not found."));
+                return true;
+            }
+            this.scoreboardManager.reloadConfig();
+            player.sendMessage(colorize("&aScoreboard configuration reloaded."));
+            return true;
+        }
+
+        if (!player.hasPermission(getPerm("scoreboard-toggle", "buildffa.scoreboard.toggle"))) {
+            sendNoPerm(player);
+            return true;
+        }
+
+        if (this.scoreboardManager == null) {
+            player.sendMessage(colorize("&cError: ScoreboardManager not found."));
+            return true;
+        }
+
+        boolean nowVisible = this.scoreboardManager.toggleScoreboard(player);
+        if (nowVisible) {
+            player.sendMessage(colorize("&aScoreboard &lENABLED&a."));
+        } else {
+            player.sendMessage(colorize("&cScoreboard &lDISABLED&c."));
+        }
+        return true;
     }
-    if (!sender.hasPermission(getPerm("setspawn", "buildffa.setspawn"))) {
-      sendNoPerm(sender);
-      return true;
+
+    // ==========================================
+    // YPvP Command
+    // ==========================================
+    private boolean handleYPvP(CommandSender sender, String[] args) {
+        if (!sender.hasPermission(getPerm("ypvp", "buildffa.ypvp"))) {
+            sendNoPerm(sender);
+            return true;
+        }
+
+        YPvP ypvp = getYPvPListener();
+        if (ypvp == null) {
+            sender.sendMessage(colorize("&cError: YPvP listener not found. Try /buildffa reload"));
+            return true;
+        }
+
+        if (args.length < 2) {
+            sender.sendMessage(colorize("&8&m----------------------------------"));
+            sender.sendMessage(colorize("&6&lYPvP Status"));
+            sender.sendMessage(colorize("&7Enabled: " + (ypvp.isEnabled() ? "&aYES" : "&cNO")));
+            sender.sendMessage(colorize("&7Y-Level: &e" + ypvp.getYPvPLimit()));
+            sender.sendMessage(colorize("&7Usage: &e/buildffa ypvp [y] &7- Set Y level"));
+            sender.sendMessage(colorize("&7Usage: &e/buildffa ypvp toggle &7- Enable/Disable"));
+            sender.sendMessage(colorize("&7Usage: &e/buildffa ypvp off &7- Disable"));
+            sender.sendMessage(colorize("&8&m----------------------------------"));
+            return true;
+        }
+
+        String arg = args[1].toLowerCase();
+
+        if (arg.equals("toggle")) {
+            boolean newState = !ypvp.isEnabled();
+            ypvp.setEnabled(newState);
+            sender.sendMessage(colorize(newState
+                    ? "&aYPvP has been &lENABLED &aat Y >= &e" + ypvp.getYPvPLimit()
+                    : "&cYPvP has been &lDISABLED"));
+            return true;
+        }
+
+        if (arg.equals("off")) {
+            ypvp.setEnabled(false);
+            sender.sendMessage(colorize("&cYPvP has been &lDISABLED"));
+            return true;
+        }
+
+        if (arg.equals("on")) {
+            ypvp.setEnabled(true);
+            sender.sendMessage(colorize("&aYPvP has been &lENABLED &aat Y >= &e" + ypvp.getYPvPLimit()));
+            return true;
+        }
+
+        double y;
+        try {
+            y = Double.parseDouble(arg);
+        } catch (NumberFormatException e) {
+            sender.sendMessage(colorize("&cInvalid number: &e" + args[1]));
+            sender.sendMessage(colorize("&7Usage: &e/buildffa ypvp [y]"));
+            return true;
+        }
+
+        ypvp.setYPvPLimit(y);
+        ypvp.setEnabled(true);
+
+        sender.sendMessage(colorize("&aYPvP Y-level set to &e" + y + " &aand &lENABLED&a."));
+        sender.sendMessage(colorize("&7Players at Y >= &e" + y + " &7cannot hit or be hit."));
+        return true;
     }
-    
-    Player player = (Player) sender;
-    Location loc = player.getLocation();
-    
-    SpawnManager spawnManager = new SpawnManager(this.plugin);
-    spawnManager.setSpawn(loc);
-    
-    String world = loc.getWorld().getName();
-    int x = loc.getBlockX();
-    int y = loc.getBlockY();
-    int z = loc.getBlockZ();
-    
-    player.sendMessage(colorize("&aRespawn point set to &e" + world + " " + x + " " + y + " " + z + "&a."));
-    return true;
-  }
-  
-  private void reloadListeners() {
-    ArrayList<RegisteredListener> listeners = HandlerList.getRegisteredListeners(this.plugin);
-    for (RegisteredListener rl : listeners) {
-      Listener l = rl.getListener();
-      if (l instanceof Void) {
-        ((Void) l).reloadConfig();
-      }
-      if (l instanceof High) {
-        ((High) l).reloadConfig();
-      }
-      if (l instanceof YPvP) {
-        ((YPvP) l).reloadConfig();
-      }
+
+    private YPvP getYPvPListener() {
+        ArrayList<RegisteredListener> listeners = HandlerList.getRegisteredListeners(this.plugin);
+        for (RegisteredListener rl : listeners) {
+            Listener l = rl.getListener();
+            if (l instanceof YPvP) {
+                return (YPvP) l;
+            }
+        }
+        return null;
     }
-  }
-  
-  private boolean handleCreator(CommandSender sender) {
-    sender.sendMessage(colorize("&8&m----------------------------------"));
-    sender.sendMessage(colorize("&6&lBuildFFA &7- &fCreated by &bMuvixo"));
-    sender.sendMessage(colorize("&7Plugin author: &fVanSaMa"));
-    sender.sendMessage(colorize("&7Version: &f4.0 (1.8.8)"));
-    sender.sendMessage(colorize("&7Made by &fPixelValley"));
-    sender.sendMessage(colorize("&8&m----------------------------------"));
-    return true;
-  }
-  
-  private boolean handleReload(CommandSender sender) {
-    if (!sender.hasPermission(getPerm("reload", "buildffa.reload"))) {
-      sendNoPerm(sender);
-      return true;
+
+    // ==========================================
+    // Build Mode
+    // ==========================================
+    private boolean handleBuildMode(CommandSender sender) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(colorize("&cOnly players can use this command."));
+            return true;
+        }
+        if (!sender.hasPermission(getPerm("buildmode", "buildffa.buildmode"))) {
+            sendNoPerm(sender);
+            return true;
+        }
+
+        Player player = (Player) sender;
+        UUID uuid = player.getUniqueId();
+
+        if (this.buildModePlayers.contains(uuid)) {
+            this.buildModePlayers.remove(uuid);
+            sendActionBar(player, "&fYou are currently &aNORMAL MODE");
+        } else {
+            this.buildModePlayers.add(uuid);
+            sendActionBar(player, "&fYou are currently &cBUILD MODE");
+        }
+        return true;
     }
-    this.plugin.reloadConfig();
-    if (this.scoreboardManager != null) {
-      this.scoreboardManager.reloadConfig();
+
+    private void sendActionBar(Player player, String message) {
+        try {
+            String packageName = Bukkit.getServer().getClass().getPackage().getName();
+            String nmsVersion = packageName.substring(packageName.lastIndexOf('.') + 1);
+
+            Class<?> craftPlayerClass = Class.forName("org.bukkit.craftbukkit." + nmsVersion + ".entity.CraftPlayer");
+            Object craftPlayer = craftPlayerClass.cast(player);
+            Object entityPlayer = craftPlayerClass.getMethod("getHandle").invoke(craftPlayer);
+            Object playerConnection = entityPlayer.getClass().getField("playerConnection").get(entityPlayer);
+
+            Class<?> chatComponentClass = Class.forName("net.minecraft.server." + nmsVersion + ".ChatComponentText");
+            Object chatComponent = chatComponentClass.getConstructor(String.class).newInstance(colorize(message));
+
+            Class<?> packetChatClass = Class.forName("net.minecraft.server." + nmsVersion + ".PacketPlayOutChat");
+            Class<?> iChatBaseClass = Class.forName("net.minecraft.server." + nmsVersion + ".IChatBaseComponent");
+
+            Object packet = packetChatClass.getConstructor(iChatBaseClass, byte.class).newInstance(chatComponent, (byte) 2);
+
+            Class<?> packetClass = Class.forName("net.minecraft.server." + nmsVersion + ".Packet");
+            Method sendPacketMethod = playerConnection.getClass().getMethod("sendPacket", packetClass);
+
+            sendPacketMethod.invoke(playerConnection, packet);
+        } catch (Exception e) {
+            player.sendMessage(colorize(message));
+        }
     }
-    reloadListeners();
-    sender.sendMessage(colorize("&aBuildFFA configuration reloaded."));
-    return true;
-  }
-  
-  private void sendHelp(CommandSender sender) {
-    sender.sendMessage(colorize("&8&m----------------------------------"));
-    sender.sendMessage(colorize("&6&lBuildFFA &7- &fCommands"));
-    sender.sendMessage(colorize("&e/buildffa kiteditor &7- Open the Kit Editor GUI"));
-    sender.sendMessage(colorize("&e/buildffa kiteditor reset &7- Reset your kit"));
-    sender.sendMessage(colorize("&e/buildffa buildmode &7- Toggle Build Mode"));
-    sender.sendMessage(colorize("&e/buildffa setvoid &7- Set void Y to your current Y"));
-    sender.sendMessage(colorize("&e/buildffa setvoid [y] &7- Set void Y to a specific value"));
-    sender.sendMessage(colorize("&e/buildffa sethighlimit &7- Set high limit to your current Y"));
-    sender.sendMessage(colorize("&e/buildffa sethighlimit [y] &7- Set high limit to a value"));
-    sender.sendMessage(colorize("&e/buildffa ypvp [y] &7- Set YPvP Y level & enable"));
-    sender.sendMessage(colorize("&e/buildffa ypvp toggle &7- Enable/Disable YPvP"));
-    sender.sendMessage(colorize("&e/buildffa ypvp off &7- Disable YPvP"));
-    sender.sendMessage(colorize("&e/buildffa setspawn &7- Set respawn point to your location"));
-    sender.sendMessage(colorize("&e/buildffa sb &7- Toggle scoreboard visibility"));
-    sender.sendMessage(colorize("&e/buildffa sb reload &7- Reload scoreboard.yml"));
-    sender.sendMessage(colorize("&e/buildffa creator &7- Show plugin credits"));
-    sender.sendMessage(colorize("&e/buildffa reload &7- Reload configuration"));
-    sender.sendMessage(colorize("&8&m----------------------------------"));
-  }
-  
-  private String colorize(String message) {
-    return ChatColor.translateAlternateColorCodes('&', message);
-  }
+
+    // ==========================================
+    // Kit Editor
+    // ==========================================
+    private boolean handleKitEditor(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(colorize("&cOnly players can use the Kit Editor."));
+            return true;
+        }
+        if (!sender.hasPermission(getPerm("kiteditor", "buildffa.kiteditor"))) {
+            sendNoPerm(sender);
+            return true;
+        }
+        Player player = (Player) sender;
+
+        if (args.length >= 2 && args[1].equalsIgnoreCase("reset")) {
+            this.kitEditor.resetKit(player);
+            player.sendMessage(colorize("&aYour kit has been reset to the default kit."));
+            return true;
+        }
+
+        this.kitEditor.openKitEditorGUI(player);
+        return true;
+    }
+
+    // ==========================================
+    // Set Void
+    // ==========================================
+    private boolean handleSetVoid(CommandSender sender, String[] args) {
+        if (!sender.hasPermission(getPerm("setvoid", "buildffa.setvoid"))) {
+            sendNoPerm(sender);
+            return true;
+        }
+
+        double y;
+        if (args.length >= 2) {
+            try {
+                y = Double.parseDouble(args[1]);
+            } catch (NumberFormatException e) {
+                sender.sendMessage(colorize("&cInvalid number: &e" + args[1]));
+                sender.sendMessage(colorize("&7Usage: &e/buildffa setvoid [y]"));
+                return true;
+            }
+        } else {
+            if (!(sender instanceof Player)) {
+                sender.sendMessage(colorize("&cYou must be a player to use setvoid without a value."));
+                sender.sendMessage(colorize("&7From console: &e/buildffa setvoid [y]"));
+                return true;
+            }
+            Player player = (Player) sender;
+            y = player.getLocation().getY();
+        }
+
+        FileConfiguration config = this.plugin.getConfig();
+        config.set("kill-height", Double.valueOf(y));
+        this.plugin.saveConfig();
+
+        reloadListeners();
+
+        sender.sendMessage(colorize("&aVoid kill height set to &e" + y + " &a(Y level)."));
+        return true;
+    }
+
+    // ==========================================
+    // Set High Limit
+    // ==========================================
+    private boolean handleSetHighLimit(CommandSender sender, String[] args) {
+        if (!sender.hasPermission(getPerm("sethighlimit", "buildffa.sethighlimit"))) {
+            sendNoPerm(sender);
+            return true;
+        }
+
+        double y;
+        if (args.length >= 2) {
+            try {
+                y = Double.parseDouble(args[1]);
+            } catch (NumberFormatException e) {
+                sender.sendMessage(colorize("&cInvalid number: &e" + args[1]));
+                sender.sendMessage(colorize("&7Usage: &e/buildffa sethighlimit [y]"));
+                return true;
+            }
+        } else {
+            if (!(sender instanceof Player)) {
+                sender.sendMessage(colorize("&cYou must be a player to use sethighlimit without a value."));
+                sender.sendMessage(colorize("&7From console: &e/buildffa sethighlimit [y]"));
+                return true;
+            }
+            Player player = (Player) sender;
+            y = player.getLocation().getY();
+        }
+
+        FileConfiguration config = this.plugin.getConfig();
+        config.set("high-limit", Double.valueOf(y));
+        this.plugin.saveConfig();
+
+        reloadListeners();
+
+        sender.sendMessage(colorize("&aHigh limit set to &e" + y + " &a(Y level)."));
+        return true;
+    }
+
+    // ==========================================
+    // Set Spawn
+    // ==========================================
+    private boolean handleSetSpawn(CommandSender sender) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(colorize("&cOnly players can use setspawn."));
+            return true;
+        }
+        if (!sender.hasPermission(getPerm("setspawn", "buildffa.setspawn"))) {
+            sendNoPerm(sender);
+            return true;
+        }
+
+        Player player = (Player) sender;
+        Location loc = player.getLocation();
+
+        SpawnManager spawnManager = new SpawnManager(this.plugin);
+        spawnManager.setSpawn(loc);
+
+        String world = loc.getWorld().getName();
+        int x = loc.getBlockX();
+        int y = loc.getBlockY();
+        int z = loc.getBlockZ();
+
+        player.sendMessage(colorize("&aRespawn point set to &e" + world + " " + x + " " + y + " " + z + "&a."));
+        return true;
+    }
+
+    // ==========================================
+    // Reload Listeners
+    // ==========================================
+    private void reloadListeners() {
+        ArrayList<RegisteredListener> listeners = HandlerList.getRegisteredListeners(this.plugin);
+        for (RegisteredListener rl : listeners) {
+            Listener l = rl.getListener();
+            if (l instanceof Void) ((Void) l).reloadConfig();
+            if (l instanceof High) ((High) l).reloadConfig();
+            if (l instanceof YPvP) ((YPvP) l).reloadConfig();
+        }
+    }
+
+    // ==========================================
+    // Creator
+    // ==========================================
+    private boolean handleCreator(CommandSender sender) {
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+        sender.sendMessage(colorize("&6&lBuildFFA &7- &fCreated by &bMuvixo"));
+        sender.sendMessage(colorize("&7Plugin author: &fVanSaMa"));
+        sender.sendMessage(colorize("&7Version: &f4.0 (1.8.8)"));
+        sender.sendMessage(colorize("&7Made by &fPixelValley"));
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+        return true;
+    }
+
+    // ==========================================
+    // Reload
+    // ==========================================
+    private boolean handleReload(CommandSender sender) {
+        if (!sender.hasPermission(getPerm("reload", "buildffa.reload"))) {
+            sendNoPerm(sender);
+            return true;
+        }
+        this.plugin.reloadConfig();
+        if (this.scoreboardManager != null) {
+            this.scoreboardManager.reloadConfig();
+        }
+        reloadListeners();
+        sender.sendMessage(colorize("&aBuildFFA configuration reloaded."));
+        return true;
+    }
+
+    // ==========================================
+    // Help
+    // ==========================================
+    private void sendHelp(CommandSender sender) {
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+        sender.sendMessage(colorize("&6&lBuildFFA &7- &fCommands"));
+        sender.sendMessage(colorize("&e/buildffa kiteditor &7- Open the Kit Editor GUI"));
+        sender.sendMessage(colorize("&e/buildffa kiteditor reset &7- Reset your kit"));
+        sender.sendMessage(colorize("&e/buildffa buildmode &7- Toggle Build Mode"));
+        sender.sendMessage(colorize("&e/buildffa setvoid &7- Set void Y to your current Y"));
+        sender.sendMessage(colorize("&e/buildffa setvoid [y] &7- Set void Y to a specific value"));
+        sender.sendMessage(colorize("&e/buildffa sethighlimit &7- Set high limit to your current Y"));
+        sender.sendMessage(colorize("&e/buildffa sethighlimit [y] &7- Set high limit to a value"));
+        sender.sendMessage(colorize("&e/buildffa ypvp [y] &7- Set YPvP Y level & enable"));
+        sender.sendMessage(colorize("&e/buildffa ypvp toggle &7- Enable/Disable YPvP"));
+        sender.sendMessage(colorize("&e/buildffa ypvp off &7- Disable YPvP"));
+        sender.sendMessage(colorize("&e/buildffa setspawn &7- Set respawn point to your location"));
+        sender.sendMessage(colorize("&e/buildffa stats [player] &7- Show player stats"));
+        sender.sendMessage(colorize("&e/buildffa top [kills|deaths|kdr|streak] [limit] &7- Show top players"));
+        sender.sendMessage(colorize("&e/buildffa resetstats <player> &7- Reset player stats"));
+        sender.sendMessage(colorize("&e/buildffa sb &7- Toggle scoreboard visibility"));
+        sender.sendMessage(colorize("&e/buildffa sb reload &7- Reload scoreboard.yml"));
+        sender.sendMessage(colorize("&e/buildffa creator &7- Show plugin credits"));
+        sender.sendMessage(colorize("&e/buildffa reload &7- Reload configuration"));
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+    }
+
+    private String colorize(String message) {
+        return ChatColor.translateAlternateColorCodes('&', message);
+    }
 }

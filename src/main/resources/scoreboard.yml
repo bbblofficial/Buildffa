@@ -28,22 +28,24 @@ title:
 #  Scoreboard Lines
 #  Max 16 visible chars per line on 1.8.8
 #  No unicode emoji — use text or symbols like :
-#  Placeholders: %player% %kills% %deaths% %online%
-#                %max_online% %world% %ping% %health%
-#                %food% %y% %highlimit% %void%
+#  Placeholders: %player% %kills% %deaths% %kdr%
+#                %killstreak% %best_killstreak%
+#                %online% %max_online% %world% %ping%
+#                %health% %food% %y% %highlimit% %void%
 # ----------------------------------------------------------
 lines:
   - '&7&m----------------'
   - '&fPlayer: &e%player%'
   - '&fKills: &a%kills%'
   - '&fDeaths: &c%deaths%'
+  - '&fKDR: &e%kdr%'
+  - '&fStreak: &b%killstreak%'
   - '&7&m----------------'
   - '&fOnline: &b%online%&7/&b%max_online%'
   - '&fWorld: &d%world%'
   - '&fPing: &e%ping%ms'
-  - '&fHealth: &c%health%'
   - '&7&m----------------'
-  - '&6play.pixelvalley.gg'
+  - '&6Play.MineStorm.iR'
   - '&7&m----------------'
 
 # ----------------------------------------------------------
@@ -59,10 +61,11 @@ per-world:
       - '&fPlayer: &e%player%'
       - '&fKills: &a%kills%'
       - '&fDeaths: &c%deaths%'
+      - '&fKDR: &e%kdr%'
       - '&7&m----------------'
       - '&fOnline: &b%online%'
       - '&7&m----------------'
-      - '&6play.pixelvalley.gg'
+      - '&6Play.MineStorm.iR'
       - '&7&m----------------'
     world_nether:
       - '&7&m----------------'
@@ -71,10 +74,11 @@ per-world:
       - '&fPlayer: &e%player%'
       - '&fKills: &a%kills%'
       - '&fDeaths: &c%deaths%'
+      - '&fKDR: &e%kdr%'
       - '&7&m----------------'
       - '&fOnline: &b%online%'
       - '&7&m----------------'
-      - '&6play.pixelvalley.gg'
+      - '&6Play.MineStorm.iR'
       - '&7&m----------------'
 
 # ----------------------------------------------------------
