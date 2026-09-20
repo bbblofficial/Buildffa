@@ -1,8 +1,6 @@
 package org.vansama.buildffa;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,7 +20,6 @@ public class DatabaseManager {
     private final JavaPlugin plugin;
     private final File dbFolder;
     private final Map<UUID, PlayerData> cache = new HashMap<UUID, PlayerData>();
-    private final Map<UUID, Long> lastSaveTime = new HashMap<UUID, Long>();
 
     private long autosaveInterval;
     private boolean autosaveEnabled;
@@ -32,8 +29,14 @@ public class DatabaseManager {
 
         this.dbFolder = new File(plugin.getDataFolder(), "db");
         if (!this.dbFolder.exists()) {
-            this.dbFolder.mkdirs();
-            plugin.getLogger().info("Created db folder");
+            boolean created = this.dbFolder.mkdirs();
+            if (created) {
+                plugin.getLogger().info("Created database folder: " + this.dbFolder.getPath());
+            } else {
+                plugin.getLogger().warning("Failed to create database folder: " + this.dbFolder.getPath());
+            }
+        } else {
+            plugin.getLogger().info("Using existing database folder: " + this.dbFolder.getPath());
         }
 
         FileConfiguration config = plugin.getConfig();
@@ -42,6 +45,7 @@ public class DatabaseManager {
 
         if (this.autosaveEnabled) {
             startAutosave();
+            plugin.getLogger().info("Database autosave every " + this.autosaveInterval + " seconds");
         }
     }
 
@@ -113,6 +117,10 @@ public class DatabaseManager {
 
         File file = getPlayerFile(data.getUuid());
 
+        if (!this.dbFolder.exists()) {
+            this.dbFolder.mkdirs();
+        }
+
         try {
             FileConfiguration cfg = YamlConfiguration.loadConfiguration(file);
 
@@ -126,7 +134,6 @@ public class DatabaseManager {
             cfg.set("last-seen", Long.valueOf(System.currentTimeMillis()));
 
             cfg.save(file);
-            this.lastSaveTime.put(data.getUuid(), Long.valueOf(System.currentTimeMillis()));
         } catch (IOException e) {
             this.plugin.getLogger().warning("Could not save data for " + data.getUuid() + ": " + e.getMessage());
         }
@@ -148,7 +155,6 @@ public class DatabaseManager {
         if (data != null) {
             savePlayer(data);
             this.cache.remove(uuid);
-            this.lastSaveTime.remove(uuid);
         }
     }
 
@@ -168,9 +174,7 @@ public class DatabaseManager {
                 return Integer.compare(b.getKills(), a.getKills());
             }
         });
-        if (all.size() > limit) {
-            return all.subList(0, limit);
-        }
+        if (all.size() > limit) return all.subList(0, limit);
         return all;
     }
 
@@ -182,9 +186,7 @@ public class DatabaseManager {
                 return Integer.compare(b.getDeaths(), a.getDeaths());
             }
         });
-        if (all.size() > limit) {
-            return all.subList(0, limit);
-        }
+        if (all.size() > limit) return all.subList(0, limit);
         return all;
     }
 
@@ -196,9 +198,7 @@ public class DatabaseManager {
                 return Double.compare(b.getKDR(), a.getKDR());
             }
         });
-        if (all.size() > limit) {
-            return all.subList(0, limit);
-        }
+        if (all.size() > limit) return all.subList(0, limit);
         return all;
     }
 
@@ -210,9 +210,7 @@ public class DatabaseManager {
                 return Integer.compare(b.getBestKillstreak(), a.getBestKillstreak());
             }
         });
-        if (all.size() > limit) {
-            return all.subList(0, limit);
-        }
+        if (all.size() > limit) return all.subList(0, limit);
         return all;
     }
 

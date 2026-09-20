@@ -28,12 +28,23 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+
+        // ============================================================
+        //  STEP 1: Create all folders FIRST (before anything else)
+        // ============================================================
+        createFolders();
+
+        // ============================================================
+        //  STEP 2: Create config files
+        // ============================================================
         createConfigIfMissing();
         saveDefaultConfig();
         reloadConfig();
-
         saveResource("scoreboard.yml", false);
 
+        // ============================================================
+        //  STEP 3: Initialize managers
+        // ============================================================
         this.database = new DatabaseManager(this);
         this.blocks = new Blocks(this);
         this.kitEditor = new KitEditor(this);
@@ -42,6 +53,9 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         this.scoreboardManager = new ScoreboardManager(this, this.killListener, this.database);
         this.voice = new Voice(this);
 
+        // ============================================================
+        //  STEP 4: Register listeners
+        // ============================================================
         getServer().getPluginManager().registerEvents(this.blocks, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.equip, (Plugin) this);
         getServer().getPluginManager().registerEvents(new High(this), (Plugin) this);
@@ -60,14 +74,24 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this.voice, (Plugin) this);
         getServer().getPluginManager().registerEvents(this, (Plugin) this);
 
+        // ============================================================
+        //  STEP 5: Register command
+        // ============================================================
         getCommand("buildffa").setExecutor(new BuildFFACommand(this, this.kitEditor, this.scoreboardManager, this.database));
 
-        getLogger().info("Plugin made by PixelValley");
-        getLogger().info("You are running on 4.0 (1.8.8 Compatible)");
-        getLogger().info("BuildFFA author: muvixo");
-        getLogger().info("Created by Muvixo");
-        getLogger().info("Database folder: " + this.database.getDbFolder().getPath());
+        // ============================================================
+        //  STEP 6: Startup logs
+        // ============================================================
+        getLogger().info("=================================================");
+        getLogger().info("  BuildFFA v4.0 - Enabled");
+        getLogger().info("  Plugin made by PixelValley");
+        getLogger().info("  Author: muvixo");
+        getLogger().info("  Database folder: " + this.database.getDbFolder().getPath());
+        getLogger().info("=================================================");
 
+        // ============================================================
+        //  STEP 7: Scheduled tasks
+        // ============================================================
         Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) this, new Runnable() {
             @Override
             public void run() {
@@ -93,6 +117,34 @@ public final class BuildFFA extends JavaPlugin implements Listener {
                 }
             }
         }, 20L, 40L);
+    }
+
+    // ============================================================
+    //  Creates all folders in the plugin's data folder
+    //  plugins/BuildFFA/db/
+    //  plugins/BuildFFA/kits/
+    // ============================================================
+    private void createFolders() {
+        if (!getDataFolder().exists()) {
+            getDataFolder().mkdirs();
+            getLogger().info("Created main plugin folder");
+        }
+
+        File dbFolder = new File(getDataFolder(), "db");
+        if (!dbFolder.exists()) {
+            boolean created = dbFolder.mkdirs();
+            if (created) {
+                getLogger().info("Created db folder at: " + dbFolder.getPath());
+            }
+        }
+
+        File kitsFolder = new File(getDataFolder(), "kits");
+        if (!kitsFolder.exists()) {
+            boolean created = kitsFolder.mkdirs();
+            if (created) {
+                getLogger().info("Created kits folder at: " + kitsFolder.getPath());
+            }
+        }
     }
 
     @EventHandler
@@ -123,10 +175,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     }
 
     private void createConfigIfMissing() {
-        if (!getDataFolder().exists()) {
-            getDataFolder().mkdirs();
-        }
-
         File configFile = new File(getDataFolder(), "config.yml");
         if (!configFile.exists()) {
             try {
@@ -194,18 +242,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
             } catch (IOException e) {
                 getLogger().warning("Could not create config.yml: " + e.getMessage());
             }
-        }
-
-        File kitsFolder = new File(getDataFolder(), "kits");
-        if (!kitsFolder.exists()) {
-            kitsFolder.mkdirs();
-            getLogger().info("Created kits folder");
-        }
-
-        File dbFolder = new File(getDataFolder(), "db");
-        if (!dbFolder.exists()) {
-            dbFolder.mkdirs();
-            getLogger().info("Created db folder");
         }
     }
 

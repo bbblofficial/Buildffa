@@ -8,10 +8,29 @@
 
 # ----------------------------------------------------------
 #  Void Kill Height
-#  Players who fall below this Y level will die.
+#  Players who fall below this Y level will die OR teleport.
 #  Set with /buildffa setvoid [y]
 # ----------------------------------------------------------
 kill-height: 0.0
+
+# ----------------------------------------------------------
+#  Void Behaviour
+#  What happens when a player falls below kill-height
+# ----------------------------------------------------------
+void:
+  # If true  → teleport to spawn + full heal (no death)
+  # If false → kill the player (old behaviour)
+  teleport-instead-of-kill: true
+
+  # Delay before teleporting (in ticks, 20 ticks = 1 sec)
+  # Set to 0 for instant teleport
+  teleport-delay: 0
+
+  # Message shown to player when teleported
+  teleport-message: '&cYou fell into the void! &7Teleported to spawn.'
+
+  # Broadcast message (only used when teleport-instead-of-kill is false)
+  death-message: '&c%player% &7fell into the void'
 
 # ----------------------------------------------------------
 #  High Build Limit
@@ -35,7 +54,9 @@ ypvp:
 #  Stores kills, deaths, killstreak, kdr per player
 # ----------------------------------------------------------
 database:
+  # Automatically save all player data periodically
   autosave: true
+  # Save interval in SECONDS (300 = 5 minutes)
   autosave-interval: 300
 
 # ----------------------------------------------------------
@@ -55,7 +76,6 @@ sounds:
 # ----------------------------------------------------------
 #  Messages
 # ----------------------------------------------------------
-void-message: '&c%player% &7fell into the void'
 kill: '&c%killer% &7killed &a%loser%'
 
 Title-Suffix: ' &7Kill'
