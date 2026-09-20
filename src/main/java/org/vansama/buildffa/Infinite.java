@@ -22,7 +22,6 @@ public class Infinite implements Listener {
     plugin.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
   }
   
-  // INFINITE FOOD - Food level never decreases
   @EventHandler
   public void onFoodLevelChange(FoodLevelChangeEvent event) {
     if (!(event.getEntity() instanceof Player)) {
@@ -37,7 +36,6 @@ public class Infinite implements Listener {
     }
   }
   
-  // INFINITE FOOD - Eating golden apples doesn't consume them
   @EventHandler
   public void onItemConsume(PlayerItemConsumeEvent event) {
     final Player player = event.getPlayer();
@@ -63,7 +61,6 @@ public class Infinite implements Listener {
     player.setSaturation(20.0F);
   }
   
-  // INFINITE BLOCKS - Blocks are never consumed when placed
   @EventHandler
   public void onBlockPlace(BlockPlaceEvent event) {
     final Player player = event.getPlayer();
@@ -72,7 +69,6 @@ public class Infinite implements Listener {
       return;
     }
     
-    // 1.8.8 uses getItemInHand(), not getItemInMainHand()
     final ItemStack itemInHand = player.getItemInHand();
     
     if (itemInHand == null || itemInHand.getType() == Material.AIR) {
@@ -85,7 +81,6 @@ public class Infinite implements Listener {
       @Override
       public void run() {
         PlayerInventory inv = player.getInventory();
-        // 1.8.8: getItemInHand()
         ItemStack current = player.getItemInHand();
         
         if (current != null && current.getType() == type) {

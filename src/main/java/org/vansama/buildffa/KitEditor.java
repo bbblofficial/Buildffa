@@ -89,7 +89,6 @@ public class KitEditor implements Listener {
     player.getInventory().addItem(new ItemStack[] { new ItemStack(Material.ENDER_PEARL) });
   }
   
-  @SuppressWarnings("unchecked")
   private void loadKitFromConfig(Player player, ConfigurationSection section) {
     if (section.contains("helmet")) {
       player.getInventory().setHelmet(section.getItemStack("helmet"));

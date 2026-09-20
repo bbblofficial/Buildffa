@@ -3,6 +3,7 @@ package org.vansama.buildffa;
 import java.io.File;
 import java.io.IOException;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -18,7 +19,6 @@ public final class BuildFFA extends JavaPlugin {
   
   @Override
   public void onEnable() {
-    // Auto-create config and folders
     createConfigIfMissing();
     saveDefaultConfig();
     reloadConfig();
@@ -45,7 +45,6 @@ public final class BuildFFA extends JavaPlugin {
     getLogger().info("BuildFFA author: VanSaMa");
     getLogger().info("Created by Muvixo");
     
-    // Clean dropped items every 3 seconds
     Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) this, new Runnable() {
       @Override
       public void run() {
@@ -61,12 +60,10 @@ public final class BuildFFA extends JavaPlugin {
   }
   
   private void createConfigIfMissing() {
-    // Ensure plugin data folder exists
     if (!getDataFolder().exists()) {
       getDataFolder().mkdirs();
     }
     
-    // Create config.yml if missing
     File configFile = new File(getDataFolder(), "config.yml");
     if (!configFile.exists()) {
       try {
@@ -88,7 +85,6 @@ public final class BuildFFA extends JavaPlugin {
       }
     }
     
-    // Create kits folder if missing
     File kitsFolder = new File(getDataFolder(), "kits");
     if (!kitsFolder.exists()) {
       kitsFolder.mkdirs();

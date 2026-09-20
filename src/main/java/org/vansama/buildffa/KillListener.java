@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -50,35 +50,27 @@ public class KillListener implements Listener {
       String titleSuffix = this.config.getString("Title-Suffix", " &7Kill");
       String subTitleKill = this.config.getString("SubTitle-kill", "&e+1 Kill");
       
-      // Use NMS for 1.8.8 title
       sendTitle(killer, "+" + kills + titleSuffix, subTitleKill);
       
-      // 1.8.8 sound name
       killer.playSound(killer.getLocation(), Sound.LEVEL_UP, 1.0F, 1.0F);
     }
   }
   
-  /**
-   * Sends a title using NMS for 1.8.8
-   */
+  @SuppressWarnings({ "unchecked", "rawtypes" })
   private void sendTitle(Player player, String title, String subtitle) {
     try {
-      // Colorize
       title = colorize(title);
       subtitle = colorize(subtitle);
       
-      // Get NMS classes
       Class<?> craftPlayerClass = Class.forName("org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer");
       Object craftPlayer = craftPlayerClass.cast(player);
       Object entityPlayer = craftPlayerClass.getMethod("getHandle").invoke(craftPlayer);
       Object playerConnection = entityPlayer.getClass().getField("playerConnection").get(entityPlayer);
       
-      // Chat components
       Class<?> chatComponentClass = Class.forName("net.minecraft.server.v1_8_R3.ChatComponentText");
       Object titleComponent = chatComponentClass.getConstructor(String.class).newInstance(title);
       Object subtitleComponent = chatComponentClass.getConstructor(String.class).newInstance(subtitle);
       
-      // PacketPlayOutTitle
       Class<?> packetTitleClass = Class.forName("net.minecraft.server.v1_8_R3.PacketPlayOutTitle");
       Class<?> enumTitleActionClass = Class.forName("net.minecraft.server.v1_8_R3.PacketPlayOutTitle$EnumTitleAction");
       
@@ -90,19 +82,15 @@ public class KillListener implements Listener {
       Object packetTitle = titleConstructor.newInstance(actionTitle, titleComponent);
       Object packetSubtitle = titleConstructor.newInstance(actionSubtitle, subtitleComponent);
       
-      // Send
       Object sendPacketMethod = playerConnection.getClass().getMethod("sendPacket", Class.forName("net.minecraft.server.v1_8_R3.Packet"));
       sendPacketMethod.invoke(playerConnection, packetTitle);
       sendPacketMethod.invoke(playerConnection, packetSubtitle);
       
-      // Set timing (fadeIn, stay, fadeOut) in ticks
-      Class<?> packetTimingClass = Class.forName("net.minecraft.server.v1_8_R3.PacketPlayOutTitle");
-      Constructor<?> timingConstructor = packetTimingClass.getConstructor(int.class, int.class, int.class);
-      Object packetTiming = timingConstructor.newInstance(0, 40, 0);
+      Constructor<?> timingConstructor = packetTitleClass.getConstructor(int.class, int.class, int.class);
+      Object packetTiming = timingConstructor.newInstance(Integer.valueOf(0), Integer.valueOf(40), Integer.valueOf(0));
       sendPacketMethod.invoke(playerConnection, packetTiming);
       
     } catch (Exception e) {
-      // Fallback: just send a chat message
       player.sendMessage(title + " " + subtitle);
     }
   }
@@ -138,6 +126,6 @@ public class KillListener implements Listener {
   }
   
   private String colorize(String message) {
-    return org.bukkit.ChatColor.translateAlternateColorCodes('&', message);
+    return ChatColor.translateAlternateColorCodes('&', message);
   }
 }

@@ -39,7 +39,6 @@ public class Equip implements Listener {
   }
   
   public void giveDiamondArmor(Player player) {
-    // Check for custom kit
     if (plugin.getConfig().getConfigurationSection("kits." + player.getUniqueId().toString()) != null) {
       return;
     }
