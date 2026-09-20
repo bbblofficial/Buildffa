@@ -1,7 +1,6 @@
 package org.vansama.buildffa;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -23,7 +22,6 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
 
 public class ScoreboardManager implements Listener {
 
@@ -139,7 +137,6 @@ public class ScoreboardManager implements Listener {
 
   public void updateScoreboard(Player player) {
     if (!this.scoreboardConfig.getBoolean("enabled", true)) {
-      // Clear scoreboard if disabled
       Scoreboard existing = this.playerBoards.remove(player.getUniqueId());
       if (existing != null) {
         player.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
@@ -185,22 +182,19 @@ public class ScoreboardManager implements Listener {
     }
 
     // In 1.8 the max line length is 16 chars per entry.
-    // We build a "unique entry" per line using invisible colour codes.
     int max = Math.min(lines.size(), 15); // 1.8 sidebar limit is 15 lines
 
     for (int i = 0; i < max; i++) {
       String raw = lines.get(i);
       String processed = applyPlaceholders(player, raw);
 
-      // Split into prefix + suffix if longer than 16 chars
       String entry;
-      String prefix = null;
-      String suffix = null;
+      String prefix;
+      String suffix;
 
       if (processed.length() > 16) {
         prefix = processed.substring(0, 16);
         suffix = processed.substring(16);
-        // Re-add colour codes from prefix if they exist
         String lastColors = ChatColor.getLastColors(prefix);
         if (lastColors != null && !lastColors.isEmpty()) {
           suffix = lastColors + suffix;
@@ -238,7 +232,7 @@ public class ScoreboardManager implements Listener {
     int kills = this.killListener.getKillCount(player);
     int deaths = this.playerDeaths.containsKey(player.getUniqueId())
         ? this.playerDeaths.get(player.getUniqueId()).intValue() : 0;
-    int online = Bukkit.getOnlinePlayers().length;
+    int online = Bukkit.getOnlinePlayers().size();   // <-- FIXED (was .length)
     int maxOnline = Bukkit.getMaxPlayers();
     String world = player.getWorld().getName();
     int ping = getPing(player);
@@ -266,7 +260,7 @@ public class ScoreboardManager implements Listener {
   }
 
   // ============================================================
-  //  Death Tracking (called by Kill listener optionally)
+  //  Death Tracking
   // ============================================================
 
   public void addDeath(Player player) {
@@ -306,10 +300,6 @@ public class ScoreboardManager implements Listener {
   //  Utilities
   // ============================================================
 
-  /**
-   * Returns a unique invisible code per index so 1.8 scoreboard entries
-   * don't collide (1.8 requires every entry to be unique).
-   */
   private String uniqueCode(int index) {
     ChatColor[] colors = ChatColor.values();
     ChatColor c1 = colors[index % colors.length];
