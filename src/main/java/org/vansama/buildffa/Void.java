@@ -12,7 +12,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -44,19 +43,13 @@ public class Void implements Listener {
     Player player = event.getPlayer();
     Location to = event.getTo();
     
-    if (player.isDead()) return;
+    if (player.isDead() || player.getHealth() <= 0) return;
     if (this.dyingPlayers.contains(player.getUniqueId())) return;
-    if (player.getHealth() <= 0) return;
     
     if (to.getY() < this.killHeight) {
       this.dyingPlayers.add(player.getUniqueId());
-      player.setHealth(0.0D); 
+      player.setHealth(0.0D);
     }
-  }
-  
-  @EventHandler
-  public void onPlayerRespawn(PlayerRespawnEvent event) {
-    this.dyingPlayers.remove(event.getPlayer().getUniqueId());
   }
   
   @EventHandler
@@ -65,7 +58,7 @@ public class Void implements Listener {
     
     Player player = event.getEntity();
     
-    if (player.getKiller() == null && this.dyingPlayers.contains(player.getUniqueId())) {
+    if (player.getKiller() == null && this.dyingPlayers.remove(player.getUniqueId())) {
       if (this.voidMessage != null && !this.voidMessage.isEmpty()) {
         String msg = ChatColor.translateAlternateColorCodes('&', this.voidMessage.replace("%player%", player.getName()));
         Bukkit.broadcastMessage(msg);
