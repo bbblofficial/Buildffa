@@ -52,8 +52,10 @@ public class Equip implements Listener {
     player.getInventory().setLeggings(unbreakable(new ItemStack(Material.DIAMOND_LEGGINGS)));
     player.getInventory().setBoots(unbreakable(new ItemStack(Material.DIAMOND_BOOTS)));
     
-    // === SLOT 0: Stone Sword ===
-    player.getInventory().setItem(0, unbreakable(new ItemStack(Material.STONE_SWORD)));
+    // === SLOT 0: Stone Sword (Sharpness II, Unbreakable) ===
+    ItemStack sword = new ItemStack(Material.STONE_SWORD);
+    sword.addUnsafeEnchantment(Enchantment.DAMAGE_ALL, 2);
+    player.getInventory().setItem(0, unbreakable(sword));
     
     // === SLOT 1: Cyan Wool x 64 ===
     ItemStack cyanWool = new ItemStack(Material.WOOL, 64, (short) 9);
@@ -65,14 +67,14 @@ public class Equip implements Listener {
     bow.addEnchantment(Enchantment.ARROW_DAMAGE, 2);
     player.getInventory().setItem(2, unbreakable(bow));
     
-    // === SLOT 3: Iron Pickaxe (Efficiency 2) ===
+    // === SLOT 3: Iron Pickaxe (Efficiency I) ===
     ItemStack pickaxe = new ItemStack(Material.IRON_PICKAXE);
-    pickaxe.addEnchantment(Enchantment.DIG_SPEED, 2);
+    pickaxe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 1);
     player.getInventory().setItem(3, unbreakable(pickaxe));
     
-    // === SLOT 4: Iron Axe (Efficiency 1) ===
+    // === SLOT 4: Iron Axe (Efficiency I) ===
     ItemStack axe = new ItemStack(Material.IRON_AXE);
-    axe.addEnchantment(Enchantment.DIG_SPEED, 1);
+    axe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 1);
     player.getInventory().setItem(4, unbreakable(axe));
     
     // === Extra ===
@@ -81,6 +83,9 @@ public class Equip implements Listener {
     player.getInventory().addItem(new ItemStack[] { new ItemStack(Material.ENDER_PEARL) });
   }
   
+  /**
+   * Marks an ItemStack as unbreakable in 1.8.8.
+   */
   public static ItemStack unbreakable(ItemStack item) {
     if (item == null) return null;
     ItemMeta meta = item.getItemMeta();

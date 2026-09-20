@@ -16,7 +16,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class Blocks implements Listener {
   private JavaPlugin plugin;
-  
   private Map<Location, Long> placedBlocks = new HashMap<Location, Long>();
   
   public Blocks(JavaPlugin plugin) {
@@ -26,14 +25,10 @@ public class Blocks implements Listener {
   
   @EventHandler
   public void onBlockPlace(BlockPlaceEvent event) {
-    if (event.getPlayer().getGameMode() == GameMode.CREATIVE) {
-      return;
-    }
+    if (event.getPlayer().getGameMode() == GameMode.CREATIVE) return;
     
     final Block block = event.getBlockPlaced();
-    if (block.getType() == Material.AIR) {
-      return;
-    }
+    if (block.getType() == Material.AIR) return;
     
     final Location loc = block.getLocation().clone();
     final Material originalType = block.getType();
@@ -56,9 +51,7 @@ public class Blocks implements Listener {
   
   @EventHandler
   public void onBlockBreak(BlockBreakEvent event) {
-    if (event.getPlayer().getGameMode() == GameMode.CREATIVE) {
-      return;
-    }
+    if (event.getPlayer().getGameMode() == GameMode.CREATIVE) return;
     
     final Block block = event.getBlock();
     final Location loc = block.getLocation().clone();
@@ -73,7 +66,6 @@ public class Blocks implements Listener {
       return;
     }
     
-    // Restore natural blocks after 18 seconds
     Bukkit.getScheduler().scheduleSyncDelayedTask((Plugin) this.plugin, new Runnable() {
       @Override
       public void run() {

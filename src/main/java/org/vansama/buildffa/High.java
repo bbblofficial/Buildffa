@@ -1,7 +1,9 @@
 package org.vansama.buildffa;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -16,7 +18,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class High implements Listener {
   private JavaPlugin plugin;
-  
   private double highLimit;
   
   public High(JavaPlugin plugin) {
@@ -30,7 +31,6 @@ public class High implements Listener {
     this.highLimit = config.getDouble("high-limit", 100.0D);
   }
   
-  // Public method so command can reload
   public void reloadConfig() {
     loadConfiguration();
   }
@@ -41,7 +41,8 @@ public class High implements Listener {
       LivingEntity shooter = (LivingEntity) event.getEntity().getShooter();
       if (shooter instanceof Player) {
         Player player = (Player) shooter;
-        if (player.getGameMode() != GameMode.CREATIVE && player.getLocation().getY() > this.highLimit) {
+        if (player.getGameMode() != GameMode.CREATIVE
+            && player.getLocation().getY() >= this.highLimit) {
           event.setCancelled(true);
         }
       }
@@ -51,18 +52,27 @@ public class High implements Listener {
   @EventHandler
   public void onBlockPlace(BlockPlaceEvent event) {
     Player player = event.getPlayer();
-    if (player.getGameMode() != GameMode.CREATIVE && player.getLocation().getY() >= this.highLimit) {
+    if (player.getGameMode() == GameMode.CREATIVE) return;
+    
+    // Check the BLOCK'S Y position, not the player's
+    Location blockLoc = event.getBlockPlaced().getLocation();
+    if (blockLoc.getY() >= this.highLimit) {
       event.setCancelled(true);
-      player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', 
-          "&cYou cannot build above &e" + (int)this.highLimit + "&c!"));
+      player.sendMessage(ChatColor.translateAlternateColorCodes('&',
+          "&cYou cannot build above &e" + (int) this.highLimit + "&c!"));
     }
   }
   
   @EventHandler
   public void onBlockBreak(BlockBreakEvent event) {
     Player player = event.getPlayer();
-    if (player.getGameMode() != GameMode.CREATIVE && player.getLocation().getY() > this.highLimit) {
+    if (player.getGameMode() == GameMode.CREATIVE) return;
+    
+    Location blockLoc = event.getBlock().getLocation();
+    if (blockLoc.getY() >= this.highLimit) {
       event.setCancelled(true);
+      player.sendMessage(ChatColor.translateAlternateColorCodes('&',
+          "&cYou cannot break blocks above &e" + (int) this.highLimit + "&c!"));
     }
   }
   
@@ -70,7 +80,8 @@ public class High implements Listener {
   public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
     if (event.getEntity() instanceof Player) {
       Player player = (Player) event.getEntity();
-      if (player.getGameMode() != GameMode.CREATIVE && player.getLocation().getY() > this.highLimit) {
+      if (player.getGameMode() != GameMode.CREATIVE
+          && player.getLocation().getY() >= this.highLimit) {
         event.setCancelled(true);
       }
     }

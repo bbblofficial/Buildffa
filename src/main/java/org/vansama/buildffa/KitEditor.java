@@ -18,6 +18,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -29,11 +31,17 @@ public class KitEditor implements Listener {
   private final JavaPlugin plugin;
   private final Map<UUID, Inventory> openEditors = new HashMap<UUID, Inventory>();
   private final Map<UUID, Boolean> editingKit = new HashMap<UUID, Boolean>();
+  // Track whether we are currently saving to avoid the close handler interfering
+  private final Map<UUID, Boolean> saving = new HashMap<UUID, Boolean>();
   
-  // 27-slot fake inventory + button slots at the bottom row
   private static final int SIZE = 36;
-  // Kit contents are stored in slots 0-26
-  // Buttons are in slots 27-35
+  
+  // Button slots
+  private static final int SLOT_SAVE = 32;
+  private static final int SLOT_CANCEL = 33;
+  private static final int SLOT_RESET = 34;
+  private static final int SLOT_INFO = 35;
+  private static final int SLOT_SPACER = 31;
   
   public KitEditor(JavaPlugin plugin) {
     this.plugin = plugin;
@@ -41,10 +49,8 @@ public class KitEditor implements Listener {
   }
   
   public void openKitEditorGUI(final Player player) {
-    // Build the fake inventory
     Inventory inv = Bukkit.createInventory(null, SIZE, colorize("&6&lKit Editor"));
     
-    // Load current kit into the first 27 slots
     FileConfiguration config = this.plugin.getConfig();
     ConfigurationSection kitSection = config.getConfigurationSection("kits." + player.getUniqueId().toString());
     
@@ -71,13 +77,13 @@ public class KitEditor implements Listener {
       }
     }
     
-    // Armor preview (display only, in slots 27-30)
+    // Armor slots (27-30)
     inv.setItem(27, helmet);
     inv.setItem(28, chestplate);
     inv.setItem(29, leggings);
     inv.setItem(30, boots);
     
-    // Save / Cancel / Reset buttons
+    // Info/Save/Cancel/Reset buttons
     ItemStack saveBtn = createButton(Material.EMERALD_BLOCK, colorize("&a&lSave Kit"), Arrays.asList(
         colorize("&7Click to save your current kit")
     ));
@@ -89,27 +95,24 @@ public class KitEditor implements Listener {
         colorize("&7Click to reset to default kit")
     ));
     ItemStack infoBtn = createButton(Material.BOOK, colorize("&b&lInfo"), Arrays.asList(
-        colorize("&7Move items around in this GUI"),
-        colorize("&7The top row is your hotbar"),
-        colorize("&7Slot 27-30 are armor"),
+        colorize("&7Top 27 slots = kit contents"),
+        colorize("&7Slots 27-30 = armor"),
         colorize("&7Click Save when done")
     ));
     
-    inv.setItem(32, saveBtn);
-    inv.setItem(33, cancelBtn);
-    inv.setItem(34, resetBtn);
-    inv.setItem(35, infoBtn);
+    inv.setItem(SLOT_SAVE, saveBtn);
+    inv.setItem(SLOT_CANCEL, cancelBtn);
+    inv.setItem(SLOT_RESET, resetBtn);
+    inv.setItem(SLOT_INFO, infoBtn);
     
-    // Store and mark editing
     this.openEditors.put(player.getUniqueId(), inv);
     this.editingKit.put(player.getUniqueId(), Boolean.valueOf(true));
+    this.saving.put(player.getUniqueId(), Boolean.valueOf(false));
     
-    // Open the fake inventory
     player.openInventory(inv);
     player.sendMessage(colorize("&8&m----------------------------------"));
     player.sendMessage(colorize("&6&lKit Editor &7opened"));
     player.sendMessage(colorize("&7Move items freely, then click &aSave &7or &cCancel"));
-    player.sendMessage(colorize("&7Top row is your hotbar. Slot 27-30 is armor."));
     player.sendMessage(colorize("&8&m----------------------------------"));
   }
   
@@ -132,35 +135,27 @@ public class KitEditor implements Listener {
   private ItemStack[] getDefaultKitContents() {
     ItemStack[] contents = new ItemStack[36];
     
-    // Slot 0: Stone Sword
-    contents[0] = unbreakable(new ItemStack(Material.STONE_SWORD));
+    ItemStack sword = new ItemStack(Material.STONE_SWORD);
+    sword.addUnsafeEnchantment(Enchantment.DAMAGE_ALL, 2);
+    contents[0] = unbreakable(sword);
     
-    // Slot 1: Cyan Wool x 64
     contents[1] = new ItemStack(Material.WOOL, 64, (short) 9);
     
-    // Slot 2: Bow
     ItemStack bow = new ItemStack(Material.BOW);
     bow.addEnchantment(Enchantment.ARROW_KNOCKBACK, 1);
     bow.addEnchantment(Enchantment.ARROW_DAMAGE, 2);
     contents[2] = unbreakable(bow);
     
-    // Slot 3: Iron Pickaxe (Efficiency 2)
     ItemStack pickaxe = new ItemStack(Material.IRON_PICKAXE);
-    pickaxe.addEnchantment(Enchantment.DIG_SPEED, 2);
+    pickaxe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 1);
     contents[3] = unbreakable(pickaxe);
     
-    // Slot 4: Iron Axe (Efficiency 1)
     ItemStack axe = new ItemStack(Material.IRON_AXE);
-    axe.addEnchantment(Enchantment.DIG_SPEED, 1);
+    axe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 1);
     contents[4] = unbreakable(axe);
     
-    // Slot 5: Arrows
     contents[5] = new ItemStack(Material.ARROW, 12);
-    
-    // Slot 6: Golden Apples
     contents[6] = new ItemStack(Material.GOLDEN_APPLE, 3);
-    
-    // Slot 7: Ender Pearl
     contents[7] = new ItemStack(Material.ENDER_PEARL);
     
     return contents;
@@ -187,19 +182,21 @@ public class KitEditor implements Listener {
   public void saveKit(Player player) {
     Inventory inv = this.openEditors.get(player.getUniqueId());
     if (inv == null) {
+      player.sendMessage(colorize("&cError: editor inventory was lost."));
       return;
     }
+    
+    // Mark as saving so onClose doesn't cancel
+    this.saving.put(player.getUniqueId(), Boolean.valueOf(true));
     
     FileConfiguration config = this.plugin.getConfig();
     String path = "kits." + player.getUniqueId().toString();
     
-    // Armor from display slots 27-30
     config.set(path + ".helmet", inv.getItem(27));
     config.set(path + ".chestplate", inv.getItem(28));
     config.set(path + ".leggings", inv.getItem(29));
     config.set(path + ".boots", inv.getItem(30));
     
-    // Contents from slots 0-26 (the kit itself)
     List<ItemStack> contents = new ArrayList<ItemStack>();
     for (int i = 0; i < 27; i++) {
       contents.add(inv.getItem(i));
@@ -208,32 +205,41 @@ public class KitEditor implements Listener {
     
     this.plugin.saveConfig();
     
+    // Clear state BEFORE closing
     this.editingKit.remove(player.getUniqueId());
     this.openEditors.remove(player.getUniqueId());
+    this.saving.remove(player.getUniqueId());
     
     player.closeInventory();
     player.sendMessage(colorize("&aYour kit has been saved!"));
     player.playSound(player.getLocation(), Sound.LEVEL_UP, 1.0F, 1.0F);
     
-    // Apply the new kit immediately
+    // Apply the new kit
     Equip equip = new Equip(this.plugin);
     equip.giveDiamondArmor(player);
   }
   
   public void cancelKit(Player player) {
+    this.saving.put(player.getUniqueId(), Boolean.valueOf(true));
+    
     this.editingKit.remove(player.getUniqueId());
     this.openEditors.remove(player.getUniqueId());
+    this.saving.remove(player.getUniqueId());
+    
     player.closeInventory();
     player.sendMessage(colorize("&cKit editing cancelled."));
   }
   
   public void resetKit(Player player) {
+    this.saving.put(player.getUniqueId(), Boolean.valueOf(true));
+    
     FileConfiguration config = this.plugin.getConfig();
     config.set("kits." + player.getUniqueId().toString(), null);
     this.plugin.saveConfig();
     
-    this.openEditors.remove(player.getUniqueId());
     this.editingKit.remove(player.getUniqueId());
+    this.openEditors.remove(player.getUniqueId());
+    this.saving.remove(player.getUniqueId());
     
     player.closeInventory();
     
@@ -265,43 +271,81 @@ public class KitEditor implements Listener {
       return;
     }
     
-    // Only handle clicks in our fake editor inventory
+    // Click was NOT in our editor GUI
     if (event.getInventory() != currentInv) {
-      // If they shift-click from their own inventory, cancel that to prevent desync
-      if (event.isShiftClick()) {
-        event.setCancelled(true);
-      }
+      // Cancel any move from player inventory into the editor
+      event.setCancelled(true);
       return;
     }
     
     int slot = event.getRawSlot();
     
-    // Buttons
-    if (slot == 32) {
+    // Save button
+    if (slot == SLOT_SAVE) {
       event.setCancelled(true);
       saveKit(player);
       return;
     }
-    if (slot == 33) {
+    // Cancel button
+    if (slot == SLOT_CANCEL) {
       event.setCancelled(true);
       cancelKit(player);
       return;
     }
-    if (slot == 34) {
+    // Reset button
+    if (slot == SLOT_RESET) {
       event.setCancelled(true);
       resetKit(player);
       return;
     }
-    if (slot == 35) {
+    // Info button
+    if (slot == SLOT_INFO) {
+      event.setCancelled(true);
+      return;
+    }
+    // Spacer slot
+    if (slot == SLOT_SPACER) {
       event.setCancelled(true);
       return;
     }
     
-    // Armor display slots (27-30) — allow editing
-    // Kit slots (0-26) — allow editing
-    // Bottom row slots (31) — allow (empty spacer)
-    // Anything else — let Bukkit handle it
-    // Allow all moves within the fake GUI
+    // Block shift-click so items can't be smuggled out
+    if (event.isShiftClick()) {
+      event.setCancelled(true);
+      return;
+    }
+    
+    // All other slots in the editor (0-30): allow free movement
+  }
+  
+  @EventHandler
+  public void onInventoryDrag(InventoryDragEvent event) {
+    if (!(event.getWhoClicked() instanceof Player)) {
+      return;
+    }
+    Player player = (Player) event.getWhoClicked();
+    if (!isEditing(player)) {
+      return;
+    }
+    
+    Inventory currentInv = this.openEditors.get(player.getUniqueId());
+    if (currentInv == null) return;
+    
+    // Cancel any drag that touches button slots or player inventory
+    for (Integer slot : event.getRawSlots()) {
+      if (slot.intValue() >= SLOT_SPACER) {
+        event.setCancelled(true);
+        return;
+      }
+    }
+  }
+  
+  @EventHandler
+  public void onPlayerDropItem(PlayerDropItemEvent event) {
+    Player player = event.getPlayer();
+    if (isEditing(player)) {
+      event.setCancelled(true);
+    }
   }
   
   @EventHandler
@@ -311,11 +355,16 @@ public class KitEditor implements Listener {
     }
     Player player = (Player) event.getPlayer();
     
-    // If they close without saving, cancel
+    // If we're in the middle of saving/cancelling, ignore
+    if (this.saving.containsKey(player.getUniqueId()) && this.saving.get(player.getUniqueId()).booleanValue()) {
+      return;
+    }
+    
+    // Player closed editor without clicking save/cancel → treat as cancel
     if (isEditing(player)) {
       this.editingKit.remove(player.getUniqueId());
       this.openEditors.remove(player.getUniqueId());
-      player.sendMessage(colorize("&7Kit editing closed (not saved)."));
+      player.sendMessage(colorize("&7Kit editor closed (not saved)."));
     }
   }
   
