@@ -47,5 +47,5 @@ permissions:
     description: Allows managing connection check
     default: op
   buildffa.connection.bypass:
-    description: Bypass the connection check kick
-    default: op
+    description: Bypass the connection check kick (grant manually or use /buildffa cc bypass)
+    default: false

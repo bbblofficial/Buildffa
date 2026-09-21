@@ -98,7 +98,6 @@ public class BuildFFACommand implements CommandExecutor {
             sender.sendMessage(colorize("&7Usage: &e/buildffa cc on|off|toggle"));
             sender.sendMessage(colorize("&7Usage: &e/buildffa cc bypass <player>"));
             sender.sendMessage(colorize("&7Usage: &e/buildffa cc unbypass <player>"));
-            sender.sendMessage(colorize("&7Usage: &e/buildffa cc set <ping>"));
             sender.sendMessage(colorize("&8&m----------------------------------"));
             return true;
         }
@@ -153,21 +152,6 @@ public class BuildFFACommand implements CommandExecutor {
             }
             conn.removeBypass(target.getUniqueId());
             sender.sendMessage(colorize("&a" + target.getName() + " is no longer bypassing."));
-            return true;
-        }
-
-        if (arg.equals("set")) {
-            if (args.length < 3) {
-                sender.sendMessage(colorize("&cUsage: /buildffa cc set <ping>"));
-                return true;
-            }
-            try {
-                int ping = Integer.parseInt(args[2]);
-                conn.setPingThreshold(ping);
-                sender.sendMessage(colorize("&aPing threshold set to &e" + ping + "ms&a."));
-            } catch (NumberFormatException e) {
-                sender.sendMessage(colorize("&cInvalid number: &e" + args[2]));
-            }
             return true;
         }
 
@@ -695,7 +679,7 @@ public class BuildFFACommand implements CommandExecutor {
         sender.sendMessage(colorize("&e/buildffa cc &7- Connection check status"));
         sender.sendMessage(colorize("&e/buildffa cc on|off|toggle &7- Toggle connection check"));
         sender.sendMessage(colorize("&e/buildffa cc bypass <player> &7- Bypass a player"));
-        sender.sendMessage(colorize("&e/buildffa cc set <ping> &7- Change ping threshold"));
+        sender.sendMessage(colorize("&e/buildffa cc unbypass <player> &7- Remove bypass from a player"));
         sender.sendMessage(colorize("&e/buildffa sb &7- Toggle scoreboard visibility"));
         sender.sendMessage(colorize("&e/buildffa sb reload &7- Reload scoreboard.yml"));
         sender.sendMessage(colorize("&e/buildffa creator &7- Show plugin credits"));

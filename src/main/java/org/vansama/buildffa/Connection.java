@@ -28,7 +28,6 @@ public class Connection implements Listener {
     private int graceSeconds;
     private int warnCooldown;
     private String kickReason;
-    private String bypassPermission;
 
     private final Map<UUID, Long> highPingSince = new HashMap<UUID, Long>();
     private final Map<UUID, Long> lastWarnTime = new HashMap<UUID, Long>();
@@ -51,8 +50,6 @@ public class Connection implements Listener {
         this.warnCooldown = config.getInt("connection-check.warn-cooldown", 5);
         this.kickReason = config.getString("connection-check.kick-message",
                 "&cUnstable connection&7\n&fYour ping is too high: &e%ping%ms&7/&e%max%ms");
-        this.bypassPermission = config.getString("connection-check.bypass-permission",
-                "buildffa.connection.bypass");
 
         this.plugin.getLogger().info("BuildFFA connection-check loaded: " +
                 (this.enabled ? "ENABLED at " + this.pingThreshold + "ms" : "DISABLED"));
@@ -86,7 +83,8 @@ public class Connection implements Listener {
         for (Player player : Bukkit.getOnlinePlayers()) {
             UUID id = player.getUniqueId();
 
-            if (isBypassed(player)) {
+            // فقط bypass دستی (از /buildffa cc bypass)
+            if (this.bypassPlayers.contains(id)) {
                 this.highPingSince.remove(id);
                 this.lastWarnTime.remove(id);
                 continue;
@@ -162,15 +160,6 @@ public class Connection implements Listener {
         player.kickPlayer(colorize(reason));
     }
 
-    private boolean isBypassed(Player player) {
-        if (this.bypassPlayers.contains(player.getUniqueId())) return true;
-        if (this.bypassPermission != null && !this.bypassPermission.isEmpty()
-                && player.hasPermission(this.bypassPermission)) {
-            return true;
-        }
-        return false;
-    }
-
     private int getPing(Player player) {
         try {
             Object craftPlayer = player.getClass().getMethod("getHandle").invoke(player);
@@ -210,13 +199,6 @@ public class Connection implements Listener {
 
     public int getPingThreshold() {
         return this.pingThreshold;
-    }
-
-    public void setPingThreshold(int value) {
-        this.pingThreshold = value;
-        FileConfiguration config = this.plugin.getConfig();
-        config.set("connection-check.ping-threshold", Integer.valueOf(value));
-        this.plugin.saveConfig();
     }
 
     public void addBypass(UUID uuid) {

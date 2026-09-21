@@ -8,25 +8,41 @@
 
 # ----------------------------------------------------------
 #  Void Kill Height
+#  Players who fall below this Y level will die OR teleport.
+#  Set with /buildffa setvoid [y]
 # ----------------------------------------------------------
 kill-height: 0.0
 
 # ----------------------------------------------------------
 #  Void Behaviour
+#  What happens when a player falls below kill-height
 # ----------------------------------------------------------
 void:
+  # If true  -> teleport to spawn + full heal (no death)
+  # If false -> kill the player (old behaviour)
   teleport-instead-of-kill: true
+
+  # Delay before teleporting (in ticks, 20 ticks = 1 sec)
+  # Set to 0 for instant teleport
   teleport-delay: 0
-  teleport-message: '&cYou fell into the void!.'
+
+  # Message shown to player when teleported
+  teleport-message: '&cYou fell into the void! &7Teleported to spawn.'
+
+  # Broadcast message (only used when teleport-instead-of-kill is false)
   death-message: '&c%player% &7fell into the void'
 
 # ----------------------------------------------------------
 #  High Build Limit
+#  Players cannot place/break blocks above this Y level.
+#  Set with /buildffa sethighlimit [y]
 # ----------------------------------------------------------
 high-limit: 100.0
 
 # ----------------------------------------------------------
 #  YPvP (Y-Level PvP Restriction)
+#  Players at or above this Y level cannot hit or be hit.
+#  Set with /buildffa ypvp [y]
 # ----------------------------------------------------------
 ypvp:
   enabled: false
@@ -35,25 +51,49 @@ ypvp:
 
 # ----------------------------------------------------------
 #  Database (JSON storage in /db folder)
+#  Stores kills, deaths, killstreak, kdr per player
 # ----------------------------------------------------------
 database:
+  # Automatically save all player data periodically
   autosave: true
+  # Save interval in SECONDS (300 = 5 minutes)
   autosave-interval: 300
 
 # ----------------------------------------------------------
 #  Connection Check (Anti-Lag / High Ping Kick)
+#  Kicks players whose ping stays above threshold for too long
 # ----------------------------------------------------------
 connection-check:
+  # Enable or disable the entire system
   enabled: true
+
+  # Ping threshold in milliseconds
+  # Players above this for grace-seconds will be kicked
   ping-threshold: 150
+
+  # How often to check ping (in ticks, 20 ticks = 1 sec)
   check-interval: 20
+
+  # Grace period before kicking (in seconds)
+  # Player must stay above threshold for this long to be kicked
   grace-seconds: 30
+
+  # Cooldown between countdown warnings (in seconds)
   warn-cooldown: 5
+
+  # Kick message shown to the player
+  # %ping% = player's ping, %max% = threshold
   kick-message: "&cUnstable connection\n&fYour ping is too high: &e%ping%ms&7/&e%max%ms"
+
+  # Bypass permission (default false — OP players are NOT auto-bypassed)
+  # To bypass a player, use: /buildffa cc bypass <player>
+  # Or grant this permission manually with LuckPerms
   bypass-permission: 'buildffa.connection.bypass'
 
 # ----------------------------------------------------------
 #  Sounds
+#  Sound effects for kills, deaths, joins
+#  NOTE: No sound on hits (too spammy)
 # ----------------------------------------------------------
 sounds:
   enabled: true
@@ -110,6 +150,7 @@ kill-screen:
 
 # ----------------------------------------------------------
 #  Spawn
+#  Set with /buildffa setspawn
 # ----------------------------------------------------------
 spawn:
   world: world
