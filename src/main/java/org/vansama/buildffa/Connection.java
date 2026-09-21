@@ -210,7 +210,7 @@ public class Connection implements Listener {
         UUID id = event.getPlayer().getUniqueId();
         this.highPingSince.remove(id);
         this.lastWarnTime.remove(id);
-        // Keep forced ping so it persists across relogs? 
+        // Keep forced ping so it persists across relogs.
         // If you want it cleared on quit, uncomment the line below:
         // this.forcedPing.remove(id);
     }
@@ -233,6 +233,10 @@ public class Connection implements Listener {
     public int getPingThreshold() {
         return this.pingThreshold;
     }
+
+    // ============================================================
+    //  BYPASS API
+    // ============================================================
 
     public void addBypass(UUID uuid) {
         this.bypassPlayers.add(uuid);

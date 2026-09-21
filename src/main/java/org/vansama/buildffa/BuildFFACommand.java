@@ -71,7 +71,7 @@ public class BuildFFACommand implements CommandExecutor {
     }
 
     // ==========================================
-    // Connection Check Command (UPDATED)
+    // Connection Check Command
     // ==========================================
     private boolean handleConnection(CommandSender sender, String[] args) {
         if (!sender.hasPermission(getPerm("connectioncheck", "buildffa.connection"))) {
@@ -188,7 +188,7 @@ public class BuildFFACommand implements CommandExecutor {
                 return true;
             }
 
-            // Must be higher than the threshold to actually trigger a kick
+            // Must be at least the threshold to actually trigger a kick
             if (pingAmount < conn.getPingThreshold()) {
                 sender.sendMessage(colorize("&cThe forced ping must be at least the threshold (&e" + conn.getPingThreshold() + "ms&c)."));
                 return true;
@@ -227,7 +227,7 @@ public class BuildFFACommand implements CommandExecutor {
             }
 
             conn.clearForcedPing(target.getUniqueId());
-            conn.clearBypass(target.getUniqueId()); // also remove bypass so it actually gets checked
+            conn.removeBypass(target.getUniqueId());
             sender.sendMessage(colorize("&aForced ping removed for &e" + target.getName() + "&a. Using real ping now."));
             return true;
         }
@@ -257,7 +257,7 @@ public class BuildFFACommand implements CommandExecutor {
     }
 
     // ==========================================
-    // Stats Command (UPDATED)
+    // Stats Command (with add / reset subcommands)
     // ==========================================
     private boolean handleStats(CommandSender sender, String[] args) {
         // ==========================================
@@ -313,9 +313,6 @@ public class BuildFFACommand implements CommandExecutor {
                 statName = "killstreak";
             } else if (stat.equals("kdr")) {
                 // KDR is derived from kills/deaths — to "add" to it, we adjust kills
-                // to achieve the desired KDR change. The simplest interpretation:
-                // treat the amount as extra kills (1 kill per KDR point is impossible
-                // without knowing deaths). We'll add `amount` kills instead.
                 data.setKills(data.getKills() + amount);
                 statName = "kdr (via kills)";
             } else {
