@@ -66,6 +66,19 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
         getCommand("buildffa").setExecutor(new BuildFFACommand(this, this.kitEditor, this.scoreboardManager, this.databaseManager));
 
+        // ==================== PlaceholderAPI ====================
+        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            try {
+                new BuildFFAExpansion(this, this.databaseManager).register();
+                getLogger().info("PlaceholderAPI expansion registered!");
+            } catch (Throwable t) {
+                getLogger().warning("Failed to register PlaceholderAPI expansion: " + t.getMessage());
+            }
+        } else {
+            getLogger().info("PlaceholderAPI not found - placeholders disabled.");
+        }
+        // ========================================================
+
         getLogger().info("=================================================");
         getLogger().info("  BuildFFA v4.0 - Enabled");
         getLogger().info("  Plugin made by PixelValley");
@@ -150,86 +163,112 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         return true;
     }
 
+    /**
+     * Creates config.yml if missing, and merges any new keys WITHOUT overwriting
+     * existing user values. Safe to update the plugin without losing data.
+     */
     private void createConfigIfMissing() {
         File configFile = new File(getDataFolder(), "config.yml");
-        if (!configFile.exists()) {
+        boolean isNew = !configFile.exists();
+
+        if (isNew) {
             try {
                 configFile.createNewFile();
-                FileConfiguration cfg = YamlConfiguration.loadConfiguration(configFile);
-
-                cfg.set("kill-height", Double.valueOf(0.0D));
-                cfg.set("high-limit", Double.valueOf(100.0D));
-
-                cfg.set("void.teleport-instead-of-kill", Boolean.valueOf(true));
-                cfg.set("void.teleport-delay", Long.valueOf(0L));
-                cfg.set("void.teleport-message", "&cYou fell into the void!.");
-                cfg.set("void.death-message", "&c%player% &7fell into the void");
-
-                cfg.set("ypvp.enabled", Boolean.valueOf(false));
-                cfg.set("ypvp.y-level", Double.valueOf(150.0D));
-                cfg.set("ypvp.block-projectiles", Boolean.valueOf(true));
-
-                cfg.set("database.autosave", Boolean.valueOf(true));
-                cfg.set("database.autosave-interval", Long.valueOf(300L));
-
-                cfg.set("connection-check.enabled", Boolean.valueOf(true));
-                cfg.set("connection-check.ping-threshold", Integer.valueOf(150));
-                cfg.set("connection-check.check-interval", Integer.valueOf(20));
-                cfg.set("connection-check.grace-seconds", Integer.valueOf(30));
-                cfg.set("connection-check.warn-cooldown", Integer.valueOf(5));
-                cfg.set("connection-check.kick-message", "&cUnstable connection\n&fYour ping is too high: &e%ping%ms&7/&e%max%ms");
-                cfg.set("connection-check.bypass-permission", "buildffa.connection.bypass");
-
-                cfg.set("kill", "&e%killer% &7killed &e%loser% &7(&e%killcount% &7kills)");
-                cfg.set("Title-Suffix", " &7Kill");
-                cfg.set("SubTitle-kill", "&e+1 Kill");
-                cfg.set("join-message", "&e%player% &7joined the game &8(&e%online%&7/&e100&8)");
-                cfg.set("quit-message", "&e%player% &7left the game &8(&e%online%&7/&e100&8)");
-
-                cfg.set("infinite.food", Boolean.valueOf(true));
-                cfg.set("infinite.blocks", Boolean.valueOf(true));
-
-                cfg.set("permissions.ypvp", "buildffa.ypvp");
-                cfg.set("permissions.ypvp-bypass", "buildffa.ypvp.bypass");
-                cfg.set("permissions.kiteditor", "buildffa.kiteditor");
-                cfg.set("permissions.setvoid", "buildffa.setvoid");
-                cfg.set("permissions.sethighlimit", "buildffa.sethighlimit");
-                cfg.set("permissions.setspawn", "buildffa.setspawn");
-                cfg.set("permissions.buildmode", "buildffa.buildmode");
-                cfg.set("permissions.reload", "buildffa.reload");
-                cfg.set("permissions.scoreboard-toggle", "buildffa.scoreboard.toggle");
-                cfg.set("permissions.highlimit-bypass", "buildffa.highlimit.bypass");
-                cfg.set("permissions.resetstats", "buildffa.resetstats");
-                cfg.set("permissions.connectioncheck", "buildffa.connection");
-
-                cfg.set("messages.no-permission", "&cYou do not have permission to do this.");
-
-                cfg.set("kill-screen.enable-title", Boolean.valueOf(true));
-                cfg.set("kill-screen.title", "&e+%killcount% &7Kill");
-                cfg.set("kill-screen.subtitle", "&e+1 Kill");
-                cfg.set("kill-screen.enable-chat-fallback", Boolean.valueOf(false));
-                cfg.set("kill-screen.chat-message", "&a+1 Kill!");
-
-                cfg.set("sounds.enabled", Boolean.valueOf(true));
-                cfg.set("sounds.kill", Boolean.valueOf(true));
-                cfg.set("sounds.death", Boolean.valueOf(true));
-                cfg.set("sounds.join", Boolean.valueOf(true));
-                cfg.set("sounds.chat", Boolean.valueOf(false));
-                cfg.set("sounds.volume", Double.valueOf(1.0D));
-                cfg.set("sounds.pitch", Double.valueOf(1.0D));
-
-                cfg.set("spawn.world", "world");
-                cfg.set("spawn.x", Double.valueOf(0.5D));
-                cfg.set("spawn.y", Double.valueOf(100.0D));
-                cfg.set("spawn.z", Double.valueOf(0.5D));
-                cfg.set("spawn.yaw", Float.valueOf(0.0F));
-                cfg.set("spawn.pitch", Float.valueOf(0.0F));
-
-                cfg.save(configFile);
-                getLogger().info("Created default config.yml");
             } catch (IOException e) {
                 getLogger().warning("Could not create config.yml: " + e.getMessage());
+                return;
             }
+        }
+
+        FileConfiguration cfg = YamlConfiguration.loadConfiguration(configFile);
+
+        setIfMissing(cfg, "kill-height", Double.valueOf(0.0D));
+        setIfMissing(cfg, "high-limit", Double.valueOf(100.0D));
+
+        setIfMissing(cfg, "void.teleport-instead-of-kill", Boolean.valueOf(true));
+        setIfMissing(cfg, "void.teleport-delay", Long.valueOf(0L));
+        setIfMissing(cfg, "void.teleport-message", "&cYou fell into the void!.");
+        setIfMissing(cfg, "void.death-message", "&c%player% &7fell into the void");
+
+        setIfMissing(cfg, "ypvp.enabled", Boolean.valueOf(false));
+        setIfMissing(cfg, "ypvp.y-level", Double.valueOf(150.0D));
+        setIfMissing(cfg, "ypvp.block-projectiles", Boolean.valueOf(true));
+
+        setIfMissing(cfg, "database.autosave", Boolean.valueOf(true));
+        setIfMissing(cfg, "database.autosave-interval", Long.valueOf(300L));
+
+        setIfMissing(cfg, "connection-check.enabled", Boolean.valueOf(true));
+        setIfMissing(cfg, "connection-check.ping-threshold", Integer.valueOf(150));
+        setIfMissing(cfg, "connection-check.check-interval", Integer.valueOf(20));
+        setIfMissing(cfg, "connection-check.grace-seconds", Integer.valueOf(30));
+        setIfMissing(cfg, "connection-check.warn-cooldown", Integer.valueOf(5));
+        setIfMissing(cfg, "connection-check.kick-message", "&cUnstable connection\n&fYour ping is too high: &e%ping%ms&7/&e%max%ms");
+        setIfMissing(cfg, "connection-check.bypass-permission", "buildffa.connection.bypass");
+
+        setIfMissing(cfg, "kill", "&e%killer% &7killed &e%loser% &7(&e%killcount% &7kills)");
+        setIfMissing(cfg, "Title-Suffix", " &7Kill");
+        setIfMissing(cfg, "SubTitle-kill", "&e+1 Kill");
+        setIfMissing(cfg, "join-message", "&e%player% &7joined the game &8(&e%online%&7/&e100&8)");
+        setIfMissing(cfg, "quit-message", "&e%player% &7left the game &8(&e%online%&7/&e100&8)");
+
+        setIfMissing(cfg, "infinite.food", Boolean.valueOf(true));
+        setIfMissing(cfg, "infinite.blocks", Boolean.valueOf(true));
+
+        setIfMissing(cfg, "permissions.ypvp", "buildffa.ypvp");
+        setIfMissing(cfg, "permissions.ypvp-bypass", "buildffa.ypvp.bypass");
+        setIfMissing(cfg, "permissions.kiteditor", "buildffa.kiteditor");
+        setIfMissing(cfg, "permissions.setvoid", "buildffa.setvoid");
+        setIfMissing(cfg, "permissions.sethighlimit", "buildffa.sethighlimit");
+        setIfMissing(cfg, "permissions.setspawn", "buildffa.setspawn");
+        setIfMissing(cfg, "permissions.buildmode", "buildffa.buildmode");
+        setIfMissing(cfg, "permissions.reload", "buildffa.reload");
+        setIfMissing(cfg, "permissions.scoreboard-toggle", "buildffa.scoreboard.toggle");
+        setIfMissing(cfg, "permissions.highlimit-bypass", "buildffa.highlimit.bypass");
+        setIfMissing(cfg, "permissions.resetstats", "buildffa.resetstats");
+        setIfMissing(cfg, "permissions.connectioncheck", "buildffa.connection");
+
+        setIfMissing(cfg, "messages.no-permission", "&cYou do not have permission to do this.");
+
+        setIfMissing(cfg, "kill-screen.enable-title", Boolean.valueOf(true));
+        setIfMissing(cfg, "kill-screen.title", "&e+%killcount% &7Kill");
+        setIfMissing(cfg, "kill-screen.subtitle", "&e+1 Kill");
+        setIfMissing(cfg, "kill-screen.enable-chat-fallback", Boolean.valueOf(false));
+        setIfMissing(cfg, "kill-screen.chat-message", "&a+1 Kill!");
+
+        setIfMissing(cfg, "sounds.enabled", Boolean.valueOf(true));
+        setIfMissing(cfg, "sounds.kill", Boolean.valueOf(true));
+        setIfMissing(cfg, "sounds.death", Boolean.valueOf(true));
+        setIfMissing(cfg, "sounds.join", Boolean.valueOf(true));
+        setIfMissing(cfg, "sounds.chat", Boolean.valueOf(false));
+        setIfMissing(cfg, "sounds.volume", Double.valueOf(1.0D));
+        setIfMissing(cfg, "sounds.pitch", Double.valueOf(1.0D));
+
+        setIfMissing(cfg, "spawn.world", "world");
+        setIfMissing(cfg, "spawn.x", Double.valueOf(0.5D));
+        setIfMissing(cfg, "spawn.y", Double.valueOf(100.0D));
+        setIfMissing(cfg, "spawn.z", Double.valueOf(0.5D));
+        setIfMissing(cfg, "spawn.yaw", Float.valueOf(0.0F));
+        setIfMissing(cfg, "spawn.pitch", Float.valueOf(0.0F));
+
+        try {
+            cfg.save(configFile);
+            if (isNew) {
+                getLogger().info("Created default config.yml");
+            } else {
+                getLogger().info("Config.yml merged (existing values preserved).");
+            }
+        } catch (IOException e) {
+            getLogger().warning("Could not save config.yml: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Only sets the value if the path does NOT already exist.
+     * This prevents overwriting user settings on plugin update.
+     */
+    private void setIfMissing(FileConfiguration cfg, String path, Object value) {
+        if (!cfg.contains(path)) {
+            cfg.set(path, value);
         }
     }
 

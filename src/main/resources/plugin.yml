@@ -3,6 +3,7 @@ version: 4.0
 main: org.vansama.buildffa.BuildFFA
 author: muvixo
 description: BuildFFA - Created by Muvixo
+softdepend: [PlaceholderAPI]
 commands:
   buildffa:
     description: Main BuildFFA command
