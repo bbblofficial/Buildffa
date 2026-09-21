@@ -81,9 +81,13 @@ connection-check:
   # Cooldown between countdown warnings (in seconds)
   warn-cooldown: 5
 
-  # Kick message shown to the player
+  # Kick message shown to the player (private)
   # %ping% = player's ping, %max% = threshold
   kick-message: "&cUnstable connection\n&fYour ping is too high: &e%ping%ms&7/&e%max%ms"
+
+  # Broadcast message shown to everyone when a player is kicked
+  # %player% = player name, %ping% = player's ping, %max% = threshold
+  broadcast-message: '&c%player% &7was kicked for &eUnstable Connection &7(&c%ping%ms&7)'
 
   # Bypass permission (default false — OP players are NOT auto-bypassed)
   # To bypass a player, use: /buildffa cc bypass <player>

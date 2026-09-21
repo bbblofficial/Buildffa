@@ -28,6 +28,7 @@ public class Connection implements Listener {
     private int graceSeconds;
     private int warnCooldown;
     private String kickReason;
+    private String broadcastMessage;
 
     private final Map<UUID, Long> highPingSince = new HashMap<UUID, Long>();
     private final Map<UUID, Long> lastWarnTime = new HashMap<UUID, Long>();
@@ -49,7 +50,9 @@ public class Connection implements Listener {
         this.graceSeconds = config.getInt("connection-check.grace-seconds", 30);
         this.warnCooldown = config.getInt("connection-check.warn-cooldown", 5);
         this.kickReason = config.getString("connection-check.kick-message",
-                "&cUnstable connection&7\n&fYour ping is too high: &e%ping%ms&7/&e%max%ms");
+                "&cUnstable connection\n&fYour ping is too high: &e%ping%ms&7/&e%max%ms");
+        this.broadcastMessage = config.getString("connection-check.broadcast-message",
+                "&c%player% &7was kicked for &eUnstable Connection &7(&c%ping%ms&7)");
 
         this.plugin.getLogger().info("BuildFFA connection-check loaded: " +
                 (this.enabled ? "ENABLED at " + this.pingThreshold + "ms" : "DISABLED"));
@@ -83,7 +86,6 @@ public class Connection implements Listener {
         for (Player player : Bukkit.getOnlinePlayers()) {
             UUID id = player.getUniqueId();
 
-            // فقط bypass دستی (از /buildffa cc bypass)
             if (this.bypassPlayers.contains(id)) {
                 this.highPingSince.remove(id);
                 this.lastWarnTime.remove(id);
@@ -157,6 +159,13 @@ public class Connection implements Listener {
                 .replace("%ping%", String.valueOf(ping))
                 .replace("%max%", String.valueOf(this.pingThreshold))
                 .replace("%player%", player.getName());
+
+        String broadcast = this.broadcastMessage
+                .replace("%player%", player.getName())
+                .replace("%ping%", String.valueOf(ping))
+                .replace("%max%", String.valueOf(this.pingThreshold));
+
+        Bukkit.broadcastMessage(colorize(broadcast));
         player.kickPlayer(colorize(reason));
     }
 
