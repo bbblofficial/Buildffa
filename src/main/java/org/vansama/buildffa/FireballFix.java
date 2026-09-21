@@ -32,6 +32,17 @@ public class FireballFix implements Listener {
     private final Map<UUID, Long> cooldown = new HashMap<UUID, Long>();
     private static final long COOLDOWN_MS = 500L;
 
+    // ============================================================
+    //  Vanilla fireball base velocity (blocks per tick).
+    //  Bigger base = wider tuning range for small speed values.
+    //  With BASE = 2.0:
+    //      speed 0.25 → slow      (0.5 blocks/tick)
+    //      speed 0.5  → medium    (1.0 blocks/tick)
+    //      speed 1.0  → fast      (2.0 blocks/tick)
+    //      speed 2.0  → very fast (4.0 blocks/tick)
+    // ============================================================
+    private static final double VANILLA_BASE = 2.0D;
+
     public FireballFix(JavaPlugin plugin) {
         this.plugin = plugin;
         plugin.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
@@ -78,16 +89,27 @@ public class FireballFix implements Listener {
 
         // ============================================================
         //  SPEED HANDLING
-        //  If fireball.speed <= 0 → do NOT touch velocity.
-        //  Minecraft's default speed is used.
-        //  If fireball.speed  > 0 → apply custom velocity.
+        //
+        //  speed = 0.0  → vanilla Minecraft speed (untouched)
+        //  speed = 0.25 → slow
+        //  speed = 0.5  → medium
+        //  speed = 1.0  → fast
+        //  speed = 2.0  → very fast
+        //
+        //  The final velocity is:
+        //      direction × (VANILLA_BASE × speed)
+        //
+        //  When speed <= 0, the plugin does NOT touch velocity
+        //  at all — Minecraft's default fireball speed is used.
         // ============================================================
         double speed = this.plugin.getConfig().getDouble("fireball.speed", 0.0D);
 
         if (speed > 0.0D) {
-            Vector direction = player.getLocation().getDirection().multiply(speed);
-            fireball.setDirection(direction);
-            fireball.setVelocity(direction);
+            Vector direction = player.getLocation().getDirection().normalize();
+            Vector velocity = direction.multiply(VANILLA_BASE * speed);
+
+            fireball.setDirection(velocity);
+            fireball.setVelocity(velocity);
         }
         // else: leave fireball velocity as vanilla default
         // ============================================================
