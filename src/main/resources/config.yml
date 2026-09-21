@@ -1,55 +1,58 @@
 # ==========================================================
-# BuildFFA Configuration
-# Created by Muvixo
-# Plugin author: VanSaMa
-# Made by PixelValley
-# Version: 4.0 (1.8.8 Compatible)
+#  BuildFFA Configuration
+#  Created by Muvixo
+#  Plugin author: VanSaMa
+#  Made by PixelValley
+#  Version: 4.0 (1.8.8 Compatible)
 # ==========================================================
-# This file is AUTO-MERGED on plugin update.
-# New keys are added automatically.
-# Your existing values are NEVER overwritten.
+#
+#  This file is AUTO-MERGED on plugin update.
+#  New keys are added automatically.
+#  Your existing values are NEVER overwritten.
 # ==========================================================
 
 # ----------------------------------------------------------
-# Void Kill Height
-# Players who fall below this Y level will die or teleport.
-# Set with /buildffa setvoid [y]
+#  Void Kill Height
+#  Players who fall below this Y level will die or teleport.
+#  Set with /buildffa setvoid [y]
 # ----------------------------------------------------------
 kill-height: -13.0
 
 # ----------------------------------------------------------
-# High Build Limit
-# Players cannot place/break blocks above this Y level.
-# Set with /buildffa sethighlimit [y]
+#  High Build Limit
+#  Players cannot place/break blocks above this Y level.
+#  Set with /buildffa sethighlimit [y]
 # ----------------------------------------------------------
 high-limit: 53.0
 
 # ----------------------------------------------------------
-# Block Timings (seconds)
-# How long blocks take to restore / disappear.
+#  Block Timings (seconds)
+#  How long blocks take to restore / disappear.
 # ----------------------------------------------------------
 blocks:
   # Natural blocks (stone, dirt, wood…) broken by players
   # reappear after this many seconds.
   natural-restore-seconds: 9
+
   # Player-placed blocks disappear after this many seconds.
   # (Ignored when the player is in Build Mode.)
   placed-decay-seconds: 5
 
 # ----------------------------------------------------------
-# Combat Mode
-# When two players hit each other, they enter combat.
-# If one leaves during combat, the other is healed.
+#  Combat Mode
+#  When two players hit each other, they enter combat.
+#  If one leaves during combat, the other is healed.
 # ----------------------------------------------------------
 combat:
   # Seconds after the last hit until combat ends
   timeout-seconds: 15
+
   # Message shown to the opponent who stayed (private)
   # %player% = the player who left
   opponent-left-message: '&a%player% &7left the server during combat. &aYou were healed.'
 
 # ----------------------------------------------------------
-# Void Behaviour
+#  Void Behaviour
 # ----------------------------------------------------------
 void:
   # If true  -> teleport to spawn + full heal, BUT death is
@@ -76,16 +79,18 @@ void:
   killed-by-message: '&c%player% &7was knocked into the void by &c%killer%'
 
 # ----------------------------------------------------------
-# YPvP (Y-Level PvP Restriction)
-# Players at or above this Y level cannot hit or be hit.
-# Set with /buildffa ypvp [y]
+#  YPvP (Y-Level PvP Restriction)
+#  Players at or above this Y level cannot hit or be hit.
+#  Set with /buildffa ypvp [y]
 # ----------------------------------------------------------
 ypvp:
   enabled: true
   y-level: 61.5
   block-projectiles: true
+
   # Message shown to the player when they try to PvP above the limit.
-  # %y%  = the configured Y level (int)
+  #   %y%  = the configured Y level (int)
+  #
   # Examples:
   #   '&cYou cannot PvP here!'
   #   '&cYou cannot PvP here! &7(&eY=%y%&7)'
@@ -93,17 +98,19 @@ ypvp:
   message: '&cYou cannot PvP here!'
 
 # ----------------------------------------------------------
-# YPearl (Y-Level Ender Pearl Restriction)
-# Players below this Y level can throw pearls.
-# The moment a pearl crosses ABOVE this Y level, it is
-# deleted mid-air and the thrower is told.
-# Set with /buildffa ypearl [y]
+#  YPearl (Y-Level Ender Pearl Restriction)
+#  Players below this Y level can throw pearls.
+#  The moment a pearl crosses ABOVE this Y level, it is
+#  deleted mid-air and the thrower is told.
+#  Set with /buildffa ypearl [y]
 # ----------------------------------------------------------
 ypearl:
   enabled: true
   y-level: 61.5
+
   # Message shown to the player when their pearl is blocked/deleted.
-  # %y%  = the configured Y level (int)
+  #   %y%  = the configured Y level (int)
+  #
   # Examples:
   #   '&cYou cannot throw pearls here!'
   #   '&cYou cannot throw pearls here! &7(&eY=%y%&7)'
@@ -111,8 +118,8 @@ ypearl:
   message: '&cYou cannot throw pearls here!'
 
 # ----------------------------------------------------------
-# Database (JSON storage in /db folder)
-# Stores kills, deaths, killstreak, kdr per player
+#  Database (JSON storage in /db folder)
+#  Stores kills, deaths, killstreak, kdr per player
 # ----------------------------------------------------------
 database:
   # Automatically save all player data periodically
@@ -121,51 +128,61 @@ database:
   autosave-interval: 300
 
 # ----------------------------------------------------------
-# Connection Check (Anti-Lag / High Ping Kick)
-# Kicks players whose ping stays above threshold for too long
+#  Connection Check (Anti-Lag / High Ping Kick)
+#  Kicks players whose ping stays above threshold for too long
 # ----------------------------------------------------------
 connection-check:
   # Enable or disable the entire system
   enabled: true
+
   # Ping threshold in milliseconds
   # Players above this for grace-seconds will be kicked
   ping-threshold: 150
+
   # How often to check ping (in ticks, 20 ticks = 1 sec)
   check-interval: 20
+
   # Grace period before kicking (in seconds)
   # Player must stay above threshold for this long to be kicked
   grace-seconds: 30
+
   # Cooldown between countdown warnings (in seconds)
   warn-cooldown: 5
+
   # Kick message shown to the player (private)
   # %ping% = player's ping, %max% = threshold
   kick-message: |-
     &cUnstable connection
     &fYour ping is too high: &e%ping%ms&7/&e%max%ms
+
   # Broadcast message shown to everyone when a player is kicked
   # %player% = player name, %ping% = player's ping, %max% = threshold
   broadcast-message: '&c%player% &7was kicked for &eUnstable Connection &7(&c%ping%ms&7)'
+
   # Bypass permission (default false — OP players are NOT auto-bypassed)
   # To bypass a player, use: /buildffa cc bypass <player>
   # Or grant this permission manually with LuckPerms
   bypass-permission: buildffa.connection.bypass
 
 # ----------------------------------------------------------
-# Killstreak Rewards
-# When a player reaches a certain killstreak, they receive
-# a reward bundle instead of just a single Golden Apple.
-# ITEM types:
-#   gapple   = Golden Apple
-#   fb       = Fireball (Fire Charge) — right-click to shoot
-#   perl     = Ender Pearl
-#   feather  = Feather (double-jump, right-click in air)
-#   speed:N  = Potion of Swiftness (N = level 1-2)
-#   jump:N   = Potion of Leaping (N = level 1-5)
+#  Killstreak Rewards
+#  When a player reaches a certain killstreak, they receive
+#  a reward bundle instead of just a single Golden Apple.
+#
+#  ITEM types:
+#    gapple   = Golden Apple
+#    fb       = Fireball (Fire Charge) — right-click to shoot
+#    perl     = Ender Pearl
+#    feather  = Feather (double-jump, right-click in air)
+#    speed:N  = Potion of Swiftness (N = level 1-2)
+#    jump:N   = Potion of Leaping (N = level 1-5)
 # ----------------------------------------------------------
 killstreak-rewards:
   enabled: true
+
   # If true, rewards repeat every 12 killstreaks after level 12
   repeat-from-12: true
+
   # Rewards per killstreak level
   rewards:
     '4':   "gapple:1 fb:1 speed:1 "
@@ -179,10 +196,10 @@ killstreak-rewards:
     '12':  "feather:1 jump:5 perl:1 fb:1 "
 
 # ----------------------------------------------------------
-# Feather Jump (Double Jump)
-# Right-click a Feather while in the air to double-jump.
-# The feather is consumed.
-# 3-second cooldown per player.
+#  Feather Jump (Double Jump)
+#  Right-click a Feather while in the air to double-jump.
+#  The feather is consumed.
+#  3-second cooldown per player.
 # ----------------------------------------------------------
 feather-jump:
   # Upward velocity (Y axis)
@@ -192,40 +209,44 @@ feather-jump:
   # 1.2 = strong
   # 1.5 = extreme
   boost: 1.2
+
   # Forward velocity (in the direction the player is looking)
   # 0.0 = no forward push (straight up)
   # 0.2 = small push
   # 0.4 = noticeable push
   forward-boost: 0.0
+
   # Projectile settings (used when launching as a projectile)
   # If you want Feather to be thrown like a Snowball instead of a boost:
-  # set boost: 0.0 and speed: 2.0
+  #   set boost: 0.0 and speed: 2.0
   speed: 2.0
   knockback-horizontal: 1.5
   knockback-vertical: 0.9
   damage: 2.0
+
   # Message shown to the player (private)
   # Leave empty ('') to disable
   message: '&b✦ &fDouble Jump!'
 
 # ----------------------------------------------------------
-# Fireball
-# Right-click a Fire Charge to shoot a real fireball.
-# Works in Survival mode (vanilla only works in Creative).
-# Rebuilt (v4.0.2) to fly the way Hypixel BedWars / Minemen Club
-# fireballs do: a perfectly straight line (no offset/kink at spawn),
-# fast, and by default they knock players around but do NOT break
-# blocks (see break-blocks below). This uses the same direct-NMS
-# technique the public "BedWars1058 Fireball Fix" addon is built on
-# (never calling setVelocity() on the fireball - only ever writing
-# its real acceleration field once, consistently, at launch).
+#  Fireball
+#  Right-click a Fire Charge to shoot a real fireball.
+#  Works in Survival mode (vanilla only works in Creative).
 #
-# SPEED LEVEL (set with /buildffa fb-speed <value>):
-#   -10.0 -> fireball is stopped      (multiplier 0.00x)
-#   -5.0  -> very slow                (multiplier 0.50x)
-#    0.0  -> tuned BedWars-style base (multiplier 1.00x)
-#   +5.0  -> fast / BedWars feel      (multiplier 1.50x)
-#   +10.0 -> extreme                  (multiplier 2.00x)
+#  Rebuilt (v4.0.2) to fly the way Hypixel BedWars / Minemen Club
+#  fireballs do: a perfectly straight line (no offset/kink at spawn),
+#  fast, and by default they knock players around but do NOT break
+#  blocks (see break-blocks below). This uses the same direct-NMS
+#  technique the public "BedWars1058 Fireball Fix" addon is built on
+#  (never calling setVelocity() on the fireball - only ever writing
+#  its real acceleration field once, consistently, at launch).
+#
+#  SPEED LEVEL (set with /buildffa fb-speed <value>):
+#    -10.0 → fireball is stopped      (multiplier 0.00x)
+#     -5.0 → very slow                (multiplier 0.50x)
+#      0.0 → tuned BedWars-style base (multiplier 1.00x)
+#     +5.0 → fast / BedWars feel      (multiplier 1.50x)
+#    +10.0 → extreme                  (multiplier 2.00x)
 # ----------------------------------------------------------
 fireball:
   # Let fireballs break blocks like true vanilla ghast fireballs.
@@ -238,7 +259,7 @@ fireball:
   message: ''
 
   # Speed slider value (-10 to +10)
-  # Default 1.5 -> multiplier 1.15x (tiny boost over vanilla)
+  # Default 1.5 → multiplier 1.15x (tiny boost over vanilla)
   # With the new physics engine, this provides a fast, straight shot.
   speed-level: 1.5
 
@@ -255,32 +276,38 @@ fireball:
   # Knockback + damage settings
   knockback:
     enabled: true
+
     # Radius (in blocks) where players get knocked
     radius: 4.0
+
     # Vertical knockback force
     height-force: 1.0
+
     # Horizontal knockback force
     radius-force: 1.5
+
     # Extra damage on top of the distance-based damage
     damage: 0.5
 
 # ----------------------------------------------------------
-# Messages
-# Normal PvP kill message
-# %killer% = killer name (GREEN)
-# %loser%  = victim name (RED)
+#  Messages
+#  Normal PvP kill message
+#  %killer% = killer name (GREEN)
+#  %loser%  = victim name (RED)
 # ----------------------------------------------------------
 kill: '&a%killer% &7killed &c%loser%'
+
 Title-Suffix: '  &7Kill'
 SubTitle-kill: ' &e+1 Kill'
 join-message: ' &e%player%  &7joined the game  &8( &e%online% &7/ &e100 &8)'
 quit-message: ' &e%player%  &7left the game  &8( &e%online% &7/ &e100 &8)'
+
 infinite:
   food: true
   blocks: true
 
 # ----------------------------------------------------------
-# Permissions
+#  Permissions
 # ----------------------------------------------------------
 permissions:
   ypvp: buildffa.ypvp
@@ -303,7 +330,7 @@ messages:
   no-permission: '&cYou do not have permission to do this.'
 
 # ----------------------------------------------------------
-# Kill Screen (Title/Subtitle on kill)
+#  Kill Screen (Title/Subtitle on kill)
 # ----------------------------------------------------------
 kill-screen:
   enable-title: true
@@ -313,9 +340,9 @@ kill-screen:
   chat-message: '&a+1 Kill!'
 
 # ----------------------------------------------------------
-# Sounds
-# Sound effects for kills, deaths, joins
-# NOTE: No sound on hits (too spammy)
+#  Sounds
+#  Sound effects for kills, deaths, joins
+#  NOTE: No sound on hits (too spammy)
 # ----------------------------------------------------------
 sounds:
   enabled: true
@@ -327,8 +354,8 @@ sounds:
   pitch: 1.0
 
 # ----------------------------------------------------------
-# Spawn
-# Set with /buildffa setspawn
+#  Spawn
+#  Set with /buildffa setspawn
 # ----------------------------------------------------------
 spawn:
   world: world
@@ -339,8 +366,8 @@ spawn:
   pitch: 5.961797
 
 # ----------------------------------------------------------
-# Leaderboard Refresh (used by hologram countdown)
-# %buildffa_next_update% counts down from this value
+#  Leaderboard Refresh (used by hologram countdown)
+#  %buildffa_next_update% counts down from this value
 # ----------------------------------------------------------
 leaderboard-refresh:
   interval-seconds: 600

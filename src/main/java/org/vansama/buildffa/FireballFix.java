@@ -2,16 +2,19 @@ package org.vansama.buildffa;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -30,66 +33,51 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 /**
- * ================================================================================
- * FIXED FIREBALL PHYSICS ENGINE (BuildFFA v4.0+)
- * ================================================================================
- * 
- * This class fixes the "mouse-click" bug by directly manipulating NMS fields.
- * 
- * KEY CHANGES:
- * 1. Increased BASE_SPEED to 4.0D to ensure visible travel distance.
- * 2. Corrected NMS acceleration scaling (dirX/Y/Z are acceleration, not velocity).
- * 3. Added safety checks for reflection to prevent crashes on non-CraftBukkit servers.
- */
+================================================================
+BEDWARS / MINEMEN-CLUB STYLE FIREBALL (FULLY FIXED)
+================================================================
+*/
 public class FireballFix implements Listener {
-
     private final JavaPlugin plugin;
-    private final Map<UUID, Long> cooldowns = new HashMap<>();
-
-    // Cooldown in milliseconds (0.5 seconds)
+    private final Map<UUID, Long> cooldown = new HashMap<>();
     private static final long COOLDOWN_MS = 500L;
 
-    // NMS Scale Factor: In 1.8, dirX/Y/Z are multiplied by 0.1 internally by Minecraft.
-    // To get a desired acceleration 'A', we must set the field to A / 0.1.
-    private static final double NMS_SCALE_FACTOR = 0.1D;
-
-    // Base Speed: This determines the "standard" BedWars-like speed.
-    // 4.0 provides a punchy, fast feel that travels significantly before exploding.
-    private static final double BASE_SPEED = 4.0D;
+    // Base speed for the slider. 
+    // Terminal velocity in blocks/tick will be roughly 9.9 * (BASE_SPEED * multiplier).
+    // We use 0.5 so that a multiplier of 1.0 gives ~5 blocks/tick (100 blocks/sec), 
+    // which is a fast but visible BedWars-style fireball, NOT a hitscan laser.
+    private static final double BASE_SPEED = 0.5D;
 
     public static final double SLIDER_MIN = -10.0D;
     public static final double SLIDER_MAX = 10.0D;
 
-    // Reflection Handles
+    // Reflection handles for NMS EntityFireball fields
     private static Field dirXField;
     private static Field dirYField;
     private static Field dirZField;
-    private static Method getHandleMethod;
-    private static boolean reflectionInitialized = false;
+    private static Method craftFireballGetHandle;
+    private static boolean reflectionReady = false;
 
     static {
         try {
-            String packageName = Bukkit.getServer().getClass().getPackage().getName();
-            String version = packageName.substring(packageName.lastIndexOf('.') + 1);
+            String craftBukkitPackage = Bukkit.getServer().getClass().getPackage().getName();
+            String version = craftBukkitPackage.substring(craftBukkitPackage.lastIndexOf('.') + 1);
             
             Class<?> nmsFireballClass = Class.forName("net.minecraft.server." + version + ".EntityFireball");
             Class<?> craftFireballClass = Class.forName("org.bukkit.craftbukkit." + version + ".entity.CraftFireball");
-
+            
             dirXField = nmsFireballClass.getDeclaredField("dirX");
             dirYField = nmsFireballClass.getDeclaredField("dirY");
             dirZField = nmsFireballClass.getDeclaredField("dirZ");
-            
             dirXField.setAccessible(true);
             dirYField.setAccessible(true);
             dirZField.setAccessible(true);
-
-            getHandleMethod = craftFireballClass.getDeclaredMethod("getHandle");
-            getHandleMethod.setAccessible(true);
-
-            reflectionInitialized = true;
-        } catch (Exception e) {
-            // Reflection failed (likely not 1.8 CraftBukkit). Fallback will be used.
-            reflectionInitialized = false;
+            
+            craftFireballGetHandle = craftFireballClass.getDeclaredMethod("getHandle");
+            craftFireballGetHandle.setAccessible(true);
+            reflectionReady = true;
+        } catch (Throwable t) {
+            reflectionReady = false;
         }
     }
 
@@ -97,51 +85,43 @@ public class FireballFix implements Listener {
         this.plugin = plugin;
     }
 
-    /**
-     * Converts the config slider value (-10 to +10) into a multiplier.
-     * -10 = 0x (Stopped)
-     *   0 = 1x (Base Speed)
-     * +10 = 2x (Double Speed)
-     */
+    // ============================================================
+    //  SLIDER -> MULTIPLIER
+    // ============================================================
     public static double sliderToMultiplier(double slider) {
         if (slider < SLIDER_MIN) slider = SLIDER_MIN;
         if (slider > SLIDER_MAX) slider = SLIDER_MAX;
         return 1.0D + (slider / 10.0D);
     }
 
-    private double getCurrentMultiplier() {
-        double slider = plugin.getConfig().getDouble("fireball.speed-level", 1.5D);
+    private double getMultiplier() {
+        double slider = this.plugin.getConfig().getDouble("fireball.speed-level", 1.5D);
         return sliderToMultiplier(slider);
     }
 
+    // ============================================================
+    //  LAUNCH FIREBALL (FIXED)
+    // ============================================================
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onRightClick(PlayerInteractEvent event) {
         Action action = event.getAction();
         if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
-
         Player player = event.getPlayer();
         ItemStack item = player.getItemInHand();
-
         if (item == null || item.getType() != Material.FIREBALL) {
             return;
         }
-
-        // Prevent default behavior (consuming item/shooting vanilla fireball)
         event.setCancelled(true);
 
-        // Cooldown Check
         long now = System.currentTimeMillis();
-        UUID uuid = player.getUniqueId();
-        Long lastClick = cooldowns.get(uuid);
-        
-        if (lastClick != null && (now - lastClick) < COOLDOWN_MS) {
+        Long last = cooldown.get(player.getUniqueId());
+        if (last != null && now - last < COOLDOWN_MS) {
             return;
         }
-        cooldowns.put(uuid, now);
+        cooldown.put(player.getUniqueId(), now);
 
-        // Consume Item
         if (item.getAmount() > 1) {
             item.setAmount(item.getAmount() - 1);
         } else {
@@ -149,168 +129,156 @@ public class FireballFix implements Listener {
         }
         player.updateInventory();
 
-        // Calculate Launch Vector
-        Vector direction = player.getEyeLocation().getDirection().normalize();
-        double multiplier = getCurrentMultiplier();
+        // Get normalized direction
+        Vector dir = player.getEyeLocation().getDirection().normalize();
+        double multiplier = getMultiplier();
         double speed = BASE_SPEED * multiplier;
-
-        // Create the fireball with an initial velocity vector.
-        // Note: In 1.8, launchProjectile sets velocity, but we will override it immediately.
-        Fireball fireball = player.launchProjectile(Fireball.class, direction.clone().multiply(speed));
-
-        // Apply Custom Physics
-        applyCustomPhysics(fireball, direction, speed);
-
-        // Configure Explosion & Effects
-        configureFireballProperties(fireball, player);
-    }
-
-    /**
-     * Directly manipulates NMS fields to ensure straight, fast flight.
-     */
-    private void applyCustomPhysics(Fireball fireball, Vector direction, double speed) {
-        if (!reflectionInitialized) {
-            // Fallback: Use Bukkit API if reflection fails.
-            fireball.setVelocity(direction.clone().multiply(speed));
+        
+        // Prevent spawning a fireball with 0 or negative speed
+        if (speed <= 0.01D) {
+            player.sendMessage(ChatColor.RED + "Fireball speed is too low to launch.");
             return;
         }
 
-        try {
-            Object nmsEntity = getHandleMethod.invoke(fireball);
+        // FIX 1: Spawn the fireball slightly in front of the player (1.5 blocks)
+        // This eliminates the spawn "kink" and prevents it from instantly 
+        // colliding with the player's own hitbox or the block they are staring at.
+        Location spawnLoc = player.getEyeLocation().add(dir.clone().multiply(1.5));
+        
+        // FIX 2: Use spawnEntity instead of launchProjectile to avoid 1.8.8 Bukkit quirks
+        Fireball fireball = (Fireball) player.getWorld().spawnEntity(spawnLoc, EntityType.FIREBALL);
+        fireball.setShooter(player);
 
-            // In Minecraft 1.8, the fireball's movement is calculated as:
-            // pos += dir * 0.1
-            // Therefore, to achieve a specific 'speed' per tick, we set dir = speed / 0.1
-            
-            double accelX = direction.getX() * speed / NMS_SCALE_FACTOR;
-            double accelY = direction.getY() * speed / NMS_SCALE_FACTOR;
-            double accelZ = direction.getZ() * speed / NMS_SCALE_FACTOR;
+        // FIX 3: Set the NMS acceleration fields directly.
+        // In 1.8.8 NMS, the fireball's velocity is updated each tick by adding dirX/Y/Z, 
+        // then applying drag (0.99). The terminal velocity is roughly 99 * dirMagnitude.
+        // By setting dir to (direction * speed * 0.1), we get a terminal velocity of ~9.9 * speed.
+        Vector nmsAccel = dir.clone().multiply(speed * 0.1D);
+        setStraightAcceleration(fireball, nmsAccel);
 
-            dirXField.set(nmsEntity, accelX);
-            dirYField.set(nmsEntity, accelY);
-            dirZField.set(nmsEntity, accelZ);
+        // FIX 4: Set the initial velocity so it doesn't start from a standstill
+        fireball.setVelocity(dir.clone().multiply(speed * 5.0D));
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            // Fallback to Bukkit API if reflection fails at runtime
-            fireball.setVelocity(direction.clone().multiply(speed));
-        }
-    }
+        // ============================================================
+        //  EXPLOSION / EFFECTS
+        // ============================================================
+        double yield = this.plugin.getConfig().getDouble("fireball.yield", 1.0D);
+        fireball.setYield((float) yield);
 
-    private void configureFireballProperties(Fireball fireball, Player shooter) {
-        // Yield (Explosion Size)
-        float yield = (float) plugin.getConfig().getDouble("fireball.yield", 1.0D);
-        fireball.setYield(yield);
-
-        // Throw Effects (Potions on shooter)
-        if (plugin.getConfig().getBoolean("fireball.throw-effects.enabled", false)) {
-            List<String> effects = plugin.getConfig().getStringList("fireball.throw-effects.effects");
-            for (String eff : effects) {
-                String[] parts = eff.split(":");
-                if (parts.length == 3) {
-                    try {
-                        PotionEffectType type = PotionEffectType.getByName(parts[0]);
-                        int duration = Integer.parseInt(parts[1]);
-                        int amplifier = Integer.parseInt(parts[2]);
-                        if (type != null) {
-                            shooter.addPotionEffect(new PotionEffect(type, duration, amplifier, true, false));
-                        }
-                    } catch (NumberFormatException ignored) {}
+        if (this.plugin.getConfig().getBoolean("fireball.throw-effects.enabled", false)) {
+            List<String> effects = this.plugin.getConfig().getStringList("fireball.throw-effects.effects");
+            if (effects != null) {
+                for (String element : effects) {
+                    String[] tokens = element.split(":");
+                    if (tokens.length < 3) continue;
+                    PotionEffectType effect = PotionEffectType.getByName(tokens[0].toUpperCase());
+                    if (effect != null) {
+                        try {
+                            player.addPotionEffect(new PotionEffect(
+                                    effect,
+                                    Integer.parseInt(tokens[1]),
+                                    Integer.parseInt(tokens[2]),
+                                    true, false));
+                        } catch (NumberFormatException ignored) {}
+                    }
                 }
             }
         }
 
-        // Message
-        String msg = plugin.getConfig().getString("fireball.message", "");
-        if (!msg.isEmpty()) {
-            shooter.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', msg));
+        String msg = this.plugin.getConfig().getString("fireball.message", "");
+        if (msg != null && !msg.isEmpty()) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', msg));
         }
 
-        // Sound
         try {
-            shooter.playSound(shooter.getLocation(), Sound.GHAST_FIREBALL, 1.0F, 1.0F);
-        } catch (Exception ignored) {}
+            player.playSound(player.getLocation(), Sound.GHAST_FIREBALL, 1.0F, 1.0F);
+        } catch (Throwable ignored) {}
     }
 
-    // ========================================================================
-    // HIT & EXPLOSION LOGIC
-    // ========================================================================
+    /**
+     * Writes the fireball's real NMS acceleration field (dirX/dirY/dirZ) directly.
+     */
+    private static void setStraightAcceleration(Fireball fireball, Vector accelVector) {
+        if (reflectionReady) {
+            try {
+                Object handle = craftFireballGetHandle.invoke(fireball);
+                dirXField.set(handle, accelVector.getX());
+                dirYField.set(handle, accelVector.getY());
+                dirZField.set(handle, accelVector.getZ());
+                return;
+            } catch (Throwable ignored) {}
+        }
+        // Fallback if reflection fails
+        fireball.setDirection(accelVector);
+    }
 
+    // ============================================================
+    //  BEDWARS1058 EXACT KNOCKBACK LOGIC
+    // ============================================================
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onFireballHit(ProjectileHitEvent event) {
-        if (!(event.getEntity() instanceof Fireball)) return;
-        
-        Fireball fireball = (Fireball) event.getEntity();
-        
-        // Only apply custom knockback if enabled in config
-        if (!plugin.getConfig().getBoolean("fireball.knockback.enabled", true)) return;
+    public void fireballHit(ProjectileHitEvent e) {
+        if (!(e.getEntity() instanceof Fireball)) return;
+        if (!this.plugin.getConfig().getBoolean("fireball.knockback.enabled", true)) return;
 
-        Location loc = fireball.getLocation();
-        if (loc.getWorld() == null) return;
+        Location location = e.getEntity().getLocation();
+        if (location.getWorld() == null) return;
 
-        double radius = plugin.getConfig().getDouble("fireball.knockback.radius", 4.0D);
-        double hForce = plugin.getConfig().getDouble("fireball.knockback.radius-force", 1.5D) * -1.0D;
-        double vForce = plugin.getConfig().getDouble("fireball.knockback.height-force", 1.0D);
-        double damage = plugin.getConfig().getDouble("fireball.knockback.damage", 0.5D);
+        double fireballExplosionSize = this.plugin.getConfig().getDouble("fireball.knockback.radius", 4.0D);
+        double fireballHorizontal = this.plugin.getConfig().getDouble("fireball.knockback.radius-force", 1.5D) * -1.0D;
+        double fireballVertical = this.plugin.getConfig().getDouble("fireball.knockback.height-force", 0.9D);
+        double damage = this.plugin.getConfig().getDouble("fireball.knockback.damage", 2.0D);
 
-        Vector center = loc.toVector();
+        Vector vector = location.toVector();
+        Collection<Entity> nearbyEntities = location.getWorld().getNearbyEntities(location, fireballExplosionSize, fireballExplosionSize, fireballExplosionSize);
         
-        for (Entity entity : loc.getWorld().getNearbyEntities(loc, radius, radius, radius)) {
+        for (Entity entity : nearbyEntities) {
             if (!(entity instanceof Player)) continue;
-            if (entity.equals(fireball.getShooter())) continue; // Don't hit self
-
-            Player victim = (Player) entity;
-            Vector victimVec = victim.getLocation().toVector();
+            Player player = (Player) entity;
+            Vector playerVector = player.getLocation().toVector();
+            Vector normalizedVector = vector.clone().subtract(playerVector).normalize();
+            Vector horizontalVector = normalizedVector.clone().multiply(fireballHorizontal);
             
-            // Calculate direction from explosion to player
-            Vector diff = victimVec.subtract(center).normalize();
-            
-            // Apply Horizontal Knockback
-            Vector knockback = diff.clone().multiply(hForce);
-            
-            // Apply Vertical Knockback
-            double yDiff = diff.getY();
-            double verticalBoost = vForce;
-            
-            // Adjust vertical force based on relative height to prevent "sticking" to ground
-            if (yDiff < 0) {
-                verticalBoost = vForce * 1.5;
-            } else if (yDiff < 0.5) {
-                verticalBoost = vForce * 1.2;
+            double y = normalizedVector.getY();
+            if (y < 0) y += 1.5;
+            if (y <= 0.5) {
+                y = fireballVertical * 1.5;
+            } else {
+                y = y * fireballVertical * 1.5;
             }
-            
-            knockback.setY(verticalBoost);
-            
-            victim.setVelocity(knockback);
-            
+            player.setVelocity(horizontalVector.setY(y));
             if (damage > 0) {
-                victim.damage(damage, fireball.getShooter() instanceof Player ? (Player) fireball.getShooter() : null);
+                player.damage(damage);
             }
         }
     }
 
+    // ============================================================
+    //  CANCEL DIRECT HIT DAMAGE (Vanilla)
+    // ============================================================
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onDirectHit(EntityDamageByEntityEvent event) {
-        // Cancel vanilla direct hit damage because we handle it in ProjectileHitEvent
-        if (event.getDamager() instanceof Fireball && event.getEntity() instanceof Player) {
-            event.setCancelled(true);
+    public void fireballDirectHit(EntityDamageByEntityEvent e) {
+        if (e.getDamager() instanceof Fireball && e.getEntity() instanceof Player) {
+            e.setCancelled(true);
         }
     }
 
+    // ============================================================
+    //  FIRE SETTINGS
+    // ============================================================
     @EventHandler
-    public void onExplosionPrime(ExplosionPrimeEvent event) {
-        if (event.getEntity() instanceof Fireball) {
-            event.setFire(false); // Disable fire spread
-        }
+    public void fireballPrime(ExplosionPrimeEvent e) {
+        if (!(e.getEntity() instanceof Fireball)) return;
+        e.setFire(false);
     }
 
+    // ============================================================
+    //  NO TERRAIN DAMAGE
+    // ============================================================
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onExplode(EntityExplodeEvent event) {
-        if (!(event.getEntity() instanceof Fireball)) return;
-        
-        // If break-blocks is false, clear the block list to prevent griefing
-        if (!plugin.getConfig().getBoolean("fireball.break-blocks", false)) {
-            event.blockList().clear();
+    public void fireballExplode(EntityExplodeEvent e) {
+        if (!(e.getEntity() instanceof Fireball)) return;
+        if (!this.plugin.getConfig().getBoolean("fireball.break-blocks", false)) {
+            e.blockList().clear();
         }
     }
 }
