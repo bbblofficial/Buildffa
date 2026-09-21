@@ -109,7 +109,7 @@ public class Void implements Listener {
         };
 
         if (this.teleportDelay > 0) {
-            Bukkit.getScheduler().scheduleDelayedTask(this.plugin, teleportTask, (int) this.teleportDelay);
+            Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, teleportTask, this.teleportDelay);
         } else {
             teleportTask.run();
         }
