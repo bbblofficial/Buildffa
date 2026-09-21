@@ -33,11 +33,13 @@ public class Void implements Listener {
     private final Set<UUID> teleportingPlayers = new HashSet<UUID>();
     private final Set<UUID> dyingPlayers = new HashSet<UUID>();
 
+    // Track who last hit who, so we can credit the void kill
     private final Map<UUID, UUID> lastDamager = new HashMap<UUID, UUID>();
     private final Map<UUID, Long> lastDamageTime = new HashMap<UUID, Long>();
 
-    private static final long DAMAGE_WINDOW_MS = 10000L;
+    private static final long DAMAGE_WINDOW_MS = 10000L; // 10 seconds
 
+    // Flag shared with Kill.java to prevent double death count
     private static final Set<UUID> voidDeaths = new HashSet<UUID>();
 
     public Void(JavaPlugin plugin) {
@@ -132,6 +134,7 @@ public class Void implements Listener {
             }
         }
 
+        // Save stats
         try {
             BuildFFA bffa = (BuildFFA) this.plugin;
             DatabaseManager db = bffa.getDatabaseManager();
@@ -158,6 +161,7 @@ public class Void implements Listener {
             this.plugin.getLogger().warning("Void death save failed: " + t.getMessage());
         }
 
+        // Broadcast message
         String finalMessage;
         if (killer != null) {
             finalMessage = this.voidKilledByMessage
@@ -187,24 +191,47 @@ public class Void implements Listener {
                     return;
                 }
 
+                // ==== Reset like a real death ====
+                // 1) Clear inventory + armor
+                player.getInventory().clear();
+                player.getInventory().setArmorContents(null);
+                player.setItemOnCursor(null);
+
+                // 2) Reset health / food / effects
                 player.setHealth(player.getMaxHealth());
                 player.setFoodLevel(20);
                 player.setSaturation(20.0F);
                 player.setExhaustion(0.0F);
                 player.setFireTicks(0);
                 player.setFallDistance(0.0F);
+                player.setLevel(0);
+                player.setExp(0.0F);
 
+                // 3) Give the default kit back
+                try {
+                    BuildFFA bffa = (BuildFFA) plugin;
+                    if (bffa.getEquip() != null) {
+                        bffa.getEquip().giveDiamondArmor(player);
+                    }
+                } catch (Throwable t) {
+                    plugin.getLogger().warning("Void kit restore failed: " + t.getMessage());
+                }
+                // =================================
+
+                // 4) Teleport to spawn
                 if (spawn != null) {
                     player.teleport(spawn);
                 } else {
                     player.teleport(player.getWorld().getSpawnLocation());
                 }
 
+                // 5) Private message
                 if (teleportMessage != null && !teleportMessage.isEmpty()) {
                     String msg = teleportMessage.replace("%player%", player.getName());
                     player.sendMessage(ChatColor.translateAlternateColorCodes('&', msg));
                 }
 
+                // 6) Release the teleport lock after 1 second
                 Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                     @Override
                     public void run() {
