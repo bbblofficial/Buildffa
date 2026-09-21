@@ -318,6 +318,21 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
         setIfMissing(cfg, "leaderboard-refresh.interval-seconds", Integer.valueOf(600));
 
+        // ==================== Killstreak Rewards ====================
+        setIfMissing(cfg, "killstreak-rewards.enabled", Boolean.valueOf(true));
+        setIfMissing(cfg, "killstreak-rewards.repeat-from-12", Boolean.valueOf(true));
+
+        setIfMissing(cfg, "killstreak-rewards.rewards.4",  "gapple:1 fb:1 speed:1");
+        setIfMissing(cfg, "killstreak-rewards.rewards.5",  "gapple:2 speed:2 jump:1");
+        setIfMissing(cfg, "killstreak-rewards.rewards.6",  "gapple:2 fb:1 jump:1 speed:1");
+        setIfMissing(cfg, "killstreak-rewards.rewards.7",  "perl:1 gapple:1 speed:2");
+        setIfMissing(cfg, "killstreak-rewards.rewards.8",  "gapple:1 fb:1");
+        setIfMissing(cfg, "killstreak-rewards.rewards.9",  "gapple:1 perl:1");
+        setIfMissing(cfg, "killstreak-rewards.rewards.10", "gapple:2 fb:1 feather:1 perl:1 speed:2 jump:3 jump:2");
+        setIfMissing(cfg, "killstreak-rewards.rewards.11", "feather:1 speed:2 jump:5 perl:1");
+        setIfMissing(cfg, "killstreak-rewards.rewards.12", "feather:1 jump:5 perl:1 fb:1");
+        // ===========================================================
+
         // ==================== Feather Jump ====================
         setIfMissing(cfg, "feather-jump.boost", Double.valueOf(1.0D));
         setIfMissing(cfg, "feather-jump.message", "&b✦ &fDouble Jump!");
@@ -345,23 +360,19 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     }
 
     // ============================================================
-    //  SCOREBOARD AUTO-MERGE — keeps user-customized lines,
-    //  but adds any new default keys
+    //  SCOREBOARD AUTO-MERGE
     // ============================================================
     private void autoMergeScoreboard() {
         File sbFile = new File(getDataFolder(), "scoreboard.yml");
         boolean isNew = !sbFile.exists();
 
-        // First time: extract from JAR
         if (isNew) {
             saveResource("scoreboard.yml", false);
             return;
         }
 
-        // Load existing user file
         FileConfiguration userCfg = YamlConfiguration.loadConfiguration(sbFile);
 
-        // Load defaults from JAR
         InputStream defStream = this.getResource("scoreboard.yml");
         if (defStream == null) return;
 
@@ -370,7 +381,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
         boolean changed = false;
 
-        // Merge top-level scalar keys (only if missing)
         for (String key : defaults.getKeys(false)) {
             if (!userCfg.contains(key)) {
                 userCfg.set(key, defaults.get(key));
@@ -378,7 +388,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
             }
         }
 
-        // Merge nested title
         if (defaults.contains("title")) {
             for (String sub : defaults.getConfigurationSection("title").getKeys(true)) {
                 String path = "title." + sub;
@@ -389,7 +398,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
             }
         }
 
-        // Merge per-world section (only if user hasn't enabled it)
         if (!userCfg.contains("per-world")) {
             userCfg.set("per-world", defaults.get("per-world"));
             changed = true;
