@@ -144,7 +144,7 @@ connection-check:
 #    gapple   = Golden Apple
 #    fb       = Fireball (Fire Charge) — right-click to shoot
 #    perl     = Ender Pearl
-#    feather  = Feather (double-jump, press SPACE in air)
+#    feather  = Feather (double-jump, right-click in air)
 #    speed:N  = Potion of Swiftness (N = level 1-2)
 #    jump:N   = Potion of Leaping (N = level 1-5)
 # ----------------------------------------------------------
@@ -168,16 +168,24 @@ killstreak-rewards:
 
 # ----------------------------------------------------------
 #  Feather Jump (Double Jump)
-#  Press SPACE while in the air to double-jump (requires a
-#  Feather in the inventory). The feather is consumed.
+#  Right-click a Feather while in the air to double-jump.
+#  The feather is consumed.
 #  3-second cooldown per player.
 # ----------------------------------------------------------
 feather-jump:
-  # Upward velocity applied on jump
-  # 1.0 = strong (default)
-  # 1.5 = very strong
-  # 2.0 = extreme
-  boost: 1.0
+  # Upward velocity (Y axis)
+  # 0.5 = very soft
+  # 0.7 = soft
+  # 0.9 = normal (recommended)
+  # 1.2 = strong
+  # 1.5 = extreme
+  boost: 0.9
+
+  # Forward velocity (in the direction the player is looking)
+  # 0.0 = no forward push (straight up)
+  # 0.2 = small push
+  # 0.4 = noticeable push
+  forward-boost: 0.0
 
   # Message shown to the player (private)
   # Leave empty ('') to disable
@@ -188,34 +196,45 @@ feather-jump:
 #  Right-click a Fire Charge to shoot a real fireball.
 #  Works in Survival mode (vanilla only works in Creative).
 #
-#  Custom explosion, knockback, and damage values.
+#  Algorithm inspired by BedWars Fireball knockback system.
 # ----------------------------------------------------------
 fireball:
   # Message shown to the shooter (private)
   # Leave empty ('') to disable
   message: ''
 
-  # Explosion radius (in blocks)
-  # 1.0 = small, 3.0 = normal, 5.0 = huge
-  explosion-size: 3.0
+  # Speed of the fireball
+  # 1.0 = slow, 2.0 = fast (recommended), 3.0 = very fast
+  speed: 2.0
 
-  # Should the explosion set blocks on fire?
-  # false = no fire (recommended)
-  make-fire: false
+  # Explosion size (blocks)
+  yield: 1.0
 
-  # Horizontal knockback multiplier
-  # Higher = further push
-  knockback-horizontal: 1.2
+  # Throw effects — applied to the shooter when they fire
+  throw-effects:
+    enabled: false
+    effects:
+      - 'SPEED:60:1'
+      # - 'JUMP:60:1'
 
-  # Vertical knockback multiplier
-  # Higher = more upward push
-  knockback-vertical: 0.9
+  # Knockback + damage settings
+  knockback:
+    enabled: true
 
-  # Damage dealt to the shooter if they're in range
-  damage-self: 3.0
+    # Radius (in blocks) where players get knocked
+    radius: 4.0
 
-  # Damage dealt to other players in range
-  damage-enemy: 4.0
+    # Vertical knockback force
+    # Higher = more upward push
+    height-force: 1.5
+
+    # Horizontal knockback force
+    # Higher = further push away
+    radius-force: 2.0
+
+    # Extra damage on top of the distance-based damage
+    # 1.0 = half a heart (in 1.8.8, 2.0 = 1 full heart)
+    damage: 1.0
 
 # ----------------------------------------------------------
 #  Messages

@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.bukkit.ChatColor;
+import org.bukkit.Effect;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -21,6 +23,7 @@ public class FeatherJump implements Listener {
 
     private final JavaPlugin plugin;
 
+    // 3-second cooldown
     private final Map<UUID, Long> cooldown = new HashMap<UUID, Long>();
     private static final long COOLDOWN_MS = 3000L;
 
@@ -29,10 +32,9 @@ public class FeatherJump implements Listener {
         plugin.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
     }
 
-    // ⚠️ ignoreCancelled = false تا همیشه صدا زده شه
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = false)
     public void onRightClick(PlayerInteractEvent event) {
-        // فقط راست‌کلیک
+        // Only right-click
         if (event.getAction() != Action.RIGHT_CLICK_AIR
                 && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
@@ -40,35 +42,23 @@ public class FeatherJump implements Listener {
 
         Player player = event.getPlayer();
         ItemStack item = player.getItemInHand();
-
-        // چک: Feather توی دست
         if (item == null || item.getType() != Material.FEATHER) return;
 
-        // ============ DEBUG ============
-        plugin.getLogger().info("[FeatherJump] " + player.getName()
-                + " | onGround=" + player.isOnGround()
-                + " | item=FEATHER x" + item.getAmount());
-        // ===============================
-
-        // چک: توی هوا باشه
-        if (player.isOnGround()) {
-            plugin.getLogger().info("[FeatherJump] " + player.getName() + " rejected: on ground");
-            return;
-        }
+        // Must be in the air
+        if (player.isOnGround()) return;
 
         // Cooldown
         long now = System.currentTimeMillis();
         if (cooldown.containsKey(player.getUniqueId())) {
             long last = cooldown.get(player.getUniqueId()).longValue();
-            if (now - last < COOLDOWN_MS) {
-                long remaining = (COOLDOWN_MS - (now - last)) / 1000;
-                player.sendMessage(ChatColor.RED + "Double Jump cooldown: " + remaining + "s");
-                return;
-            }
+            if (now - last < COOLDOWN_MS) return;
         }
         cooldown.put(player.getUniqueId(), Long.valueOf(now));
 
-        // مصرف 1 پر
+        // Cancel vanilla interaction
+        event.setCancelled(true);
+
+        // Consume 1 feather
         if (item.getAmount() > 1) {
             item.setAmount(item.getAmount() - 1);
         } else {
@@ -76,22 +66,42 @@ public class FeatherJump implements Listener {
         }
         player.updateInventory();
 
-        // Boost
-        double boost = this.plugin.getConfig().getDouble("feather-jump.boost", 1.0D);
-        Vector v = player.getVelocity();
-        v.setY(boost);
-        player.setVelocity(v);
-        player.setFallDistance(0.0F);
+        // ============================================================
+        //  SMOOTH DOUBLE JUMP (like Fireball, no momentum reset)
+        // ============================================================
+        double boost = this.plugin.getConfig().getDouble("feather-jump.boost", 0.9D);
+        double forwardBoost = this.plugin.getConfig().getDouble("feather-jump.forward-boost", 0.0D);
 
+        Vector velocity = player.getVelocity();
+
+        // Only set Y — keep horizontal momentum
+        velocity.setY(boost);
+
+        // Optional forward push
+        if (forwardBoost > 0.0D) {
+            Vector direction = player.getLocation().getDirection().setY(0).normalize();
+            velocity.add(direction.multiply(forwardBoost));
+        }
+
+        player.setVelocity(velocity);
+        // ============================================================
+
+        // Visual effects (subtle, like the smooth fireball)
+        Location loc = player.getLocation();
         try {
-            player.playSound(player.getLocation(), Sound.BAT_TAKEOFF, 1.0F, 1.2F);
+            player.getWorld().playEffect(loc, Effect.CLOUD, 1);
+            player.getWorld().playEffect(loc, Effect.SMOKE, 4);
         } catch (Throwable ignored) {}
 
+        // Sound — soft bat takeoff
+        try {
+            player.playSound(loc, Sound.BAT_TAKEOFF, 0.7F, 1.5F);
+        } catch (Throwable ignored) {}
+
+        // Message
         String msg = this.plugin.getConfig().getString("feather-jump.message", "&b✦ &fDouble Jump!");
         if (msg != null && !msg.isEmpty()) {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', msg));
         }
-
-        plugin.getLogger().info("[FeatherJump] " + player.getName() + " DOUBLE JUMPED!");
     }
 }
