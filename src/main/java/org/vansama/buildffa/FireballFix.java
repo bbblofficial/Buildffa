@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -29,15 +30,16 @@ public class FireballFix implements Listener {
 
     private final JavaPlugin plugin;
     private final Map<UUID, Long> cooldown = new HashMap<UUID, Long>();
-    private static final long COOLDOWN_MS = 1000L;
+    private static final long COOLDOWN_MS = 500L;
 
-    // Cached config values (reloaded on every fireball for safety)
+    // Cached config
     private double explosionSize;
     private boolean makeFire;
     private double knockbackHorizontal;
     private double knockbackVertical;
     private double damageSelf;
     private double damageEnemy;
+    private double speed;
 
     public FireballFix(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -46,16 +48,17 @@ public class FireballFix implements Listener {
     }
 
     public void loadConfig() {
-        this.explosionSize        = plugin.getConfig().getDouble("fireball.explosion-size", 3.0D);
-        this.makeFire             = plugin.getConfig().getBoolean("fireball.make-fire", false);
-        this.knockbackHorizontal  = plugin.getConfig().getDouble("fireball.knockback-horizontal", 1.2D) * -1;
-        this.knockbackVertical    = plugin.getConfig().getDouble("fireball.knockback-vertical", 0.9D);
-        this.damageSelf           = plugin.getConfig().getDouble("fireball.damage-self", 3.0D);
-        this.damageEnemy          = plugin.getConfig().getDouble("fireball.damage-enemy", 4.0D);
+        this.explosionSize       = plugin.getConfig().getDouble("fireball.explosion-size", 2.0D);
+        this.makeFire            = plugin.getConfig().getBoolean("fireball.make-fire", false);
+        this.knockbackHorizontal = plugin.getConfig().getDouble("fireball.knockback-horizontal", 1.2D) * -1;
+        this.knockbackVertical   = plugin.getConfig().getDouble("fireball.knockback-vertical", 0.9D);
+        this.damageSelf          = plugin.getConfig().getDouble("fireball.damage-self", 1.0D);
+        this.damageEnemy         = plugin.getConfig().getDouble("fireball.damage-enemy", 1.0D);
+        this.speed               = plugin.getConfig().getDouble("fireball.speed", 2.0D);
     }
 
     // ============================================================
-    //  RIGHT-CLICK FIRE CHARGE → SHOOT FIREBALL
+    //  RIGHT-CLICK FIRE CHARGE → SHOOT FAST FIREBALL
     // ============================================================
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onRightClick(PlayerInteractEvent event) {
@@ -90,6 +93,12 @@ public class FireballFix implements Listener {
 
         // Launch fireball
         Fireball fireball = player.launchProjectile(Fireball.class);
+
+        // Give it high velocity so it flies fast
+        Vector direction = player.getLocation().getDirection().multiply(speed);
+        fireball.setDirection(direction);
+        fireball.setVelocity(direction);
+
         fireball.setIsIncendiary(makeFire);
         fireball.setYield((float) explosionSize);
 
@@ -99,12 +108,12 @@ public class FireballFix implements Listener {
 
         String msg = this.plugin.getConfig().getString("fireball.message", "");
         if (msg != null && !msg.isEmpty()) {
-            player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', msg));
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', msg));
         }
     }
 
     // ============================================================
-    //  FIREBALL HIT → APPLY CUSTOM KNOCKBACK + DAMAGE
+    //  FIREBALL HIT → CUSTOM KNOCKBACK + DAMAGE
     // ============================================================
     @EventHandler
     public void fireballHit(ProjectileHitEvent event) {
@@ -113,7 +122,6 @@ public class FireballFix implements Listener {
         Location location = event.getEntity().getLocation();
         ProjectileSource source = ((Fireball) event.getEntity()).getShooter();
         if (!(source instanceof Player)) return;
-        Player shooter = (Player) source;
 
         Vector vector = location.toVector();
         World world = location.getWorld();
@@ -142,7 +150,7 @@ public class FireballFix implements Listener {
             target.setVelocity(horizontal.setY(y));
 
             // Damage
-            if (target.equals(shooter)) {
+            if (target.equals(source)) {
                 if (damageSelf > 0) target.damage(damageSelf);
             } else {
                 if (damageEnemy > 0) target.damage(damageEnemy);
@@ -151,7 +159,7 @@ public class FireballFix implements Listener {
     }
 
     // ============================================================
-    //  PREVENT VANILLA FIREBALL DAMAGE (we handle it ourselves)
+    //  PREVENT VANILLA DIRECT DAMAGE
     // ============================================================
     @EventHandler
     public void fireballDirectHit(EntityDamageByEntityEvent event) {
