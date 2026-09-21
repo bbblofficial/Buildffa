@@ -8,6 +8,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -30,14 +31,9 @@ public class Blocks implements Listener {
     Bukkit.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
   }
 
-  /**
-   * Loads block timings from config.yml.
-   * If the keys are missing they are added with default values.
-   */
   public void loadConfiguration() {
     FileConfiguration config = this.plugin.getConfig();
 
-    // Auto-add keys if missing (never overwrite existing values)
     if (!config.contains("blocks.natural-restore-seconds")) {
       config.set("blocks.natural-restore-seconds", Integer.valueOf(9));
       this.plugin.saveConfig();
@@ -50,7 +46,6 @@ public class Blocks implements Listener {
     int naturalSeconds = config.getInt("blocks.natural-restore-seconds", 9);
     int placedSeconds = config.getInt("blocks.placed-decay-seconds", 5);
 
-    // Sanity limits (1 second → 10 minutes)
     if (naturalSeconds < 1) naturalSeconds = 1;
     if (naturalSeconds > 600) naturalSeconds = 600;
     if (placedSeconds < 1) placedSeconds = 1;
@@ -67,15 +62,35 @@ public class Blocks implements Listener {
     loadConfiguration();
   }
 
+  /**
+   * Returns true if this player is currently in Build Mode.
+   * Build Mode players get their placed blocks SAVED (no decay),
+   * and their broken blocks are NOT restored.
+   */
+  private boolean isBuildMode(Player player) {
+    return BuildModeManager.isInBuildMode(player);
+  }
+
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onBlockPlace(BlockPlaceEvent event) {
-    if (event.getPlayer().getGameMode() == GameMode.CREATIVE) return;
+    Player player = event.getPlayer();
+    if (player.getGameMode() == GameMode.CREATIVE) return;
 
     final Block block = event.getBlockPlaced();
     if (block.getType() == Material.AIR) return;
 
     final Location loc = block.getLocation().clone();
     final Material originalType = block.getType();
+
+    // ============================================================
+    //  BUILD MODE → place block permanently (never decays)
+    // ============================================================
+    if (isBuildMode(player)) {
+      // Do NOT track it in placedBlocks, so it will never decay.
+      // The block just stays there forever until someone breaks it.
+      return;
+    }
+    // ============================================================
 
     this.placedBlocks.put(loc, Long.valueOf(System.currentTimeMillis()));
 
@@ -95,20 +110,31 @@ public class Blocks implements Listener {
 
   @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
   public void onBlockBreak(BlockBreakEvent event) {
-    if (event.getPlayer().getGameMode() == GameMode.CREATIVE) return;
+    Player player = event.getPlayer();
+    if (player.getGameMode() == GameMode.CREATIVE) return;
 
     final Block block = event.getBlock();
     final Location loc = block.getLocation().clone();
     final Material blockType = block.getType();
     final byte blockData = block.getData();
 
-    // Cancel so no drops are created
-    event.setCancelled(true);
+    // ============================================================
+    //  BUILD MODE → break block permanently (no restore)
+    // ============================================================
+    if (isBuildMode(player)) {
+      // Allow the break to proceed normally — do NOT cancel
+      // and do NOT schedule a restore.
+      // Also remove from placedBlocks if it was there.
+      this.placedBlocks.remove(loc);
+      return;
+    }
+    // ============================================================
 
-    // Manually remove the block
+    // Normal behavior: cancel (no drops) and restore later
+    event.setCancelled(true);
     block.setType(Material.AIR);
 
-    // If it was a player-placed block, just remove from tracking — no restore
+    // If it was a player-placed block, just remove — no restore
     if (this.placedBlocks.containsKey(loc)) {
       this.placedBlocks.remove(loc);
       return;
@@ -131,7 +157,6 @@ public class Blocks implements Listener {
             b.setData(blockData);
           }
         } else {
-          // Block was replaced — retry every 10 ticks
           Bukkit.getScheduler().scheduleSyncDelayedTask((Plugin) Blocks.this.plugin, this, 10L);
         }
       }

@@ -13,6 +13,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
 
 public class Kill implements Listener {
 
@@ -79,9 +80,9 @@ public class Kill implements Listener {
             this.databaseManager.savePlayer(killerData);
         }
 
-        killer.setHealth(killer.getMaxHealth());
-        killer.setFoodLevel(20);
-        killer.setSaturation(20.0F);
+        // ==================== FULL HEAL KILLER ====================
+        fullHeal(killer);
+        // ==========================================================
 
         killer.getInventory().addItem(new ItemStack[] { new ItemStack(Material.GOLDEN_APPLE, 1) });
 
@@ -93,6 +94,34 @@ public class Kill implements Listener {
                     .replaceAll("%killcount%", String.valueOf(killCount));
             Bukkit.broadcastMessage(broadcastMessage);
         }
+    }
+
+    /**
+     * Fully heals the killer — health, food, saturation, exhaustion,
+     * fire, fall distance, and removes all potion effects.
+     */
+    private void fullHeal(Player player) {
+        // Health
+        player.setHealth(player.getMaxHealth());
+
+        // Food bar
+        player.setFoodLevel(20);
+        player.setSaturation(20.0F);
+        player.setExhaustion(0.0F);
+
+        // Remove fire / fall damage
+        player.setFireTicks(0);
+        player.setFallDistance(0.0F);
+
+        // Clear all potion effects (bad or good)
+        for (PotionEffect effect : player.getActivePotionEffects()) {
+            player.removePotionEffect(effect.getType());
+        }
+
+        // Reset XP bar state to keep it clean
+        // (comment out if you want to keep XP)
+        // player.setLevel(0);
+        // player.setExp(0.0F);
     }
 
     private String colorize(String message) {
