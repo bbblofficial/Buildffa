@@ -4,13 +4,18 @@
 #  Theme: Aqua / White / Dark-Aqua (No Bold)
 #  Created by Muvixo | Author: VanSaMa | Made by PixelValley
 # ==========================================================
+#
+#  This file is AUTO-MERGED on plugin update.
+#  New keys are added automatically.
+#  Your existing lines are NEVER overwritten.
+# ==========================================================
 
 enabled: true
 update-interval: 10
 join-delay: 5
 
 # ----------------------------------------------------------
-#  Title Animation (Aqua & White, no bold)
+#  Title Animation
 # ----------------------------------------------------------
 title:
   animated: true
@@ -27,12 +32,6 @@ title:
 
 # ----------------------------------------------------------
 #  Scoreboard Lines
-#  Theme:
-#    &b  = Aqua (main accent)
-#    &f  = White (values)
-#    &3  = Dark Aqua (dividers)
-#    &7  = Gray (subtle)
-#    &8  = Dark Gray (separator)
 # ----------------------------------------------------------
 lines:
   - '&3&m----------------'
@@ -41,6 +40,9 @@ lines:
   - '&bDeaths &8» &f%deaths%'
   - '&bKDR &8» &f%kdr%'
   - '&bStreak &8» &f%killstreak%'
+  - '&bBest KS &8» &f%best_killstreak%'
+  - '&3&m----------------'
+  - '&bTop KS &8» &f%buildffa_top_name_killstreak_1% &7(&b%buildffa_top_value_killstreak_1%&7)'
   - '&3&m----------------'
   - '&bOnline &8» &f%online%&7/&f%max_online%'
   - '&bPing &8» &f%ping%ms'

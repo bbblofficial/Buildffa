@@ -2,6 +2,9 @@ package org.vansama.buildffa;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -52,7 +55,11 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         createConfigIfMissing();
         saveDefaultConfig();
         reloadConfig();
-        saveResource("scoreboard.yml", false);
+        autoMergeScoreboard();
+
+        // Combat Mode timeout
+        int combatTimeout = this.getConfig().getInt("combat.timeout-seconds", 15);
+        CombatManager.setCombatTimeoutSeconds(combatTimeout);
 
         this.databaseManager = new DatabaseManager(this);
         this.blocks = new Blocks(this);
@@ -108,6 +115,15 @@ public final class BuildFFA extends JavaPlugin implements Listener {
                 }
             }
         }.runTaskTimer(this, 20L, 20L);
+        // ==============================================================
+
+        // ==================== Combat cleanup ticker ====================
+        Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) this, new Runnable() {
+            @Override
+            public void run() {
+                CombatManager.cleanupExpired();
+            }
+        }, 100L, 100L);
         // ==============================================================
 
         getLogger().info("=================================================");
@@ -195,6 +211,9 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         return true;
     }
 
+    // ============================================================
+    //  CONFIG AUTO-MERGE — never overwrites existing values
+    // ============================================================
     private void createConfigIfMissing() {
         File configFile = new File(getDataFolder(), "config.yml");
         boolean isNew = !configFile.exists();
@@ -210,13 +229,24 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
         FileConfiguration cfg = YamlConfiguration.loadConfiguration(configFile);
 
+        // ---- Load defaults from inside the JAR (src/main/resources/config.yml) ----
+        InputStream defStream = this.getResource("config.yml");
+        if (defStream != null) {
+            YamlConfiguration defaults = YamlConfiguration.loadConfiguration(
+                    new InputStreamReader(defStream, StandardCharsets.UTF_8));
+            cfg.setDefaults(defaults);
+        }
+
+        // ---- Hardcoded fallbacks (in case JAR defaults are missing) ----
         setIfMissing(cfg, "kill-height", Double.valueOf(0.0D));
         setIfMissing(cfg, "high-limit", Double.valueOf(100.0D));
 
-        // ==================== Block timings (new) ====================
         setIfMissing(cfg, "blocks.natural-restore-seconds", Integer.valueOf(9));
         setIfMissing(cfg, "blocks.placed-decay-seconds", Integer.valueOf(5));
-        // =============================================================
+
+        setIfMissing(cfg, "combat.timeout-seconds", Integer.valueOf(15));
+        setIfMissing(cfg, "combat.opponent-left-message",
+                "&a%player% &7left the server during combat. &aYou were healed.");
 
         setIfMissing(cfg, "void.teleport-instead-of-kill", Boolean.valueOf(true));
         setIfMissing(cfg, "void.teleport-delay", Long.valueOf(0L));
@@ -308,6 +338,67 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         }
     }
 
+    // ============================================================
+    //  SCOREBOARD AUTO-MERGE — keeps user-customized lines,
+    //  but adds any new default keys
+    // ============================================================
+    private void autoMergeScoreboard() {
+        File sbFile = new File(getDataFolder(), "scoreboard.yml");
+        boolean isNew = !sbFile.exists();
+
+        // First time: extract from JAR
+        if (isNew) {
+            saveResource("scoreboard.yml", false);
+            return;
+        }
+
+        // Load existing user file
+        FileConfiguration userCfg = YamlConfiguration.loadConfiguration(sbFile);
+
+        // Load defaults from JAR
+        InputStream defStream = this.getResource("scoreboard.yml");
+        if (defStream == null) return;
+
+        YamlConfiguration defaults = YamlConfiguration.loadConfiguration(
+                new InputStreamReader(defStream, StandardCharsets.UTF_8));
+
+        boolean changed = false;
+
+        // Merge top-level scalar keys (only if missing)
+        for (String key : defaults.getKeys(false)) {
+            if (!userCfg.contains(key)) {
+                userCfg.set(key, defaults.get(key));
+                changed = true;
+            }
+        }
+
+        // Merge nested title
+        if (defaults.contains("title")) {
+            for (String sub : defaults.getConfigurationSection("title").getKeys(true)) {
+                String path = "title." + sub;
+                if (!userCfg.contains(path) && !defaults.isConfigurationSection(path)) {
+                    userCfg.set(path, defaults.get(path));
+                    changed = true;
+                }
+            }
+        }
+
+        // Merge per-world section (only if user hasn't enabled it)
+        if (!userCfg.contains("per-world")) {
+            userCfg.set("per-world", defaults.get("per-world"));
+            changed = true;
+        }
+
+        if (changed) {
+            try {
+                userCfg.save(sbFile);
+                getLogger().info("Scoreboard.yml merged (existing lines preserved).");
+            } catch (IOException e) {
+                getLogger().warning("Could not merge scoreboard.yml: " + e.getMessage());
+            }
+        }
+    }
+
     @Override
     public void onDisable() {
         if (this.databaseManager != null) {
@@ -320,6 +411,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
             this.scoreboardManager.shutdown();
         }
         BuildModeManager.clearAll();
+        CombatManager.clearAll();
         getLogger().info("BuildFFA disabled.");
     }
 

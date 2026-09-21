@@ -13,60 +13,53 @@
 
 # ----------------------------------------------------------
 #  Void Kill Height
-#  Players who fall below this Y level will die OR teleport.
-#  Set with /buildffa setvoid [y]
 # ----------------------------------------------------------
 kill-height: 64.0
 
 # ----------------------------------------------------------
 #  High Build Limit
-#  Players cannot place/break blocks above this Y level.
-#  Set with /buildffa sethighlimit [y]
 # ----------------------------------------------------------
 high-limit: 100.0
 
 # ----------------------------------------------------------
-#  Block Timings
-#  How long blocks take to restore / disappear.
-#  All values are in SECONDS.
+#  Block Timings (seconds)
 # ----------------------------------------------------------
 blocks:
-  # Natural blocks (stone, dirt, wood…) broken by players
-  # will reappear after this many seconds.
   natural-restore-seconds: 9
-
-  # Player-placed blocks disappear after this many seconds.
   placed-decay-seconds: 5
+
+# ----------------------------------------------------------
+#  Combat Mode
+#  When two players hit each other, they enter combat.
+#  If one leaves during combat, the other is healed.
+# ----------------------------------------------------------
+combat:
+  # Seconds after the last hit until combat ends
+  timeout-seconds: 15
+
+  # Message shown to the opponent who stayed (private)
+  # %player% = the player who left
+  opponent-left-message: '&a%player% &7left the server during combat. &aYou were healed.'
 
 # ----------------------------------------------------------
 #  Void Behaviour
 # ----------------------------------------------------------
 void:
-  # If true  -> teleport to spawn + full heal, BUT death is
-  #             still registered in stats (kills/deaths/kdr).
-  # If false -> kill the player normally (death also counted).
   teleport-instead-of-kill: true
-
-  # Delay before teleporting (in ticks, 20 ticks = 1 sec)
   teleport-delay: 0
 
   # Private message shown to the player who fell.
-  # Leave empty ('') to disable the private message.
-  # %player% = player name
+  # Leave empty ('') to disable.
   teleport-message: ''
 
-  # Broadcast message when NOBODY is credited
-  # %player% = player name
+  # Broadcast when nobody is credited
   death-message: '&c%player% &7fell into the void'
 
-  # Broadcast message when someone knocked the player in
-  # (they were hit in the last 10 seconds)
-  # %player% = victim name
-  # %killer% = attacker who last hit them
+  # Broadcast when someone knocked the player in
   killed-by-message: '&c%player% &7was knocked into the void by &c%killer%'
 
 # ----------------------------------------------------------
-#  YPvP (Y-Level PvP Restriction)
+#  YPvP
 # ----------------------------------------------------------
 ypvp:
   enabled: true
@@ -97,9 +90,6 @@ connection-check:
 
 # ----------------------------------------------------------
 #  Messages
-#  Normal PvP kill message
-#  %killer% = killer name (GREEN)
-#  %loser%  = victim name (RED)
 # ----------------------------------------------------------
 kill: '&a%killer% &7killed &c%loser%'
 
@@ -133,7 +123,7 @@ messages:
   no-permission: '&cYou do not have permission to do this.'
 
 # ----------------------------------------------------------
-#  Kill Screen (Title/Subtitle on kill)
+#  Kill Screen
 # ----------------------------------------------------------
 kill-screen:
   enable-title: true
@@ -156,7 +146,6 @@ sounds:
 
 # ----------------------------------------------------------
 #  Spawn
-#  Set with /buildffa setspawn
 # ----------------------------------------------------------
 spawn:
   world: world
@@ -167,7 +156,7 @@ spawn:
   pitch: -1.5645014
 
 # ----------------------------------------------------------
-#  Leaderboard Refresh (for hologram countdown)
+#  Leaderboard Refresh
 # ----------------------------------------------------------
 leaderboard-refresh:
   interval-seconds: 600
