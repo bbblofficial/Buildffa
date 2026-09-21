@@ -187,6 +187,14 @@ feather-jump:
   # 0.4 = noticeable push
   forward-boost: 0.0
 
+  # Projectile settings (used when launching as a projectile)
+  # If you want Feather to be thrown like a Snowball instead of a boost:
+  #   set boost: 0.0 and speed: 2.0
+  speed: 2.0
+  knockback-horizontal: 1.5
+  knockback-vertical: 0.9
+  damage: 2.0
+
   # Message shown to the player (private)
   # Leave empty ('') to disable
   message: '&b✦ &fDouble Jump!'

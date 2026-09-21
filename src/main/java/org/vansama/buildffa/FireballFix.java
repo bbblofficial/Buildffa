@@ -1,6 +1,5 @@
 package org.vansama.buildffa;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -20,6 +19,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -35,8 +35,6 @@ public class FireballFix implements Listener {
     private final JavaPlugin plugin;
     private final Map<UUID, Long> cooldown = new HashMap<UUID, Long>();
     private static final long COOLDOWN_MS = 500L;
-
-    private final ArrayList<Player> coolDownPlayers = new ArrayList<Player>();
 
     public FireballFix(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -92,7 +90,7 @@ public class FireballFix implements Listener {
         double yield = this.plugin.getConfig().getDouble("fireball.yield", 1.0D);
         fireball.setYield((float) yield);
 
-        // Throw effects (BedWars-style)
+        // Throw effects
         if (this.plugin.getConfig().getBoolean("fireball.throw-effects.enabled", false)) {
             List<String> effects = this.plugin.getConfig().getStringList("fireball.throw-effects.effects");
             if (effects != null) {
@@ -124,14 +122,13 @@ public class FireballFix implements Listener {
     }
 
     // ============================================================
-    //  EXPLODE → KNOCKBACK + DAMAGE (BedWars style)
+    //  EXPLODE → KNOCKBACK + DAMAGE
     // ============================================================
     @EventHandler
     public void onExplode(EntityExplodeEvent event) {
         Location l = event.getLocation();
         double radius = this.plugin.getConfig().getDouble("fireball.knockback.radius", 4.0D);
 
-        // ✅ Collection (نه List)
         Collection<Entity> nearby = l.getWorld().getNearbyEntities(l, radius, radius, radius);
 
         if (event.getEntityType() == EntityType.FIREBALL
@@ -149,53 +146,37 @@ public class FireballFix implements Listener {
     }
 
     // ============================================================
-    //  PREVENT VANILLA EXPLOSION DAMAGE
+    //  CANCEL DIRECT FIREBALL DAMAGE
     // ============================================================
     @EventHandler
-    public void fireballDirectHit(EntityDamageEvent event) {
-        if (!(event.getEntity() instanceof Player)) return;
-
-        EntityDamageEvent.DamageCause cause = event.getCause();
-        if (cause != EntityDamageEvent.DamageCause.ENTITY_EXPLOSION
-                && cause != EntityDamageEvent.DamageCause.BLOCK_EXPLOSION) return;
-
-        // Cancel vanilla — our pushAway() handles damage
-        event.setCancelled(true);
+    public void fireballDirectHit(EntityDamageByEntityEvent event) {
+        if (event.getDamager() instanceof Fireball) {
+            event.setCancelled(true);
+            return;
+        }
     }
 
     // ============================================================
-    //  PUSH + DAMAGE (BedWars algorithm)
+    //  PUSH + DAMAGE
     // ============================================================
     void pushAway(LivingEntity player, Location l, double hf, double rf, EntityExplodeEvent event) {
         Location loc = player.getLocation();
         double damage = this.plugin.getConfig().getDouble("fireball.knockback.damage", 1.0D);
 
-        double distance = (event.getYield() * 16.0F);
-        distance *= 1.0D;
-
         double hf1 = Math.max(-4.0D, Math.min(4.0D, hf));
         double rf1 = Math.max(-4.0D, Math.min(4.0D, -1.0D * rf));
 
-        // Knockback direction (away from explosion)
         player.setVelocity(l.toVector()
                 .subtract(loc.toVector())
                 .normalize()
                 .multiply(rf1)
                 .setY(hf1));
 
-        // Custom damage
-        double finalDamage = distance - loc.distance(player.getLocation()) + damage;
+        double finalDamage = damage;
         if (finalDamage < 0) finalDamage = 0;
 
-        EntityDamageEvent damageEvent = new EntityDamageEvent(
-                player,
-                EntityDamageEvent.DamageCause.BLOCK_EXPLOSION,
-                finalDamage);
-
-        Bukkit.getPluginManager().callEvent(damageEvent);
-
-        if (!damageEvent.isCancelled()) {
-            player.damage(damageEvent.getFinalDamage());
+        if (finalDamage > 0) {
+            player.damage(finalDamage);
         }
     }
 }

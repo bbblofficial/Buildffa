@@ -34,7 +34,6 @@ public class FeatherJump implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = false)
     public void onRightClick(PlayerInteractEvent event) {
-        // Only right-click
         if (event.getAction() != Action.RIGHT_CLICK_AIR
                 && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
@@ -55,7 +54,6 @@ public class FeatherJump implements Listener {
         }
         cooldown.put(player.getUniqueId(), Long.valueOf(now));
 
-        // Cancel vanilla interaction
         event.setCancelled(true);
 
         // Consume 1 feather
@@ -67,17 +65,14 @@ public class FeatherJump implements Listener {
         player.updateInventory();
 
         // ============================================================
-        //  SMOOTH DOUBLE JUMP (like Fireball, no momentum reset)
+        //  SMOOTH DOUBLE JUMP
         // ============================================================
         double boost = this.plugin.getConfig().getDouble("feather-jump.boost", 0.9D);
         double forwardBoost = this.plugin.getConfig().getDouble("feather-jump.forward-boost", 0.0D);
 
         Vector velocity = player.getVelocity();
-
-        // Only set Y — keep horizontal momentum
         velocity.setY(boost);
 
-        // Optional forward push
         if (forwardBoost > 0.0D) {
             Vector direction = player.getLocation().getDirection().setY(0).normalize();
             velocity.add(direction.multiply(forwardBoost));
@@ -86,19 +81,17 @@ public class FeatherJump implements Listener {
         player.setVelocity(velocity);
         // ============================================================
 
-        // Visual effects (subtle, like the smooth fireball)
+        // Visual effects
         Location loc = player.getLocation();
         try {
             player.getWorld().playEffect(loc, Effect.CLOUD, 1);
             player.getWorld().playEffect(loc, Effect.SMOKE, 4);
         } catch (Throwable ignored) {}
 
-        // Sound — soft bat takeoff
         try {
             player.playSound(loc, Sound.BAT_TAKEOFF, 0.7F, 1.5F);
         } catch (Throwable ignored) {}
 
-        // Message
         String msg = this.plugin.getConfig().getString("feather-jump.message", "&b✦ &fDouble Jump!");
         if (msg != null && !msg.isEmpty()) {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', msg));

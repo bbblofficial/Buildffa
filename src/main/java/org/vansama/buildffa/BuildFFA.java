@@ -82,6 +82,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(new Items(this, this.kitEditor), (Plugin) this);
         getServer().getPluginManager().registerEvents(new Fall(this), (Plugin) this);
         getServer().getPluginManager().registerEvents(new FeatherJump(this), (Plugin) this);
+        getServer().getPluginManager().registerEvents(new FeatherHit(this), (Plugin) this);
         getServer().getPluginManager().registerEvents(this.fireballFix, (Plugin) this);
         getServer().getPluginManager().registerEvents(new PotionFix(this), (Plugin) this);
         getServer().getPluginManager().registerEvents(this.killListener, (Plugin) this);
@@ -339,18 +340,27 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         // ===========================================================
 
         // ==================== Feather Jump ====================
-        setIfMissing(cfg, "feather-jump.boost", Double.valueOf(1.0D));
+        setIfMissing(cfg, "feather-jump.boost", Double.valueOf(0.9D));
+        setIfMissing(cfg, "feather-jump.forward-boost", Double.valueOf(0.0D));
+        setIfMissing(cfg, "feather-jump.speed", Double.valueOf(2.0D));
+        setIfMissing(cfg, "feather-jump.knockback-horizontal", Double.valueOf(1.5D));
+        setIfMissing(cfg, "feather-jump.knockback-vertical", Double.valueOf(0.9D));
+        setIfMissing(cfg, "feather-jump.damage", Double.valueOf(2.0D));
         setIfMissing(cfg, "feather-jump.message", "&b✦ &fDouble Jump!");
         // ======================================================
 
         // ==================== Fireball ====================
         setIfMissing(cfg, "fireball.message", "");
-        setIfMissing(cfg, "fireball.explosion-size", Double.valueOf(3.0D));
-        setIfMissing(cfg, "fireball.make-fire", Boolean.valueOf(false));
-        setIfMissing(cfg, "fireball.knockback-horizontal", Double.valueOf(1.2D));
-        setIfMissing(cfg, "fireball.knockback-vertical", Double.valueOf(0.9D));
-        setIfMissing(cfg, "fireball.damage-self", Double.valueOf(3.0D));
-        setIfMissing(cfg, "fireball.damage-enemy", Double.valueOf(4.0D));
+        setIfMissing(cfg, "fireball.speed", Double.valueOf(2.0D));
+        setIfMissing(cfg, "fireball.yield", Double.valueOf(1.0D));
+
+        setIfMissing(cfg, "fireball.throw-effects.enabled", Boolean.valueOf(false));
+
+        setIfMissing(cfg, "fireball.knockback.enabled", Boolean.valueOf(true));
+        setIfMissing(cfg, "fireball.knockback.radius", Double.valueOf(4.0D));
+        setIfMissing(cfg, "fireball.knockback.height-force", Double.valueOf(1.5D));
+        setIfMissing(cfg, "fireball.knockback.radius-force", Double.valueOf(2.0D));
+        setIfMissing(cfg, "fireball.knockback.damage", Double.valueOf(1.0D));
         // ===================================================
 
         try {
