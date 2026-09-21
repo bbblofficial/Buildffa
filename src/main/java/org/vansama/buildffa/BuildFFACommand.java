@@ -103,6 +103,14 @@ public class BuildFFACommand implements CommandExecutor {
             return handleResetStats(sender, args);
         }
 
+        if (sub.equals("forceksreward")) {
+            if (!sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))) {
+                sendNoPerm(sender);
+                return true;
+            }
+            return handleForceKsReward(sender, args);
+        }
+
         if (sub.equals("connectioncheck") || sub.equals("cc")) {
             if (!sender.hasPermission(getPerm("connectioncheck", "buildffa.connection"))) {
                 sendNoPerm(sender);
@@ -505,6 +513,189 @@ public class BuildFFACommand implements CommandExecutor {
         sender.sendMessage(colorize("&7Best Killstreak: &b" + data.getBestKillstreak()));
         sender.sendMessage(colorize("&8&m----------------------------------"));
         return true;
+    }
+
+    // ==========================================
+    // Force Killstreak Reward
+    // /buildffa forceksreward <ks>
+    // Gives the reward bundle for that killstreak level
+    // to the command sender (must be a player).
+    // ==========================================
+    private boolean handleForceKsReward(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(colorize("&cOnly players can use this command."));
+            return true;
+        }
+
+        if (args.length < 2) {
+            sender.sendMessage(colorize("&cUsage: /buildffa forceksreward <ks>"));
+            sender.sendMessage(colorize("&7Example: &e/buildffa forceksreward 10"));
+            return true;
+        }
+
+        int ks;
+        try {
+            ks = Integer.parseInt(args[1]);
+        } catch (NumberFormatException e) {
+            sender.sendMessage(colorize("&cInvalid killstreak value: &e" + args[1]));
+            return true;
+        }
+
+        if (ks < 1) {
+            sender.sendMessage(colorize("&cKillstreak must be at least 1."));
+            return true;
+        }
+
+        Player player = (Player) sender;
+
+        // Check if the reward is enabled
+        if (!this.plugin.getConfig().getBoolean("killstreak-rewards.enabled", true)) {
+            sender.sendMessage(colorize("&cKillstreak rewards are disabled in config.yml."));
+            return true;
+        }
+
+        // Resolve the level (supports repeat-from-12 wrap)
+        boolean repeatFrom12 = this.plugin.getConfig().getBoolean("killstreak-rewards.repeat-from-12", true);
+        int level = resolveRewardLevel(ks, repeatFrom12);
+
+        if (level == -1) {
+            sender.sendMessage(colorize("&cNo reward found for killstreak &e" + ks + "&c."));
+            return true;
+        }
+
+        String rewardString = this.plugin.getConfig()
+                .getString("killstreak-rewards.rewards." + level, "");
+
+        if (rewardString == null || rewardString.isEmpty()) {
+            sender.sendMessage(colorize("&cNo reward configured for killstreak &e" + level + "&c."));
+            return true;
+        }
+
+        // Give the reward
+        boolean gaveAny = giveRewardBundle(player, rewardString);
+
+        if (!gaveAny) {
+            sender.sendMessage(colorize("&cFailed to give reward for killstreak &e" + ks + "&c."));
+            return true;
+        }
+
+        sender.sendMessage(colorize("&a&l★ &aKillstreak &e" + ks + " &a— reward received!"));
+        try {
+            player.playSound(player.getLocation(), org.bukkit.Sound.LEVEL_UP, 1.0F, 1.5F);
+        } catch (Throwable ignored) {}
+
+        return true;
+    }
+
+    // ==========================================
+    // Resolve which reward level to use
+    // (handles repeat-from-12 wrapping)
+    // ==========================================
+    private int resolveRewardLevel(int streak, boolean repeatFrom12) {
+        // Exact match first
+        if (this.plugin.getConfig().contains("killstreak-rewards.rewards." + streak)) {
+            return streak;
+        }
+
+        // Wrap around 12 if enabled
+        if (repeatFrom12 && streak > 12) {
+            int wrapped = ((streak - 1) % 12) + 1;
+            if (this.plugin.getConfig().contains("killstreak-rewards.rewards." + wrapped)) {
+                return wrapped;
+            }
+        }
+
+        // Fall back to the highest configured level <= streak
+        for (int i = streak - 1; i >= 1; i--) {
+            if (this.plugin.getConfig().contains("killstreak-rewards.rewards." + i)) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    // ==========================================
+    // Give a reward bundle (string like "gapple:1 fb:1 speed:2")
+    // Returns true if at least one item was given.
+    // ==========================================
+    private boolean giveRewardBundle(Player player, String rewardString) {
+        String[] parts = rewardString.split(" ");
+        boolean gaveAny = false;
+
+        for (String part : parts) {
+            if (part.isEmpty()) continue;
+
+            String[] split = part.split(":");
+            if (split.length != 2) continue;
+
+            String itemName = split[0].toLowerCase();
+            int amount;
+            try {
+                amount = Integer.parseInt(split[1]);
+            } catch (NumberFormatException e) {
+                continue;
+            }
+            if (amount <= 0) continue;
+
+            org.bukkit.inventory.ItemStack item = buildRewardItem(itemName, amount);
+            if (item != null) {
+                player.getInventory().addItem(item);
+                gaveAny = true;
+            }
+        }
+
+        return gaveAny;
+    }
+
+    // ==========================================
+    // Build a reward item from its config name
+    // ==========================================
+    private org.bukkit.inventory.ItemStack buildRewardItem(String name, int amount) {
+        if (name.equals("gapple") || name.equals("golden_apple") || name.equals("gap")) {
+            return new org.bukkit.inventory.ItemStack(org.bukkit.Material.GOLDEN_APPLE, amount);
+        }
+        if (name.equals("fb") || name.equals("fireball") || name.equals("fire_charge")) {
+            return new org.bukkit.inventory.ItemStack(org.bukkit.Material.FIREBALL, amount);
+        }
+        if (name.equals("perl") || name.equals("pearl") || name.equals("ender_pearl")) {
+            return new org.bukkit.inventory.ItemStack(org.bukkit.Material.ENDER_PEARL, amount);
+        }
+        if (name.equals("feather")) {
+            return new org.bukkit.inventory.ItemStack(org.bukkit.Material.FEATHER, amount);
+        }
+        if (name.equals("speed")) {
+            return makeRewardPotion(1, amount);
+        }
+        if (name.equals("jump")) {
+            return makeRewardPotion(2, amount);
+        }
+        return null;
+    }
+
+    /**
+     * Build ONE potion. kind: 1 = Speed, 2 = Jump
+     * amount is used as the level (not the count) to match
+     * the existing Kill.java behavior.
+     */
+    private org.bukkit.inventory.ItemStack makeRewardPotion(int kind, int level) {
+        org.bukkit.inventory.ItemStack potion = new org.bukkit.inventory.ItemStack(
+                org.bukkit.Material.POTION, 1);
+
+        short data;
+        if (kind == 1) {
+            if (level <= 1) data = 8194;      // Speed I
+            else data = 8226;                 // Speed II
+        } else {
+            if (level <= 1) data = 8203;      // Jump I
+            else if (level == 2) data = 8235; // Jump II
+            else if (level == 3) data = 8267; // Jump III
+            else if (level == 4) data = 8299; // Jump IV
+            else data = 8331;                 // Jump V
+        }
+
+        potion.setDurability(data);
+        return potion;
     }
 
     // ==========================================
@@ -938,14 +1129,11 @@ public class BuildFFACommand implements CommandExecutor {
 
     // ==========================================
     // Help (permission-aware)
-    // Shows only commands the sender can actually use.
     // ==========================================
     private void sendHelp(CommandSender sender) {
         sender.sendMessage(colorize("&8&m----------------------------------"));
         sender.sendMessage(colorize("&6&lBuildFFA &7- &fCommands"));
         sender.sendMessage(colorize("&8&m----------------------------------"));
-
-        boolean shownAny = false;
 
         // ============================================================
         //  PLAYER COMMANDS
@@ -954,19 +1142,16 @@ public class BuildFFACommand implements CommandExecutor {
         if (sender.hasPermission(getPerm("kiteditor", "buildffa.kiteditor"))) {
             sender.sendMessage(colorize("&e/buildffa kiteditor &7- Open the Kit Editor GUI"));
             sender.sendMessage(colorize("&e/buildffa kiteditor reset &7- Reset your kit"));
-            shownAny = true;
         }
 
         if (sender.hasPermission(getPerm("scoreboard-toggle", "buildffa.scoreboard.toggle"))) {
             sender.sendMessage(colorize("&e/buildffa sb &7- Toggle scoreboard visibility"));
-            shownAny = true;
         }
 
         // Stats (view) — available to everyone
         sender.sendMessage(colorize("&e/buildffa stats [player] &7- Show player stats"));
         sender.sendMessage(colorize("&e/buildffa top [kills|deaths|kdr|streak] [limit] &7- Show top players"));
         sender.sendMessage(colorize("&e/buildffa creator &7- Show plugin credits"));
-        shownAny = true;
 
         // ============================================================
         //  ADMIN COMMANDS
@@ -1015,6 +1200,7 @@ public class BuildFFACommand implements CommandExecutor {
                 sender.sendMessage(colorize("&e/buildffa stats add <kill|kdr|ks|death> <player> <amount> &7- Add to a stat"));
                 sender.sendMessage(colorize("&e/buildffa stats reset <kill|ks|death> <player> &7- Reset a stat"));
                 sender.sendMessage(colorize("&e/buildffa resetstats <player> &7- Reset all player stats"));
+                sender.sendMessage(colorize("&e/buildffa forceksreward <ks> &7- Give yourself the reward for that killstreak"));
             }
 
             if (sender.hasPermission(getPerm("connectioncheck", "buildffa.connection"))) {

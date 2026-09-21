@@ -16,14 +16,14 @@
 #  Players who fall below this Y level will die or teleport.
 #  Set with /buildffa setvoid [y]
 # ----------------------------------------------------------
-kill-height: 64.0
+kill-height: -13.0
 
 # ----------------------------------------------------------
 #  High Build Limit
 #  Players cannot place/break blocks above this Y level.
 #  Set with /buildffa sethighlimit [y]
 # ----------------------------------------------------------
-high-limit: 100.0
+high-limit: 53.0
 
 # ----------------------------------------------------------
 #  Block Timings (seconds)
@@ -85,7 +85,7 @@ void:
 # ----------------------------------------------------------
 ypvp:
   enabled: true
-  y-level: 136.0
+  y-level: 61.5
   block-projectiles: true
 
 # ----------------------------------------------------------
@@ -179,7 +179,7 @@ feather-jump:
   # 0.9 = normal (recommended)
   # 1.2 = strong
   # 1.5 = extreme
-  boost: 0.9
+  boost: 1.2
 
   # Forward velocity (in the direction the player is looking)
   # 0.0 = no forward push (straight up)
@@ -212,13 +212,16 @@ fireball:
   message: ''
 
   # Speed of the fireball
-  # 0.0 = DEFAULT MINECRAFT speed (vanilla, not modified)
-  # 1.0 = slow
-  # 2.0 = fast (recommended)
-  # 3.0 = very fast
+  # 0.0  = DEFAULT MINECRAFT speed (plugin does NOT modify velocity)
+  # 0.25 = very slow
+  # 0.5  = slow
+  # 0.75 = medium
+  # 1.0  = fast
+  # 2.0  = very fast
+  # 3.0  = extreme
   #
-  # When set to 0, the plugin does NOT touch the fireball's
-  # velocity — Minecraft's default behavior is used.
+  # The final velocity is: direction × (VANILLA_BASE × speed)
+  # where VANILLA_BASE = 2.0
   speed: 0.0
 
   # Explosion size (blocks)
@@ -314,11 +317,11 @@ sounds:
 # ----------------------------------------------------------
 spawn:
   world: world
-  x: 0.6189695097104563
-  y: 147.0
-  z: -4.156980653367726
-  yaw: 0.07537842
-  pitch: -2.546529
+  x: -83.61916298668011
+  y: 69.46495898148244
+  z: 90.46339979325055
+  yaw: 90.342545
+  pitch: 5.961797
 
 # ----------------------------------------------------------
 #  Leaderboard Refresh (used by hologram countdown)
