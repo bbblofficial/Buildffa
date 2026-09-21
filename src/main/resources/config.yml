@@ -232,17 +232,14 @@ fireball:
     # Radius (in blocks) where players get knocked
     radius: 4.0
 
-    # Vertical knockback force
-    # Higher = more upward push
-    height-force: 1.5
+    # Vertical knockback force (Lowered to 1.0 for balanced jump height)
+    height-force: 1.0
 
-    # Horizontal knockback force
-    # Higher = further push away
-    radius-force: 2.0
+    # Horizontal knockback force (Lowered to 1.5 for balanced backward push)
+    radius-force: 1.5
 
-    # Extra damage on top of the distance-based damage
-    # 1.0 = half a heart (in 1.8.8, 2.0 = 1 full heart)
-    damage: 1.0
+    # Extra damage on top of the distance-based damage (Fixed to exactly 0.5)
+    damage: 0.5
 
 # ----------------------------------------------------------
 #  Messages

@@ -123,18 +123,21 @@ public class FireballFix implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void fireballHit(ProjectileHitEvent event) {
         if (!(event.getEntity() instanceof Fireball)) return;
+        
+        // اطمینان از روشن بودن تنظیمات پرتاب
+        if (!this.plugin.getConfig().getBoolean("fireball.knockback.enabled", true)) return;
 
         Location location = event.getEntity().getLocation();
         
-        // خواندن تنظیمات
+        // همگام‌سازی مسیر متغیرها دقیقاً با config.yml شما
         double radius = this.plugin.getConfig().getDouble("fireball.knockback.radius", 4.0D);
         
-        // در کد بدوارزی که فرستادید، نیروی افقی در -1 ضرب شده بود تا پرتاب به سمت بیرون انجام شود
+        // نیرو باید قرینه (منفی) شود تا بازیکن را به بیرون پرتاب کند
         double horizontalForce = this.plugin.getConfig().getDouble("fireball.knockback.radius-force", 2.0D) * -1.0D;
         double verticalForce = this.plugin.getConfig().getDouble("fireball.knockback.height-force", 1.5D);
         
-        // تنظیم دمیج دقیقاً روی 0.5 (درخواستی شما)
-        double damage = 0.5D;
+        // دمیج مستقیماً از کانفیگ خوانده می‌شود
+        double damage = this.plugin.getConfig().getDouble("fireball.knockback.damage", 0.5D);
 
         if (location.getWorld() == null) return;
 
@@ -147,18 +150,18 @@ public class FireballFix implements Listener {
 
             Vector playerVector = player.getLocation().toVector();
             
-            // فرمول دقیق Bedwars1058
-            // استفاده از clone برای جلوگیری از باگ تغییر وکتور بین چند پلیر
+            // ریاضی دقیق بدوارز با جلوگیری از پرتاب بیش از حد
             Vector normalizedVector = fireballVector.clone().subtract(playerVector).normalize();
             Vector horizontalVector = normalizedVector.clone().multiply(horizontalForce);
             
             double y = normalizedVector.getY();
-            if (y < 0) y += 1.5;
+            
+            if (y < 0) y += 1.0; 
             
             if (y <= 0.5) {
-                y = verticalForce * 1.5; // نیروی پرش در صورتی که بازیکن خودش نپریده باشد
+                y = verticalForce; // نیروی پرش استاندارد
             } else {
-                y = y * verticalForce * 1.5; // نیروی پرش در صورتی که بازیکن پریده باشد
+                y = y * verticalForce; // اعمال شیب پرش
             }
             
             player.setVelocity(horizontalVector.setY(y));
@@ -177,6 +180,7 @@ public class FireballFix implements Listener {
     public void fireballDirectHit(EntityDamageByEntityEvent event) {
         if (event.getDamager() instanceof Fireball) {
             if (event.getEntity() instanceof Player) {
+                // جلوگیری از دمیج آتش و اصابت مستقیم بازی
                 event.setCancelled(true);
             }
         }
