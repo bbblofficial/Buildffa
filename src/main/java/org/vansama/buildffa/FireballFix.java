@@ -1,6 +1,7 @@
 package org.vansama.buildffa;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +12,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Fireball;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -20,7 +22,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
@@ -56,10 +57,8 @@ public class FireballFix implements Listener {
         ItemStack item = player.getItemInHand();
         if (item == null) return;
 
-        // Accept FIREBALL (Fire Charge)
         if (item.getType() != Material.FIREBALL) return;
 
-        // Cooldown check
         long now = System.currentTimeMillis();
         if (cooldown.containsKey(player.getUniqueId())) {
             long last = cooldown.get(player.getUniqueId()).longValue();
@@ -90,11 +89,10 @@ public class FireballFix implements Listener {
 
         fireball.setIsIncendiary(false);
 
-        // Explosion yield controls explosion size
         double yield = this.plugin.getConfig().getDouble("fireball.yield", 1.0D);
         fireball.setYield((float) yield);
 
-        // Throw effects (like BedWars plugin)
+        // Throw effects (BedWars-style)
         if (this.plugin.getConfig().getBoolean("fireball.throw-effects.enabled", false)) {
             List<String> effects = this.plugin.getConfig().getStringList("fireball.throw-effects.effects");
             if (effects != null) {
@@ -133,9 +131,10 @@ public class FireballFix implements Listener {
         Location l = event.getLocation();
         double radius = this.plugin.getConfig().getDouble("fireball.knockback.radius", 4.0D);
 
-        List<Entity> nearby = l.getWorld().getNearbyEntities(l, radius, radius, radius);
+        // ✅ Collection (نه List)
+        Collection<Entity> nearby = l.getWorld().getNearbyEntities(l, radius, radius, radius);
 
-        if (event.getEntityType() == org.bukkit.entity.EntityType.FIREBALL
+        if (event.getEntityType() == EntityType.FIREBALL
                 && this.plugin.getConfig().getBoolean("fireball.knockback.enabled", true)) {
 
             double hf = this.plugin.getConfig().getDouble("fireball.knockback.height-force", 1.5D) / 2.0D;
@@ -150,21 +149,17 @@ public class FireballFix implements Listener {
     }
 
     // ============================================================
-    //  PREVENT VANILLA DAMAGE (we handle it ourselves)
+    //  PREVENT VANILLA EXPLOSION DAMAGE
     // ============================================================
-    @EventHandler
-    public void onProjectileHit(ProjectileHitEvent event) {
-        if (!(event.getEntity() instanceof Fireball)) return;
-    }
-
     @EventHandler
     public void fireballDirectHit(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player)) return;
-        if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_EXPLOSION
-                && event.getCause() != EntityDamageEvent.DamageCause.BLOCK_EXPLOSION) return;
 
-        // Only cancel if it's a Fireball
-        // (we let our custom pushAway handle damage)
+        EntityDamageEvent.DamageCause cause = event.getCause();
+        if (cause != EntityDamageEvent.DamageCause.ENTITY_EXPLOSION
+                && cause != EntityDamageEvent.DamageCause.BLOCK_EXPLOSION) return;
+
+        // Cancel vanilla — our pushAway() handles damage
         event.setCancelled(true);
     }
 
