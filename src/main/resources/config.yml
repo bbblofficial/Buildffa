@@ -13,19 +13,29 @@
 
 # ----------------------------------------------------------
 #  Void Kill Height
+#  Players who fall below this Y level will die or teleport.
+#  Set with /buildffa setvoid [y]
 # ----------------------------------------------------------
 kill-height: 64.0
 
 # ----------------------------------------------------------
 #  High Build Limit
+#  Players cannot place/break blocks above this Y level.
+#  Set with /buildffa sethighlimit [y]
 # ----------------------------------------------------------
 high-limit: 100.0
 
 # ----------------------------------------------------------
 #  Block Timings (seconds)
+#  How long blocks take to restore / disappear.
 # ----------------------------------------------------------
 blocks:
+  # Natural blocks (stone, dirt, wood…) broken by players
+  # reappear after this many seconds.
   natural-restore-seconds: 9
+
+  # Player-placed blocks disappear after this many seconds.
+  # (Ignored when the player is in Build Mode.)
   placed-decay-seconds: 5
 
 # ----------------------------------------------------------
@@ -45,21 +55,33 @@ combat:
 #  Void Behaviour
 # ----------------------------------------------------------
 void:
+  # If true  -> teleport to spawn + full heal, BUT death is
+  #             still registered in stats (kills/deaths/kdr).
+  # If false -> kill the player normally (death also counted).
   teleport-instead-of-kill: true
+
+  # Delay before teleporting (in ticks, 20 ticks = 1 sec)
   teleport-delay: 0
 
   # Private message shown to the player who fell.
-  # Leave empty ('') to disable.
+  # Leave empty ('') to disable the private message.
+  # %player% = player name
   teleport-message: ''
 
-  # Broadcast when nobody is credited
+  # Broadcast message when NOBODY is credited
+  # %player% = player name
   death-message: '&c%player% &7fell into the void'
 
-  # Broadcast when someone knocked the player in
+  # Broadcast message when someone knocked the player in
+  # (they were hit in the last 10 seconds)
+  # %player% = victim name
+  # %killer% = attacker who last hit them
   killed-by-message: '&c%player% &7was knocked into the void by &c%killer%'
 
 # ----------------------------------------------------------
-#  YPvP
+#  YPvP (Y-Level PvP Restriction)
+#  Players at or above this Y level cannot hit or be hit.
+#  Set with /buildffa ypvp [y]
 # ----------------------------------------------------------
 ypvp:
   enabled: true
@@ -67,29 +89,57 @@ ypvp:
   block-projectiles: true
 
 # ----------------------------------------------------------
-#  Database
+#  Database (JSON storage in /db folder)
+#  Stores kills, deaths, killstreak, kdr per player
 # ----------------------------------------------------------
 database:
+  # Automatically save all player data periodically
   autosave: true
+  # Save interval in SECONDS (300 = 5 minutes)
   autosave-interval: 300
 
 # ----------------------------------------------------------
-#  Connection Check
+#  Connection Check (Anti-Lag / High Ping Kick)
+#  Kicks players whose ping stays above threshold for too long
 # ----------------------------------------------------------
 connection-check:
+  # Enable or disable the entire system
   enabled: true
+
+  # Ping threshold in milliseconds
+  # Players above this for grace-seconds will be kicked
   ping-threshold: 150
+
+  # How often to check ping (in ticks, 20 ticks = 1 sec)
   check-interval: 20
+
+  # Grace period before kicking (in seconds)
+  # Player must stay above threshold for this long to be kicked
   grace-seconds: 30
+
+  # Cooldown between countdown warnings (in seconds)
   warn-cooldown: 5
+
+  # Kick message shown to the player (private)
+  # %ping% = player's ping, %max% = threshold
   kick-message: |-
     &cUnstable connection
     &fYour ping is too high: &e%ping%ms&7/&e%max%ms
+
+  # Broadcast message shown to everyone when a player is kicked
+  # %player% = player name, %ping% = player's ping, %max% = threshold
   broadcast-message: '&c%player% &7was kicked for &eUnstable Connection &7(&c%ping%ms&7)'
+
+  # Bypass permission (default false — OP players are NOT auto-bypassed)
+  # To bypass a player, use: /buildffa cc bypass <player>
+  # Or grant this permission manually with LuckPerms
   bypass-permission: buildffa.connection.bypass
 
 # ----------------------------------------------------------
 #  Messages
+#  Normal PvP kill message
+#  %killer% = killer name (GREEN)
+#  %loser%  = victim name (RED)
 # ----------------------------------------------------------
 kill: '&a%killer% &7killed &c%loser%'
 
@@ -123,7 +173,7 @@ messages:
   no-permission: '&cYou do not have permission to do this.'
 
 # ----------------------------------------------------------
-#  Kill Screen
+#  Kill Screen (Title/Subtitle on kill)
 # ----------------------------------------------------------
 kill-screen:
   enable-title: true
@@ -134,6 +184,8 @@ kill-screen:
 
 # ----------------------------------------------------------
 #  Sounds
+#  Sound effects for kills, deaths, joins
+#  NOTE: No sound on hits (too spammy)
 # ----------------------------------------------------------
 sounds:
   enabled: true
@@ -146,6 +198,7 @@ sounds:
 
 # ----------------------------------------------------------
 #  Spawn
+#  Set with /buildffa setspawn
 # ----------------------------------------------------------
 spawn:
   world: world
@@ -156,7 +209,41 @@ spawn:
   pitch: -1.5645014
 
 # ----------------------------------------------------------
-#  Leaderboard Refresh
+#  Leaderboard Refresh (used by hologram countdown)
+#  %buildffa_next_update% counts down from this value
 # ----------------------------------------------------------
 leaderboard-refresh:
   interval-seconds: 600
+
+# ----------------------------------------------------------
+#  Killstreak Rewards
+#  When a player reaches a certain killstreak, they receive
+#  a reward bundle instead of just a single Golden Apple.
+#
+#  ITEM types:
+#    gapple   = Golden Apple
+#    fb       = Fireball (Fire Charge)
+#    speed    = Potion of Swiftness (with level)
+#    jump     = Potion of Leaping (with level)
+#    perl     = Ender Pearl
+#    feather  = Feather (for double-jump)
+#
+#  For potions use: speed:N  /  jump:N  (N = level)
+# ----------------------------------------------------------
+killstreak-rewards:
+  enabled: true
+
+  # If true, rewards repeat every 12 killstreaks after level 12
+  repeat-from-12: true
+
+  # Rewards per killstreak level
+  rewards:
+    '4':  "gapple:1 fb:1 speed:1"
+    '5':  "gapple:2 speed:2 jump:1"
+    '6':  "gapple:2 fb:1 jump:1 speed:1"
+    '7':  "perl:1 gapple:1 speed:2"
+    '8':  "gapple:1 fb:1"
+    '9':  "gapple:1 perl:1"
+    '10': "gapple:2 fb:1 feather:1 perl:1 speed:2 jump:3 jump:2"
+    '11': "feather:1 speed:2 jump:5 perl:1"
+    '12': "feather:1 jump:5 perl:1 fb:1"

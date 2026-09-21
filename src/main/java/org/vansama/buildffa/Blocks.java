@@ -122,9 +122,11 @@ public class Blocks implements Listener {
     //  BUILD MODE → break block permanently (no restore)
     // ============================================================
     if (isBuildMode(player)) {
-      // Allow the break to proceed normally — do NOT cancel
-      // and do NOT schedule a restore.
-      // Also remove from placedBlocks if it was there.
+      // Cancel the event so we control what drops (nothing)
+      event.setCancelled(true);
+      // Remove the block
+      block.setType(Material.AIR);
+      // Remove from tracking if it was there
       this.placedBlocks.remove(loc);
       return;
     }

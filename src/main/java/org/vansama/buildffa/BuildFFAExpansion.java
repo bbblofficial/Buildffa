@@ -46,16 +46,15 @@ public class BuildFFAExpansion extends PlaceholderExpansion {
 
         String id = identifier.toLowerCase();
 
-        // ---------- Live countdown: %buildffa_next_update% ----------
+        // Live countdown
         if (id.equals("next_update") || id.equals("countdown")) {
             int secs = BuildFFA.getSecondsUntilRefresh();
             int minutes = secs / 60;
             int seconds = secs % 60;
             return String.format("%02d:%02d", minutes, seconds);
         }
-        // ----------------------------------------------------------
 
-        // ---------- Player's own stats ----------
+        // Player stats
         if (player != null && player.isOnline()) {
             PlayerData data = database.getPlayer(player.getUniqueId());
             if (data == null) data = database.loadPlayer(player.getUniqueId());
@@ -67,7 +66,7 @@ public class BuildFFAExpansion extends PlaceholderExpansion {
             if (id.equals("best_killstreak") || id.equals("beststreak")) return String.valueOf(data.getBestKillstreak());
         }
 
-        // ---------- Top placeholders: %buildffa_top_name_kills_1% ----------
+        // Top placeholders
         if (id.startsWith("top_") && !id.startsWith("top_rank_")) {
             String[] parts = id.split("_");
             if (parts.length < 4) return "";
@@ -113,7 +112,7 @@ public class BuildFFAExpansion extends PlaceholderExpansion {
             }
         }
 
-        // ---------- Player's own rank: %buildffa_top_rank_kills% ----------
+        // Own rank
         if (id.startsWith("top_rank_")) {
             if (player == null) return "?";
 

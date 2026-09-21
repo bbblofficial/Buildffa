@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -17,8 +18,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
 
 public class Void implements Listener {
 
@@ -33,13 +36,11 @@ public class Void implements Listener {
     private final Set<UUID> teleportingPlayers = new HashSet<UUID>();
     private final Set<UUID> dyingPlayers = new HashSet<UUID>();
 
-    // Track who last hit who, so we can credit the void kill
     private final Map<UUID, UUID> lastDamager = new HashMap<UUID, UUID>();
     private final Map<UUID, Long> lastDamageTime = new HashMap<UUID, Long>();
 
-    private static final long DAMAGE_WINDOW_MS = 10000L; // 10 seconds
+    private static final long DAMAGE_WINDOW_MS = 10000L;
 
-    // Flag shared with Kill.java to prevent double death count
     private static final Set<UUID> voidDeaths = new HashSet<UUID>();
 
     public Void(JavaPlugin plugin) {
@@ -57,7 +58,6 @@ public class Void implements Listener {
         this.teleportInsteadOfKill = config.getBoolean("void.teleport-instead-of-kill", true);
         this.teleportDelay = config.getLong("void.teleport-delay", 0L);
 
-        // Private message — empty string means disabled
         String msg = config.getString("void.teleport-message", "");
         if (msg == null) msg = "";
         this.teleportMessage = msg;
@@ -137,7 +137,6 @@ public class Void implements Listener {
             }
         }
 
-        // Save stats
         try {
             BuildFFA bffa = (BuildFFA) this.plugin;
             DatabaseManager db = bffa.getDatabaseManager();
@@ -164,7 +163,12 @@ public class Void implements Listener {
             this.plugin.getLogger().warning("Void death save failed: " + t.getMessage());
         }
 
-        // Broadcast message
+        // Full heal killer
+        if (killer != null) {
+            fullHeal(killer);
+            killer.getInventory().addItem(new ItemStack(Material.GOLDEN_APPLE, 1));
+        }
+
         String finalMessage;
         if (killer != null) {
             finalMessage = this.voidKilledByMessage
@@ -183,6 +187,19 @@ public class Void implements Listener {
         this.lastDamageTime.remove(player.getUniqueId());
     }
 
+    private void fullHeal(Player player) {
+        player.setHealth(player.getMaxHealth());
+        player.setFoodLevel(20);
+        player.setSaturation(20.0F);
+        player.setExhaustion(0.0F);
+        player.setFireTicks(0);
+        player.setFallDistance(0.0F);
+
+        for (PotionEffect effect : player.getActivePotionEffects()) {
+            player.removePotionEffect(effect.getType());
+        }
+    }
+
     private void teleportToSpawn(final Player player) {
         final Location spawn = getSpawnLocation();
 
@@ -194,13 +211,10 @@ public class Void implements Listener {
                     return;
                 }
 
-                // ==== Reset like a real death ====
-                // 1) Clear inventory + armor
                 player.getInventory().clear();
                 player.getInventory().setArmorContents(null);
                 player.setItemOnCursor(null);
 
-                // 2) Reset health / food / effects
                 player.setHealth(player.getMaxHealth());
                 player.setFoodLevel(20);
                 player.setSaturation(20.0F);
@@ -210,7 +224,6 @@ public class Void implements Listener {
                 player.setLevel(0);
                 player.setExp(0.0F);
 
-                // 3) Give the default kit back
                 try {
                     BuildFFA bffa = (BuildFFA) plugin;
                     if (bffa.getEquip() != null) {
@@ -219,22 +232,18 @@ public class Void implements Listener {
                 } catch (Throwable t) {
                     plugin.getLogger().warning("Void kit restore failed: " + t.getMessage());
                 }
-                // =================================
 
-                // 4) Teleport to spawn
                 if (spawn != null) {
                     player.teleport(spawn);
                 } else {
                     player.teleport(player.getWorld().getSpawnLocation());
                 }
 
-                // 5) Private message (only if not empty)
                 if (teleportMessage != null && !teleportMessage.isEmpty()) {
                     String msg = teleportMessage.replace("%player%", player.getName());
                     player.sendMessage(ChatColor.translateAlternateColorCodes('&', msg));
                 }
 
-                // 6) Release the teleport lock after 1 second
                 Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                     @Override
                     public void run() {
@@ -297,6 +306,7 @@ public class Void implements Listener {
                 msg = this.voidKilledByMessage
                         .replace("%player%", player.getName())
                         .replace("%killer%", killer.getName());
+                fullHeal(killer);
             } else {
                 msg = this.voidMessage.replace("%player%", player.getName());
             }
