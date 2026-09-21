@@ -136,6 +136,53 @@ connection-check:
   bypass-permission: buildffa.connection.bypass
 
 # ----------------------------------------------------------
+#  Killstreak Rewards
+#  When a player reaches a certain killstreak, they receive
+#  a reward bundle instead of just a single Golden Apple.
+#
+#  ITEM types:
+#    gapple   = Golden Apple
+#    fb       = Fireball (Fire Charge)
+#    speed:N  = Potion of Swiftness (N = level)
+#    jump:N   = Potion of Leaping (N = level)
+#    perl     = Ender Pearl
+#    feather  = Feather (for double-jump)
+# ----------------------------------------------------------
+killstreak-rewards:
+  enabled: true
+
+  # If true, rewards repeat every 12 killstreaks after level 12
+  repeat-from-12: true
+
+  # Rewards per killstreak level
+  rewards:
+    '4':  "gapple:1 fb:1 speed:1"
+    '5':  "gapple:2 speed:2 jump:1"
+    '6':  "gapple:2 fb:1 jump:1 speed:1"
+    '7':  "perl:1 gapple:1 speed:2"
+    '8':  "gapple:1 fb:1"
+    '9':  "gapple:1 perl:1"
+    '10': "gapple:2 fb:1 feather:1 perl:1 speed:2 jump:3 jump:2"
+    '11': "feather:1 speed:2 jump:5 perl:1"
+    '12': "feather:1 jump:5 perl:1 fb:1"
+
+# ----------------------------------------------------------
+#  Feather Jump
+#  Right-click a Feather while in the air to double-jump.
+#  The feather is consumed.
+# ----------------------------------------------------------
+feather-jump:
+  # Upward velocity applied on jump
+  # 1.0 = strong (default)
+  # 1.5 = very strong
+  # 2.0 = extreme
+  boost: 1.0
+
+  # Message shown to the player (private)
+  # Leave empty ('') to disable
+  message: '&b✦ &fDouble Jump!'
+
+# ----------------------------------------------------------
 #  Messages
 #  Normal PvP kill message
 #  %killer% = killer name (GREEN)
@@ -201,7 +248,7 @@ sounds:
 #  Set with /buildffa setspawn
 # ----------------------------------------------------------
 spawn:
-  world: world
+  world: world/
   x: 0.5372841193081425
   y: 147.0
   z: -4.17030647534353
@@ -214,36 +261,3 @@ spawn:
 # ----------------------------------------------------------
 leaderboard-refresh:
   interval-seconds: 600
-
-# ----------------------------------------------------------
-#  Killstreak Rewards
-#  When a player reaches a certain killstreak, they receive
-#  a reward bundle instead of just a single Golden Apple.
-#
-#  ITEM types:
-#    gapple   = Golden Apple
-#    fb       = Fireball (Fire Charge)
-#    speed    = Potion of Swiftness (with level)
-#    jump     = Potion of Leaping (with level)
-#    perl     = Ender Pearl
-#    feather  = Feather (for double-jump)
-#
-#  For potions use: speed:N  /  jump:N  (N = level)
-# ----------------------------------------------------------
-killstreak-rewards:
-  enabled: true
-
-  # If true, rewards repeat every 12 killstreaks after level 12
-  repeat-from-12: true
-
-  # Rewards per killstreak level
-  rewards:
-    '4':  "gapple:1 fb:1 speed:1"
-    '5':  "gapple:2 speed:2 jump:1"
-    '6':  "gapple:2 fb:1 jump:1 speed:1"
-    '7':  "perl:1 gapple:1 speed:2"
-    '8':  "gapple:1 fb:1"
-    '9':  "gapple:1 perl:1"
-    '10': "gapple:2 fb:1 feather:1 perl:1 speed:2 jump:3 jump:2"
-    '11': "feather:1 speed:2 jump:5 perl:1"
-    '12': "feather:1 jump:5 perl:1 fb:1"

@@ -78,6 +78,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(new Kill(this, this.killListener, this.databaseManager), (Plugin) this);
         getServer().getPluginManager().registerEvents(new Items(this, this.kitEditor), (Plugin) this);
         getServer().getPluginManager().registerEvents(new Fall(this), (Plugin) this);
+        getServer().getPluginManager().registerEvents(new FeatherJump(this), (Plugin) this);
         getServer().getPluginManager().registerEvents(this.killListener, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.kitEditor, (Plugin) this);
         getServer().getPluginManager().registerEvents(new Infinite(this), (Plugin) this);
@@ -316,6 +317,11 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "spawn.pitch", Float.valueOf(0.0F));
 
         setIfMissing(cfg, "leaderboard-refresh.interval-seconds", Integer.valueOf(600));
+
+        // ==================== Feather Jump ====================
+        setIfMissing(cfg, "feather-jump.boost", Double.valueOf(1.0D));
+        setIfMissing(cfg, "feather-jump.message", "&b✦ &fDouble Jump!");
+        // ======================================================
 
         try {
             cfg.save(configFile);
