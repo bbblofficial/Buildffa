@@ -34,19 +34,19 @@ import org.bukkit.util.Vector;
 
 /**
 ================================================================
-BEDWARS / MINEMEN-CLUB STYLE FIREBALL (FULLY FIXED)
+BEDWARS / MINEMEN-CLUB STYLE FIREBALL (NO DRAG FIX)
 ================================================================
+این نسخه مشکل کندی بعد از پرتاب را با حذف کامل setVelocity
+و استفاده انحصاری از شتاب NMS حل کرده است.
 */
 public class FireballFix implements Listener {
     private final JavaPlugin plugin;
     private final Map<UUID, Long> cooldown = new HashMap<>();
     private static final long COOLDOWN_MS = 500L;
 
-    // Base speed for the slider. 
-    // Terminal velocity in blocks/tick will be roughly 9.9 * (BASE_SPEED * multiplier).
-    // We use 0.5 so that a multiplier of 1.0 gives ~5 blocks/tick (100 blocks/sec), 
-    // which is a fast but visible BedWars-style fireball, NOT a hitscan laser.
-    private static final double BASE_SPEED = 0.5D;
+    // BASE_SPEED: سرعت پایه برای ضریب 1.0
+    // این مقدار باید طوری باشد که گوی آتشین حس "سریع اما قابل دیدن" داشته باشد.
+    private static final double BASE_SPEED = 2.5D; 
 
     public static final double SLIDER_MIN = -10.0D;
     public static final double SLIDER_MAX = 10.0D;
@@ -100,7 +100,7 @@ public class FireballFix implements Listener {
     }
 
     // ============================================================
-    //  LAUNCH FIREBALL (FIXED)
+    //  LAUNCH FIREBALL (FIXED - NO DRAG)
     // ============================================================
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onRightClick(PlayerInteractEvent event) {
@@ -134,30 +134,22 @@ public class FireballFix implements Listener {
         double multiplier = getMultiplier();
         double speed = BASE_SPEED * multiplier;
         
-        // Prevent spawning a fireball with 0 or negative speed
         if (speed <= 0.01D) {
             player.sendMessage(ChatColor.RED + "Fireball speed is too low to launch.");
             return;
         }
 
-        // FIX 1: Spawn the fireball slightly in front of the player (1.5 blocks)
-        // This eliminates the spawn "kink" and prevents it from instantly 
-        // colliding with the player's own hitbox or the block they are staring at.
+        // Spawn the fireball slightly in front to avoid self-collision
         Location spawnLoc = player.getEyeLocation().add(dir.clone().multiply(1.5));
-        
-        // FIX 2: Use spawnEntity instead of launchProjectile to avoid 1.8.8 Bukkit quirks
         Fireball fireball = (Fireball) player.getWorld().spawnEntity(spawnLoc, EntityType.FIREBALL);
         fireball.setShooter(player);
 
-        // FIX 3: Set the NMS acceleration fields directly.
-        // In 1.8.8 NMS, the fireball's velocity is updated each tick by adding dirX/Y/Z, 
-        // then applying drag (0.99). The terminal velocity is roughly 99 * dirMagnitude.
-        // By setting dir to (direction * speed * 0.1), we get a terminal velocity of ~9.9 * speed.
+        // FIX: ONLY use NMS acceleration. Do NOT call setVelocity.
+        // This prevents the 0.99 drag factor from slowing it down.
+        // In 1.8 NMS, dirX/Y/Z are added to velocity every tick.
+        // We scale it by 0.1 because Minecraft internally multiplies it by 0.1 again.
         Vector nmsAccel = dir.clone().multiply(speed * 0.1D);
         setStraightAcceleration(fireball, nmsAccel);
-
-        // FIX 4: Set the initial velocity so it doesn't start from a standstill
-        fireball.setVelocity(dir.clone().multiply(speed * 5.0D));
 
         // ============================================================
         //  EXPLOSION / EFFECTS
@@ -197,6 +189,7 @@ public class FireballFix implements Listener {
 
     /**
      * Writes the fireball's real NMS acceleration field (dirX/dirY/dirZ) directly.
+     * This ensures constant speed without drag.
      */
     private static void setStraightAcceleration(Fireball fireball, Vector accelVector) {
         if (reflectionReady) {
@@ -208,7 +201,8 @@ public class FireballFix implements Listener {
                 return;
             } catch (Throwable ignored) {}
         }
-        // Fallback if reflection fails
+        // Fallback: If reflection fails, we have no choice but to use setDirection.
+        // Note: This fallback WILL have drag, but it's better than crashing.
         fireball.setDirection(accelVector);
     }
 
