@@ -18,8 +18,8 @@ kill-height: 0.0
 #  What happens when a player falls below kill-height
 # ----------------------------------------------------------
 void:
-  # If true  → teleport to spawn + full heal (no death)
-  # If false → kill the player (old behaviour)
+  # If true  -> teleport to spawn + full heal (no death)
+  # If false -> kill the player (old behaviour)
   teleport-instead-of-kill: true
 
   # Delay before teleporting (in ticks, 20 ticks = 1 sec)
@@ -61,14 +61,14 @@ database:
 
 # ----------------------------------------------------------
 #  Sounds
-#  Sound effects for kills, deaths, hits, joins
+#  Sound effects for kills, deaths, joins
+#  NOTE: No sound on hits (too spammy)
 # ----------------------------------------------------------
 sounds:
   enabled: true
   kill: true
   death: true
   join: true
-  hit: true
   chat: false
   volume: 1.0
   pitch: 1.0

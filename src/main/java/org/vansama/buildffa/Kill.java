@@ -8,6 +8,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
@@ -17,19 +18,22 @@ public class Kill implements Listener {
 
     private JavaPlugin plugin;
     private KillListener killListener;
-    private DatabaseManager database;
+    private DatabaseManager databaseManager;
 
     private Map<UUID, Long> lastKillTimestamps = new HashMap<UUID, Long>();
     private Map<UUID, Long> lastVictimDeathTimestamps = new HashMap<UUID, Long>();
 
-    public Kill(JavaPlugin plugin, KillListener killListener, DatabaseManager database) {
+    public Kill(JavaPlugin plugin, KillListener killListener, DatabaseManager databaseManager) {
         this.plugin = plugin;
         this.killListener = killListener;
-        this.database = database;
+        this.databaseManager = databaseManager;
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
+        // حذف پیام پیش‌فرض "was slain by"
+        event.setDeathMessage(null);
+
         Player deathPlayer = event.getEntity();
         UUID victimId = deathPlayer.getUniqueId();
 
@@ -42,11 +46,11 @@ public class Kill implements Listener {
         }
         this.lastVictimDeathTimestamps.put(victimId, Long.valueOf(now));
 
-        PlayerData victimData = this.database.getPlayer(victimId);
+        PlayerData victimData = this.databaseManager.getPlayer(victimId);
         if (victimData != null) {
             victimData.addDeath();
             victimData.resetKillstreak();
-            this.database.savePlayer(victimData);
+            this.databaseManager.savePlayer(victimData);
         }
 
         if (deathPlayer.getKiller() == null) return;
@@ -63,11 +67,11 @@ public class Kill implements Listener {
 
         int killCount = this.killListener.getKillCount(killer);
 
-        PlayerData killerData = this.database.getPlayer(killerId);
+        PlayerData killerData = this.databaseManager.getPlayer(killerId);
         if (killerData != null) {
             killerData.addKill();
             killerData.addKillstreak();
-            this.database.savePlayer(killerData);
+            this.databaseManager.savePlayer(killerData);
         }
 
         killer.setHealth(killer.getMaxHealth());

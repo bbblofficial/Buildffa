@@ -4,14 +4,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -29,7 +27,6 @@ public class Voice implements Listener {
     private boolean killSoundEnabled;
     private boolean deathSoundEnabled;
     private boolean joinSoundEnabled;
-    private boolean hitSoundEnabled;
     private boolean chatSoundEnabled;
 
     private float volume;
@@ -47,7 +44,6 @@ public class Voice implements Listener {
         this.killSoundEnabled = config.getBoolean("sounds.kill", true);
         this.deathSoundEnabled = config.getBoolean("sounds.death", true);
         this.joinSoundEnabled = config.getBoolean("sounds.join", true);
-        this.hitSoundEnabled = config.getBoolean("sounds.hit", true);
         this.chatSoundEnabled = config.getBoolean("sounds.chat", false);
         this.volume = (float) config.getDouble("sounds.volume", 1.0D);
         this.pitch = (float) config.getDouble("sounds.pitch", 1.0D);
@@ -83,7 +79,7 @@ public class Voice implements Listener {
     }
 
     // ============================================================
-    //  KILL SOUND — when player kills someone
+    //  KILL SOUND — فقط وقتی بازیکن کسی رو میکشه
     // ============================================================
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onKill(PlayerDeathEvent event) {
@@ -93,11 +89,11 @@ public class Voice implements Listener {
         Player killer = event.getEntity().getKiller();
         if (killer == null) return;
 
-        playSound(killer, Sound.LEVEL_UP, this.volume, 1.2F);
+        killer.playSound(killer.getLocation(), Sound.LEVEL_UP, this.volume, 1.2F);
     }
 
     // ============================================================
-    //  DEATH SOUND — when player dies
+    //  DEATH SOUND — وقتی بازیکن میمیره
     // ============================================================
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDeath(PlayerDeathEvent event) {
@@ -107,7 +103,7 @@ public class Voice implements Listener {
         Player victim = event.getEntity();
         if (victim == null) return;
 
-        playSound(victim, Sound.ENDERDRAGON_HIT, 0.6F, 0.8F);
+        victim.playSound(victim.getLocation(), Sound.ENDERDRAGON_HIT, 0.6F, 0.8F);
     }
 
     // ============================================================
@@ -123,7 +119,7 @@ public class Voice implements Listener {
     }
 
     // ============================================================
-    //  QUIT SOUND — played to remaining players
+    //  QUIT SOUND
     // ============================================================
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
@@ -137,28 +133,7 @@ public class Voice implements Listener {
     }
 
     // ============================================================
-    //  HIT SOUND — when a player takes a hit
-    // ============================================================
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onHit(EntityDamageByEntityEvent event) {
-        if (!this.soundsEnabled) return;
-        if (!this.hitSoundEnabled) return;
-
-        if (!(event.getEntity() instanceof Player)) return;
-        if (!(event.getDamager() instanceof Player)) return;
-
-        Player victim = (Player) event.getEntity();
-        Player attacker = (Player) event.getDamager();
-
-        // Sound for attacker (soft click)
-        attacker.playSound(attacker.getLocation(), Sound.CLICK, 0.4F, 1.8F);
-
-        // Sound for victim (hurt)
-        victim.playSound(victim.getLocation(), Sound.HURT_FLESH, 0.5F, 1.0F);
-    }
-
-    // ============================================================
-    //  CHAT SOUND — optional, off by default
+    //  CHAT SOUND — اختیاری
     // ============================================================
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onChat(AsyncPlayerChatEvent event) {
@@ -176,9 +151,6 @@ public class Voice implements Listener {
         }, 1L);
     }
 
-    // ============================================================
-    //  PUBLIC METHODS for other classes
-    // ============================================================
     public void playKillSound(Player player) {
         if (!this.killSoundEnabled) return;
         playSound(player, Sound.LEVEL_UP, this.volume, 1.2F);
@@ -187,23 +159,6 @@ public class Voice implements Listener {
     public void playDeathSound(Player player) {
         if (!this.deathSoundEnabled) return;
         playSound(player, Sound.ENDERDRAGON_HIT, 0.6F, 0.8F);
-    }
-
-    public void playHitSound(Player player) {
-        if (!this.hitSoundEnabled) return;
-        playSound(player, Sound.CLICK, 0.4F, 1.8F);
-    }
-
-    public void playLevelUp(Player player) {
-        playSound(player, Sound.LEVEL_UP, this.volume, 1.0F);
-    }
-
-    public void playAnvilBreak(Player player) {
-        playSound(player, Sound.ANVIL_BREAK, 0.5F, 1.0F);
-    }
-
-    public void playAnvilLand(Player player) {
-        playSound(player, Sound.ANVIL_LAND, 0.5F, 1.0F);
     }
 
     public boolean isSoundsEnabled() {
