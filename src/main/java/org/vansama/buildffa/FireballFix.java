@@ -39,11 +39,15 @@ public class FireballFix implements Listener {
 
     // ============================================================
     //  RIGHT-CLICK FIRE CHARGE → SHOOT FIREBALL
+    //  Works everywhere (air, block, entity) — no requirement
+    //  to be looking at a block.
     // ============================================================
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onRightClick(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_AIR
-                && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+        // Accept RIGHT_CLICK_AIR and RIGHT_CLICK_BLOCK only.
+        // (LEFT_CLICK actions are ignored.)
+        Action action = event.getAction();
+        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
 
@@ -53,17 +57,17 @@ public class FireballFix implements Listener {
 
         if (item.getType() != Material.FIREBALL) return;
 
+        // Cancel vanilla behavior (fire charge placement / etc.)
+        event.setCancelled(true);
+
         long now = System.currentTimeMillis();
         if (cooldown.containsKey(player.getUniqueId())) {
             long last = cooldown.get(player.getUniqueId()).longValue();
             if (now - last < COOLDOWN_MS) {
-                event.setCancelled(true);
                 return;
             }
         }
         cooldown.put(player.getUniqueId(), Long.valueOf(now));
-
-        event.setCancelled(true);
 
         // Consume one fire charge
         if (item.getAmount() > 1) {
@@ -123,20 +127,14 @@ public class FireballFix implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void fireballHit(ProjectileHitEvent event) {
         if (!(event.getEntity() instanceof Fireball)) return;
-        
-        // اطمینان از روشن بودن تنظیمات پرتاب
+
         if (!this.plugin.getConfig().getBoolean("fireball.knockback.enabled", true)) return;
 
         Location location = event.getEntity().getLocation();
-        
-        // همگام‌سازی مسیر متغیرها دقیقاً با config.yml شما
+
         double radius = this.plugin.getConfig().getDouble("fireball.knockback.radius", 4.0D);
-        
-        // نیرو باید قرینه (منفی) شود تا بازیکن را به بیرون پرتاب کند
         double horizontalForce = this.plugin.getConfig().getDouble("fireball.knockback.radius-force", 2.0D) * -1.0D;
         double verticalForce = this.plugin.getConfig().getDouble("fireball.knockback.height-force", 1.5D);
-        
-        // دمیج مستقیماً از کانفیگ خوانده می‌شود
         double damage = this.plugin.getConfig().getDouble("fireball.knockback.damage", 0.5D);
 
         if (location.getWorld() == null) return;
@@ -149,24 +147,22 @@ public class FireballFix implements Listener {
             Player player = (Player) entity;
 
             Vector playerVector = player.getLocation().toVector();
-            
-            // ریاضی دقیق بدوارز با جلوگیری از پرتاب بیش از حد
+
             Vector normalizedVector = fireballVector.clone().subtract(playerVector).normalize();
             Vector horizontalVector = normalizedVector.clone().multiply(horizontalForce);
-            
+
             double y = normalizedVector.getY();
-            
-            if (y < 0) y += 1.0; 
-            
+
+            if (y < 0) y += 1.0;
+
             if (y <= 0.5) {
-                y = verticalForce; // نیروی پرش استاندارد
+                y = verticalForce;
             } else {
-                y = y * verticalForce; // اعمال شیب پرش
+                y = y * verticalForce;
             }
-            
+
             player.setVelocity(horizontalVector.setY(y));
 
-            // اعمال دمیج
             if (damage > 0) {
                 player.damage(damage);
             }
@@ -180,7 +176,6 @@ public class FireballFix implements Listener {
     public void fireballDirectHit(EntityDamageByEntityEvent event) {
         if (event.getDamager() instanceof Fireball) {
             if (event.getEntity() instanceof Player) {
-                // جلوگیری از دمیج آتش و اصابت مستقیم بازی
                 event.setCancelled(true);
             }
         }

@@ -71,7 +71,7 @@ public class BuildFFACommand implements CommandExecutor {
     }
 
     // ==========================================
-    // Connection Check Command
+    // Connection Check Command (UPDATED)
     // ==========================================
     private boolean handleConnection(CommandSender sender, String[] args) {
         if (!sender.hasPermission(getPerm("connectioncheck", "buildffa.connection"))) {
@@ -93,6 +93,8 @@ public class BuildFFACommand implements CommandExecutor {
             sender.sendMessage(colorize("&7Usage: &e/buildffa cc on|off|toggle"));
             sender.sendMessage(colorize("&7Usage: &e/buildffa cc bypass <player>"));
             sender.sendMessage(colorize("&7Usage: &e/buildffa cc unbypass <player>"));
+            sender.sendMessage(colorize("&7Usage: &e/buildffa cc forceaddping <player> <ping>"));
+            sender.sendMessage(colorize("&7Usage: &e/buildffa cc ping <player> default"));
             sender.sendMessage(colorize("&8&m----------------------------------"));
             return true;
         }
@@ -150,8 +152,97 @@ public class BuildFFACommand implements CommandExecutor {
             return true;
         }
 
+        // ==========================================
+        //  /buildffa cc forceaddping <player> <ping>
+        // ==========================================
+        if (arg.equals("forceaddping")) {
+            if (args.length < 4) {
+                sender.sendMessage(colorize("&cUsage: /buildffa cc forceaddping <player> <ping>"));
+                return true;
+            }
+
+            Player target = Bukkit.getPlayer(args[2]);
+            if (target == null) {
+                sender.sendMessage(colorize("&cPlayer not found: &e" + args[2]));
+                return true;
+            }
+
+            int pingAmount;
+            try {
+                pingAmount = Integer.parseInt(args[3]);
+            } catch (NumberFormatException e) {
+                sender.sendMessage(colorize("&cInvalid ping amount: &e" + args[3]));
+                return true;
+            }
+
+            if (pingAmount < 0) {
+                sender.sendMessage(colorize("&cPing amount cannot be negative."));
+                return true;
+            }
+
+            // Must be higher than the player's real ping
+            int realPing = getRealPing(target);
+            if (pingAmount <= realPing) {
+                sender.sendMessage(colorize("&cThe forced ping must be higher than the player's current ping."));
+                sender.sendMessage(colorize("&7" + target.getName() + "'s current ping: &e" + realPing + "ms"));
+                return true;
+            }
+
+            // Must be higher than the threshold to actually trigger a kick
+            if (pingAmount < conn.getPingThreshold()) {
+                sender.sendMessage(colorize("&cThe forced ping must be at least the threshold (&e" + conn.getPingThreshold() + "ms&c)."));
+                return true;
+            }
+
+            conn.setForcedPing(target.getUniqueId(), pingAmount);
+            sender.sendMessage(colorize("&aForced ping for &e" + target.getName() + " &aset to &e" + pingAmount + "ms&a."));
+            sender.sendMessage(colorize("&7Real ping: &e" + realPing + "ms &7| Threshold: &e" + conn.getPingThreshold() + "ms"));
+            return true;
+        }
+
+        // ==========================================
+        //  /buildffa cc ping <player> default
+        // ==========================================
+        if (arg.equals("ping")) {
+            if (args.length < 4) {
+                sender.sendMessage(colorize("&cUsage: /buildffa cc ping <player> default"));
+                return true;
+            }
+
+            Player target = Bukkit.getPlayer(args[2]);
+            if (target == null) {
+                sender.sendMessage(colorize("&cPlayer not found: &e" + args[2]));
+                return true;
+            }
+
+            String mode = args[3].toLowerCase();
+            if (!mode.equals("default")) {
+                sender.sendMessage(colorize("&cUsage: /buildffa cc ping <player> default"));
+                return true;
+            }
+
+            if (!conn.hasForcedPing(target.getUniqueId())) {
+                sender.sendMessage(colorize("&e" + target.getName() + " &7does not have a forced ping."));
+                return true;
+            }
+
+            conn.clearForcedPing(target.getUniqueId());
+            conn.clearBypass(target.getUniqueId()); // also remove bypass so it actually gets checked
+            sender.sendMessage(colorize("&aForced ping removed for &e" + target.getName() + "&a. Using real ping now."));
+            return true;
+        }
+
         sender.sendMessage(colorize("&cUnknown argument. Use /buildffa cc"));
         return true;
+    }
+
+    private int getRealPing(Player player) {
+        try {
+            Object craftPlayer = player.getClass().getMethod("getHandle").invoke(player);
+            return ((Integer) craftPlayer.getClass().getField("ping").get(craftPlayer)).intValue();
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     private Connection getConnectionListener() {
@@ -166,9 +257,135 @@ public class BuildFFACommand implements CommandExecutor {
     }
 
     // ==========================================
-    // Stats Command
+    // Stats Command (UPDATED)
     // ==========================================
     private boolean handleStats(CommandSender sender, String[] args) {
+        // ==========================================
+        //  /buildffa stats add <kill|kdr|ks|death> <player> <amount>
+        // ==========================================
+        if (args.length >= 2 && args[1].equalsIgnoreCase("add")) {
+            if (!sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))) {
+                sendNoPerm(sender);
+                return true;
+            }
+
+            if (args.length < 5) {
+                sender.sendMessage(colorize("&cUsage: /buildffa stats add <kill|kdr|ks|death> <player> <amount>"));
+                return true;
+            }
+
+            String stat = args[2].toLowerCase();
+            Player target = Bukkit.getPlayer(args[3]);
+            if (target == null) {
+                sender.sendMessage(colorize("&cPlayer not found: &e" + args[3]));
+                return true;
+            }
+
+            int amount;
+            try {
+                amount = Integer.parseInt(args[4]);
+            } catch (NumberFormatException e) {
+                sender.sendMessage(colorize("&cInvalid amount: &e" + args[4]));
+                return true;
+            }
+
+            PlayerData data = this.database.getPlayer(target.getUniqueId());
+            if (data == null) {
+                data = this.database.loadPlayer(target.getUniqueId());
+            }
+            if (data == null) {
+                sender.sendMessage(colorize("&cNo data found for &e" + target.getName()));
+                return true;
+            }
+
+            String statName;
+            if (stat.equals("kill") || stat.equals("kills")) {
+                data.setKills(data.getKills() + amount);
+                statName = "kills";
+            } else if (stat.equals("death") || stat.equals("deaths")) {
+                data.setDeaths(data.getDeaths() + amount);
+                statName = "deaths";
+            } else if (stat.equals("ks") || stat.equals("killstreak") || stat.equals("streak")) {
+                data.setKillstreak(data.getKillstreak() + amount);
+                if (data.getKillstreak() > data.getBestKillstreak()) {
+                    data.setBestKillstreak(data.getKillstreak());
+                }
+                statName = "killstreak";
+            } else if (stat.equals("kdr")) {
+                // KDR is derived from kills/deaths — to "add" to it, we adjust kills
+                // to achieve the desired KDR change. The simplest interpretation:
+                // treat the amount as extra kills (1 kill per KDR point is impossible
+                // without knowing deaths). We'll add `amount` kills instead.
+                data.setKills(data.getKills() + amount);
+                statName = "kdr (via kills)";
+            } else {
+                sender.sendMessage(colorize("&cInvalid stat: &e" + stat));
+                sender.sendMessage(colorize("&7Valid stats: &ekill&7, &ekdr&7, &eks&7, &edeath"));
+                return true;
+            }
+
+            this.database.savePlayer(data);
+            sender.sendMessage(colorize("&aAdded &e" + amount + " &ato &e" + target.getName() + "'s &e" + statName + "&a."));
+            sender.sendMessage(colorize("&7Kills: &a" + data.getKills()
+                    + " &7| Deaths: &c" + data.getDeaths()
+                    + " &7| KS: &b" + data.getKillstreak()
+                    + " &7| KDR: &e" + String.format("%.2f", data.getKDR())));
+            return true;
+        }
+
+        // ==========================================
+        //  /buildffa stats reset <kill|ks|death> <player>
+        // ==========================================
+        if (args.length >= 2 && args[1].equalsIgnoreCase("reset")) {
+            if (!sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))) {
+                sendNoPerm(sender);
+                return true;
+            }
+
+            if (args.length < 4) {
+                sender.sendMessage(colorize("&cUsage: /buildffa stats reset <kill|ks|death> <player>"));
+                return true;
+            }
+
+            String stat = args[2].toLowerCase();
+            Player target = Bukkit.getPlayer(args[3]);
+            if (target == null) {
+                sender.sendMessage(colorize("&cPlayer not found: &e" + args[3]));
+                return true;
+            }
+
+            PlayerData data = this.database.getPlayer(target.getUniqueId());
+            if (data == null) {
+                data = this.database.loadPlayer(target.getUniqueId());
+            }
+            if (data == null) {
+                sender.sendMessage(colorize("&cNo data found for &e" + target.getName()));
+                return true;
+            }
+
+            String statName;
+            if (stat.equals("kill") || stat.equals("kills")) {
+                data.setKills(0);
+                statName = "kills";
+            } else if (stat.equals("death") || stat.equals("deaths")) {
+                data.setDeaths(0);
+                statName = "deaths";
+            } else if (stat.equals("ks") || stat.equals("killstreak") || stat.equals("streak")) {
+                data.setKillstreak(0);
+                data.setBestKillstreak(0);
+                statName = "killstreak & best killstreak";
+            } else {
+                sender.sendMessage(colorize("&cInvalid stat: &e" + stat));
+                sender.sendMessage(colorize("&7Valid stats: &ekill&7, &eks&7, &edeath"));
+                return true;
+            }
+
+            this.database.savePlayer(data);
+            sender.sendMessage(colorize("&aReset &e" + statName + " &afor &e" + target.getName() + "&a."));
+            return true;
+        }
+
+        // ---- Default /stats <player> ----
         Player target;
 
         if (args.length >= 2) {
@@ -695,12 +912,16 @@ public class BuildFFACommand implements CommandExecutor {
         sender.sendMessage(colorize("&e/buildffa ypvp off &7- Disable YPvP"));
         sender.sendMessage(colorize("&e/buildffa setspawn &7- Set respawn point to your location"));
         sender.sendMessage(colorize("&e/buildffa stats [player] &7- Show player stats"));
+        sender.sendMessage(colorize("&e/buildffa stats add <kill|kdr|ks|death> <player> <amount> &7- Add to a stat"));
+        sender.sendMessage(colorize("&e/buildffa stats reset <kill|ks|death> <player> &7- Reset a stat"));
         sender.sendMessage(colorize("&e/buildffa top [kills|deaths|kdr|streak] [limit] &7- Show top players"));
-        sender.sendMessage(colorize("&e/buildffa resetstats <player> &7- Reset player stats"));
+        sender.sendMessage(colorize("&e/buildffa resetstats <player> &7- Reset all player stats"));
         sender.sendMessage(colorize("&e/buildffa cc &7- Connection check status"));
         sender.sendMessage(colorize("&e/buildffa cc on|off|toggle &7- Toggle connection check"));
         sender.sendMessage(colorize("&e/buildffa cc bypass <player> &7- Bypass a player"));
         sender.sendMessage(colorize("&e/buildffa cc unbypass <player> &7- Remove bypass from a player"));
+        sender.sendMessage(colorize("&e/buildffa cc forceaddping <player> <ping> &7- Force a ping value"));
+        sender.sendMessage(colorize("&e/buildffa cc ping <player> default &7- Remove forced ping"));
         sender.sendMessage(colorize("&e/buildffa sb &7- Toggle scoreboard visibility"));
         sender.sendMessage(colorize("&e/buildffa sb reload &7- Reload scoreboard.yml"));
         sender.sendMessage(colorize("&e/buildffa creator &7- Show plugin credits"));

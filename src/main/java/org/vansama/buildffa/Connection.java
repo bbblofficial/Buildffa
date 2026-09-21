@@ -33,6 +33,14 @@ public class Connection implements Listener {
     private final Map<UUID, Long> highPingSince = new HashMap<UUID, Long>();
     private final Map<UUID, Long> lastWarnTime = new HashMap<UUID, Long>();
     private final Set<UUID> bypassPlayers = new HashSet<UUID>();
+
+    // ============================================================
+    //  FORCED PING (for testing / simulation)
+    //  UUID -> forced ping value
+    // ============================================================
+    private final Map<UUID, Integer> forcedPing = new HashMap<UUID, Integer>();
+    // ============================================================
+
     private int taskId = -1;
 
     public Connection(JavaPlugin plugin) {
@@ -92,7 +100,7 @@ public class Connection implements Listener {
                 continue;
             }
 
-            int ping = getPing(player);
+            int ping = getEffectivePing(player);
 
             if (ping >= this.pingThreshold) {
                 if (!this.highPingSince.containsKey(id)) {
@@ -169,6 +177,19 @@ public class Connection implements Listener {
         player.kickPlayer(colorize(reason));
     }
 
+    /**
+     * Returns the ping used for connection-check logic.
+     * If a forced ping is set for this player, that value is used.
+     * Otherwise the real ping is returned.
+     */
+    public int getEffectivePing(Player player) {
+        UUID id = player.getUniqueId();
+        if (this.forcedPing.containsKey(id)) {
+            return this.forcedPing.get(id).intValue();
+        }
+        return getPing(player);
+    }
+
     private int getPing(Player player) {
         try {
             Object craftPlayer = player.getClass().getMethod("getHandle").invoke(player);
@@ -189,6 +210,9 @@ public class Connection implements Listener {
         UUID id = event.getPlayer().getUniqueId();
         this.highPingSince.remove(id);
         this.lastWarnTime.remove(id);
+        // Keep forced ping so it persists across relogs? 
+        // If you want it cleared on quit, uncomment the line below:
+        // this.forcedPing.remove(id);
     }
 
     public boolean isEnabled() {
@@ -220,6 +244,36 @@ public class Connection implements Listener {
 
     public boolean hasBypass(UUID uuid) {
         return this.bypassPlayers.contains(uuid);
+    }
+
+    // ============================================================
+    //  FORCED PING API
+    // ============================================================
+
+    /**
+     * Sets a forced ping for a player.
+     * The value MUST be higher than their current real ping,
+     * and higher than the configured threshold, otherwise it
+     * would not trigger a kick.
+     */
+    public void setForcedPing(UUID uuid, int ping) {
+        this.forcedPing.put(uuid, Integer.valueOf(ping));
+    }
+
+    /**
+     * Removes the forced ping so the player's real ping is used again.
+     */
+    public void clearForcedPing(UUID uuid) {
+        this.forcedPing.remove(uuid);
+    }
+
+    public boolean hasForcedPing(UUID uuid) {
+        return this.forcedPing.containsKey(uuid);
+    }
+
+    public int getForcedPing(UUID uuid) {
+        if (!this.forcedPing.containsKey(uuid)) return -1;
+        return this.forcedPing.get(uuid).intValue();
     }
 
     private String colorize(String message) {
