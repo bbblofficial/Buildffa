@@ -56,8 +56,11 @@ public class Void implements Listener {
                 "&c%player% &7was knocked into the void by &c%killer%");
         this.teleportInsteadOfKill = config.getBoolean("void.teleport-instead-of-kill", true);
         this.teleportDelay = config.getLong("void.teleport-delay", 0L);
-        this.teleportMessage = config.getString("void.teleport-message",
-                "&c%player% &7fell into the void! &7Teleported to spawn.");
+
+        // Private message — empty string means disabled
+        String msg = config.getString("void.teleport-message", "");
+        if (msg == null) msg = "";
+        this.teleportMessage = msg;
     }
 
     public void reloadConfig() {
@@ -225,7 +228,7 @@ public class Void implements Listener {
                     player.teleport(player.getWorld().getSpawnLocation());
                 }
 
-                // 5) Private message
+                // 5) Private message (only if not empty)
                 if (teleportMessage != null && !teleportMessage.isEmpty()) {
                     String msg = teleportMessage.replace("%player%", player.getName());
                     player.sendMessage(ChatColor.translateAlternateColorCodes('&', msg));
