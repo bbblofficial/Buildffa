@@ -29,6 +29,9 @@ public class Void implements Listener {
     private final Set<UUID> teleportingPlayers = new HashSet<UUID>();
     private final Set<UUID> dyingPlayers = new HashSet<UUID>();
 
+    // Flag shared with Kill.java so it doesn't double-count deaths from the void
+    private static final Set<UUID> voidDeaths = new HashSet<UUID>();
+
     public Void(JavaPlugin plugin) {
         this.plugin = plugin;
         loadConfiguration();
@@ -49,6 +52,17 @@ public class Void implements Listener {
         loadConfiguration();
     }
 
+    /**
+     * Used by Kill.java to know this death was already handled by Void.
+     */
+    public static boolean isVoidDeath(UUID uuid) {
+        return voidDeaths.contains(uuid);
+    }
+
+    public static void clearVoidDeath(UUID uuid) {
+        voidDeaths.remove(uuid);
+    }
+
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
@@ -62,11 +76,49 @@ public class Void implements Listener {
         if (to.getY() < this.killHeight) {
             if (this.teleportInsteadOfKill) {
                 this.teleportingPlayers.add(player.getUniqueId());
+
+                // Register death + broadcast message even though we teleport
+                registerVoidDeath(player);
+
                 teleportToSpawn(player);
             } else {
                 this.dyingPlayers.add(player.getUniqueId());
                 player.setHealth(0.0D);
             }
+        }
+    }
+
+    /**
+     * Registers a death in the database and broadcasts the death message
+     * without actually killing the player.
+     */
+    private void registerVoidDeath(Player player) {
+        // Flag so Kill.java skips this death
+        voidDeaths.add(player.getUniqueId());
+
+        // Save to database
+        try {
+            BuildFFA bffa = (BuildFFA) this.plugin;
+            DatabaseManager db = bffa.getDatabaseManager();
+            if (db != null) {
+                PlayerData data = db.getPlayer(player.getUniqueId());
+                if (data == null) {
+                    data = db.loadPlayer(player.getUniqueId());
+                }
+                if (data != null) {
+                    data.addDeath();
+                    data.resetKillstreak();
+                    db.savePlayer(data);
+                }
+            }
+        } catch (Throwable t) {
+            this.plugin.getLogger().warning("Void death save failed: " + t.getMessage());
+        }
+
+        // Broadcast death message
+        if (this.voidMessage != null && !this.voidMessage.isEmpty()) {
+            String broadcast = this.voidMessage.replace("%player%", player.getName());
+            Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', broadcast));
         }
     }
 
@@ -97,12 +149,6 @@ public class Void implements Listener {
                 if (teleportMessage != null && !teleportMessage.isEmpty()) {
                     String msg = teleportMessage.replace("%player%", player.getName());
                     player.sendMessage(ChatColor.translateAlternateColorCodes('&', msg));
-                }
-
-                // Broadcast به همه که فلانی افتاد تو void
-                if (voidMessage != null && !voidMessage.isEmpty()) {
-                    String broadcast = voidMessage.replace("%player%", player.getName());
-                    Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', broadcast));
                 }
 
                 Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {

@@ -18,8 +18,9 @@ kill-height: 0.0
 #  What happens when a player falls below kill-height
 # ----------------------------------------------------------
 void:
-  # If true  -> teleport to spawn + full heal (no death)
-  # If false -> kill the player (old behaviour)
+  # If true  -> teleport to spawn + full heal, BUT death is
+  #             still registered in stats (kills/deaths/kdr).
+  # If false -> kill the player normally (death also counted).
   teleport-instead-of-kill: true
 
   # Delay before teleporting (in ticks, 20 ticks = 1 sec)
