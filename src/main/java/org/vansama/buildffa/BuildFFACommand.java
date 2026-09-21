@@ -63,6 +63,7 @@ public class BuildFFACommand implements CommandExecutor {
         if (sub.equals("stats")) return handleStats(sender, args);
         if (sub.equals("top")) return handleTop(sender, args);
         if (sub.equals("resetstats")) return handleResetStats(sender, args);
+        if (sub.equals("connectioncheck") || sub.equals("cc")) return handleConnection(sender, args);
         if (sub.equals("creator")) return handleCreator(sender);
         if (sub.equals("reload")) return handleReload(sender);
         if (sub.equals("help")) {
@@ -72,6 +73,117 @@ public class BuildFFACommand implements CommandExecutor {
 
         sender.sendMessage(colorize("&cUnknown subcommand. Use /buildffa help"));
         return true;
+    }
+
+    // ==========================================
+    // Connection Check Command
+    // ==========================================
+    private boolean handleConnection(CommandSender sender, String[] args) {
+        if (!sender.hasPermission(getPerm("connectioncheck", "buildffa.connection"))) {
+            sendNoPerm(sender);
+            return true;
+        }
+
+        Connection conn = getConnectionListener();
+        if (conn == null) {
+            sender.sendMessage(colorize("&cError: Connection listener not found. Try /buildffa reload"));
+            return true;
+        }
+
+        if (args.length < 2) {
+            sender.sendMessage(colorize("&8&m----------------------------------"));
+            sender.sendMessage(colorize("&6&lConnection Check Status"));
+            sender.sendMessage(colorize("&7Enabled: " + (conn.isEnabled() ? "&aYES" : "&cNO")));
+            sender.sendMessage(colorize("&7Ping Threshold: &e" + conn.getPingThreshold() + "ms"));
+            sender.sendMessage(colorize("&7Usage: &e/buildffa cc on|off|toggle"));
+            sender.sendMessage(colorize("&7Usage: &e/buildffa cc bypass <player>"));
+            sender.sendMessage(colorize("&7Usage: &e/buildffa cc unbypass <player>"));
+            sender.sendMessage(colorize("&7Usage: &e/buildffa cc set <ping>"));
+            sender.sendMessage(colorize("&8&m----------------------------------"));
+            return true;
+        }
+
+        String arg = args[1].toLowerCase();
+
+        if (arg.equals("on")) {
+            conn.setEnabled(true);
+            sender.sendMessage(colorize("&aConnection check &lENABLED&a."));
+            return true;
+        }
+
+        if (arg.equals("off")) {
+            conn.setEnabled(false);
+            sender.sendMessage(colorize("&cConnection check &lDISABLED&c."));
+            return true;
+        }
+
+        if (arg.equals("toggle")) {
+            boolean state = !conn.isEnabled();
+            conn.setEnabled(state);
+            sender.sendMessage(colorize(state
+                    ? "&aConnection check &lENABLED&a."
+                    : "&cConnection check &lDISABLED&c."));
+            return true;
+        }
+
+        if (arg.equals("bypass")) {
+            if (args.length < 3) {
+                sender.sendMessage(colorize("&cUsage: /buildffa cc bypass <player>"));
+                return true;
+            }
+            Player target = Bukkit.getPlayer(args[2]);
+            if (target == null) {
+                sender.sendMessage(colorize("&cPlayer not found: &e" + args[2]));
+                return true;
+            }
+            conn.addBypass(target.getUniqueId());
+            sender.sendMessage(colorize("&a" + target.getName() + " is now bypassing connection check."));
+            return true;
+        }
+
+        if (arg.equals("unbypass")) {
+            if (args.length < 3) {
+                sender.sendMessage(colorize("&cUsage: /buildffa cc unbypass <player>"));
+                return true;
+            }
+            Player target = Bukkit.getPlayer(args[2]);
+            if (target == null) {
+                sender.sendMessage(colorize("&cPlayer not found: &e" + args[2]));
+                return true;
+            }
+            conn.removeBypass(target.getUniqueId());
+            sender.sendMessage(colorize("&a" + target.getName() + " is no longer bypassing."));
+            return true;
+        }
+
+        if (arg.equals("set")) {
+            if (args.length < 3) {
+                sender.sendMessage(colorize("&cUsage: /buildffa cc set <ping>"));
+                return true;
+            }
+            try {
+                int ping = Integer.parseInt(args[2]);
+                conn.setPingThreshold(ping);
+                sender.sendMessage(colorize("&aPing threshold set to &e" + ping + "ms&a."));
+            } catch (NumberFormatException e) {
+                sender.sendMessage(colorize("&cInvalid number: &e" + args[2]));
+            }
+            return true;
+        }
+
+        sender.sendMessage(colorize("&cUnknown argument. Use /buildffa cc"));
+        return true;
+    }
+
+    private Connection getConnectionListener() {
+        ArrayList<RegisteredListener> listeners = HandlerList.getRegisteredListeners(this.plugin);
+        for (RegisteredListener rl : listeners) {
+            Listener l = rl.getListener();
+            if (l instanceof Connection) {
+                return (Connection) l;
+            }
+        }
+        return null;
     }
 
     // ==========================================
@@ -526,6 +638,7 @@ public class BuildFFACommand implements CommandExecutor {
             if (l instanceof Void) ((Void) l).reloadConfig();
             if (l instanceof High) ((High) l).reloadConfig();
             if (l instanceof YPvP) ((YPvP) l).reloadConfig();
+            if (l instanceof Connection) ((Connection) l).reloadConfig();
         }
     }
 
@@ -579,6 +692,10 @@ public class BuildFFACommand implements CommandExecutor {
         sender.sendMessage(colorize("&e/buildffa stats [player] &7- Show player stats"));
         sender.sendMessage(colorize("&e/buildffa top [kills|deaths|kdr|streak] [limit] &7- Show top players"));
         sender.sendMessage(colorize("&e/buildffa resetstats <player> &7- Reset player stats"));
+        sender.sendMessage(colorize("&e/buildffa cc &7- Connection check status"));
+        sender.sendMessage(colorize("&e/buildffa cc on|off|toggle &7- Toggle connection check"));
+        sender.sendMessage(colorize("&e/buildffa cc bypass <player> &7- Bypass a player"));
+        sender.sendMessage(colorize("&e/buildffa cc set <ping> &7- Change ping threshold"));
         sender.sendMessage(colorize("&e/buildffa sb &7- Toggle scoreboard visibility"));
         sender.sendMessage(colorize("&e/buildffa sb reload &7- Reload scoreboard.yml"));
         sender.sendMessage(colorize("&e/buildffa creator &7- Show plugin credits"));

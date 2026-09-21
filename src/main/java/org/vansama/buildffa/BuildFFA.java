@@ -25,6 +25,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     private ScoreboardManager scoreboardManager;
     private DatabaseManager databaseManager;
     private Voice voice;
+    private Connection connection;
 
     @Override
     public void onEnable() {
@@ -42,6 +43,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         this.killListener = new KillListener(this);
         this.scoreboardManager = new ScoreboardManager(this, this.killListener, this.databaseManager);
         this.voice = new Voice(this);
+        this.connection = new Connection(this);
 
         getServer().getPluginManager().registerEvents(this.blocks, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.equip, (Plugin) this);
@@ -59,6 +61,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(new YPvP(this), (Plugin) this);
         getServer().getPluginManager().registerEvents(this.scoreboardManager, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.voice, (Plugin) this);
+        getServer().getPluginManager().registerEvents(this.connection, (Plugin) this);
         getServer().getPluginManager().registerEvents(this, (Plugin) this);
 
         getCommand("buildffa").setExecutor(new BuildFFACommand(this, this.kitEditor, this.scoreboardManager, this.databaseManager));
@@ -169,6 +172,14 @@ public final class BuildFFA extends JavaPlugin implements Listener {
                 cfg.set("database.autosave", Boolean.valueOf(true));
                 cfg.set("database.autosave-interval", Long.valueOf(300L));
 
+                cfg.set("connection-check.enabled", Boolean.valueOf(true));
+                cfg.set("connection-check.ping-threshold", Integer.valueOf(150));
+                cfg.set("connection-check.check-interval", Integer.valueOf(20));
+                cfg.set("connection-check.grace-seconds", Integer.valueOf(30));
+                cfg.set("connection-check.warn-cooldown", Integer.valueOf(5));
+                cfg.set("connection-check.kick-message", "&cUnstable connection\n&fYour ping is too high: &e%ping%ms&7/&e%max%ms");
+                cfg.set("connection-check.bypass-permission", "buildffa.connection.bypass");
+
                 cfg.set("kill", "&e%killer% &7killed &e%loser% &7(&e%killcount% &7kills)");
                 cfg.set("Title-Suffix", " &7Kill");
                 cfg.set("SubTitle-kill", "&e+1 Kill");
@@ -189,6 +200,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
                 cfg.set("permissions.scoreboard-toggle", "buildffa.scoreboard.toggle");
                 cfg.set("permissions.highlimit-bypass", "buildffa.highlimit.bypass");
                 cfg.set("permissions.resetstats", "buildffa.resetstats");
+                cfg.set("permissions.connectioncheck", "buildffa.connection");
 
                 cfg.set("messages.no-permission", "&cYou do not have permission to do this.");
 
@@ -202,7 +214,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
                 cfg.set("sounds.kill", Boolean.valueOf(true));
                 cfg.set("sounds.death", Boolean.valueOf(true));
                 cfg.set("sounds.join", Boolean.valueOf(true));
-                cfg.set("sounds.hit", Boolean.valueOf(true));
                 cfg.set("sounds.chat", Boolean.valueOf(false));
                 cfg.set("sounds.volume", Double.valueOf(1.0D));
                 cfg.set("sounds.pitch", Double.valueOf(1.0D));
@@ -258,5 +269,9 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
     public Voice getVoice() {
         return this.voice;
+    }
+
+    public Connection getConnection() {
+        return this.connection;
     }
 }

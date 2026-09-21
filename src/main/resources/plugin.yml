@@ -6,7 +6,7 @@ description: BuildFFA - Created by Muvixo
 commands:
   buildffa:
     description: Main BuildFFA command
-    usage: /buildffa <help|kiteditor|setvoid|sethighlimit|setspawn|buildmode|ypvp|sb|stats|top|resetstats|creator|reload>
+    usage: /buildffa <help|kiteditor|setvoid|sethighlimit|setspawn|buildmode|ypvp|sb|stats|top|resetstats|cc|creator|reload>
     aliases:
       - bffa
 permissions:
@@ -42,4 +42,10 @@ permissions:
     default: true
   buildffa.resetstats:
     description: Allows resetting player stats
+    default: op
+  buildffa.connection:
+    description: Allows managing connection check
+    default: op
+  buildffa.connection.bypass:
+    description: Bypass the connection check kick
     default: op

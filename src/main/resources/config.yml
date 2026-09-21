@@ -8,41 +8,25 @@
 
 # ----------------------------------------------------------
 #  Void Kill Height
-#  Players who fall below this Y level will die OR teleport.
-#  Set with /buildffa setvoid [y]
 # ----------------------------------------------------------
 kill-height: 0.0
 
 # ----------------------------------------------------------
 #  Void Behaviour
-#  What happens when a player falls below kill-height
 # ----------------------------------------------------------
 void:
-  # If true  -> teleport to spawn + full heal (no death)
-  # If false -> kill the player (old behaviour)
   teleport-instead-of-kill: true
-
-  # Delay before teleporting (in ticks, 20 ticks = 1 sec)
-  # Set to 0 for instant teleport
   teleport-delay: 0
-
-  # Message shown to player when teleported
   teleport-message: '&cYou fell into the void! &7Teleported to spawn.'
-
-  # Broadcast message (only used when teleport-instead-of-kill is false)
   death-message: '&c%player% &7fell into the void'
 
 # ----------------------------------------------------------
 #  High Build Limit
-#  Players cannot place/break blocks above this Y level.
-#  Set with /buildffa sethighlimit [y]
 # ----------------------------------------------------------
 high-limit: 100.0
 
 # ----------------------------------------------------------
 #  YPvP (Y-Level PvP Restriction)
-#  Players at or above this Y level cannot hit or be hit.
-#  Set with /buildffa ypvp [y]
 # ----------------------------------------------------------
 ypvp:
   enabled: false
@@ -51,18 +35,25 @@ ypvp:
 
 # ----------------------------------------------------------
 #  Database (JSON storage in /db folder)
-#  Stores kills, deaths, killstreak, kdr per player
 # ----------------------------------------------------------
 database:
-  # Automatically save all player data periodically
   autosave: true
-  # Save interval in SECONDS (300 = 5 minutes)
   autosave-interval: 300
 
 # ----------------------------------------------------------
+#  Connection Check (Anti-Lag / High Ping Kick)
+# ----------------------------------------------------------
+connection-check:
+  enabled: true
+  ping-threshold: 150
+  check-interval: 20
+  grace-seconds: 30
+  warn-cooldown: 5
+  kick-message: "&cUnstable connection\n&fYour ping is too high: &e%ping%ms&7/&e%max%ms"
+  bypass-permission: 'buildffa.connection.bypass'
+
+# ----------------------------------------------------------
 #  Sounds
-#  Sound effects for kills, deaths, joins
-#  NOTE: No sound on hits (too spammy)
 # ----------------------------------------------------------
 sounds:
   enabled: true
@@ -102,6 +93,7 @@ permissions:
   scoreboard-toggle: 'buildffa.scoreboard.toggle'
   highlimit-bypass: 'buildffa.highlimit.bypass'
   resetstats: 'buildffa.resetstats'
+  connectioncheck: 'buildffa.connection'
 
 messages:
   no-permission: '&cYou do not have permission to do this.'
@@ -118,7 +110,6 @@ kill-screen:
 
 # ----------------------------------------------------------
 #  Spawn
-#  Set with /buildffa setspawn
 # ----------------------------------------------------------
 spawn:
   world: world
