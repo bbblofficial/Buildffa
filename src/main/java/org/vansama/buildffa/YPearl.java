@@ -23,6 +23,7 @@ public class YPearl implements Listener {
     private double yPearlLimit;
     private boolean enabled;
     private String bypassPermission;
+    private String message;
 
     private final Map<UUID, Long> lastMessageTime = new HashMap<UUID, Long>();
     private static final long MESSAGE_COOLDOWN = 1500L;
@@ -38,6 +39,10 @@ public class YPearl implements Listener {
         this.enabled = config.getBoolean("ypearl.enabled", true);
         this.yPearlLimit = config.getDouble("ypearl.y-level", 61.5D);
         this.bypassPermission = config.getString("permissions.ypearl-bypass", "buildffa.ypearl.bypass");
+
+        String msg = config.getString("ypearl.message", "&cYou cannot throw pearls here!");
+        if (msg == null) msg = "";
+        this.message = msg;
 
         this.plugin.getLogger().info("BuildFFA ypearl loaded: " +
                 (this.enabled ? "ENABLED at Y >= " + this.yPearlLimit : "DISABLED"));
@@ -59,7 +64,7 @@ public class YPearl implements Listener {
     // ============================================================
     //  LET THE PEARL FLY — track it every tick.
     //  The moment it crosses above the Y limit, delete it and
-    //  tell the thrower: "You can't throw pearls!"
+    //  send the configured message.
     // ============================================================
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onProjectileLaunch(ProjectileLaunchEvent event) {
@@ -73,7 +78,6 @@ public class YPearl implements Listener {
         if (shouldBypass(shooter)) return;
 
         // If the player is already above the limit, delete instantly
-        // — the pearl would never be valid anyway.
         if (shooter.getLocation().getY() >= this.yPearlLimit) {
             pearl.remove();
             sendMessage(shooter);
@@ -84,13 +88,11 @@ public class YPearl implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-                // Stop if pearl is gone
                 if (pearl.isDead() || !pearl.isValid()) {
                     cancel();
                     return;
                 }
 
-                // Pearl crossed above the limit → delete + message
                 if (pearl.getLocation().getY() >= yPearlLimit) {
                     pearl.remove();
                     sendMessage(shooter);
@@ -101,8 +103,8 @@ public class YPearl implements Listener {
     }
 
     // ============================================================
-    //  SAFETY NET: if the tracker somehow missed a tick and the
-    //  pearl teleported the player above the limit, cancel it.
+    //  SAFETY NET: cancel the actual ender-pearl teleport if the
+    //  tracker somehow missed a tick.
     // ============================================================
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPearlTeleport(PlayerTeleportEvent event) {
@@ -121,6 +123,9 @@ public class YPearl implements Listener {
     private void sendMessage(final Player player) {
         if (player == null || !player.isOnline()) return;
 
+        // If the admin disabled the message, don't send anything
+        if (this.message == null || this.message.isEmpty()) return;
+
         long now = System.currentTimeMillis();
         long last = this.lastMessageTime.containsKey(player.getUniqueId())
                 ? this.lastMessageTime.get(player.getUniqueId()).longValue() : 0L;
@@ -128,10 +133,8 @@ public class YPearl implements Listener {
         if (now - last < MESSAGE_COOLDOWN) return;
         this.lastMessageTime.put(player.getUniqueId(), Long.valueOf(now));
 
-        player.sendMessage("");
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "  &c&l✖ &cYou can't throw pearls here!"));
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "  &7Ender Pearls are disabled above &eY=" + (int) this.yPearlLimit));
-        player.sendMessage("");
+        String out = this.message.replace("%y%", String.valueOf((int) this.yPearlLimit));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', out));
     }
 
     public boolean isEnabled() {

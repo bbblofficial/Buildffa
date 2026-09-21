@@ -88,6 +88,15 @@ ypvp:
   y-level: 61.5
   block-projectiles: true
 
+  # Message shown to the player when they try to PvP above the limit.
+  #   %y%  = the configured Y level (int)
+  #
+  # Examples:
+  #   '&cYou cannot PvP here!'
+  #   '&cYou cannot PvP here! &7(&eY=%y%&7)'
+  #   ''   <- disables the message entirely
+  message: '&cYou cannot PvP here!'
+
 # ----------------------------------------------------------
 #  YPearl (Y-Level Ender Pearl Restriction)
 #  Players below this Y level can throw pearls.
@@ -98,6 +107,15 @@ ypvp:
 ypearl:
   enabled: true
   y-level: 61.5
+
+  # Message shown to the player when their pearl is blocked/deleted.
+  #   %y%  = the configured Y level (int)
+  #
+  # Examples:
+  #   '&cYou cannot throw pearls here!'
+  #   '&cYou cannot throw pearls here! &7(&eY=%y%&7)'
+  #   ''   <- disables the message entirely
+  message: '&cYou cannot throw pearls here!'
 
 # ----------------------------------------------------------
 #  Database (JSON storage in /db folder)

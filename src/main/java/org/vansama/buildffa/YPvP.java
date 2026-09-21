@@ -25,6 +25,7 @@ public class YPvP implements Listener {
     private boolean enabled;
     private String bypassPermission;
     private boolean blockProjectiles;
+    private String message;
 
     private final Map<UUID, Long> lastMessageTime = new HashMap<UUID, Long>();
     private static final long MESSAGE_COOLDOWN = 1500L;
@@ -41,6 +42,10 @@ public class YPvP implements Listener {
         this.yPvPLimit = config.getDouble("ypvp.y-level", 150.0D);
         this.bypassPermission = config.getString("permissions.ypvp-bypass", "buildffa.ypvp.bypass");
         this.blockProjectiles = config.getBoolean("ypvp.block-projectiles", true);
+
+        String msg = config.getString("ypvp.message", "&cYou cannot PvP here!");
+        if (msg == null) msg = "";
+        this.message = msg;
 
         this.plugin.getLogger().info("BuildFFA ypvp loaded: " +
                 (this.enabled ? "ENABLED at Y >= " + this.yPvPLimit : "DISABLED"));
@@ -169,6 +174,9 @@ public class YPvP implements Listener {
     private void sendMessage(Player player) {
         if (player == null || !player.isOnline()) return;
 
+        // If the admin disabled the message, don't send anything
+        if (this.message == null || this.message.isEmpty()) return;
+
         long now = System.currentTimeMillis();
         long last = this.lastMessageTime.containsKey(player.getUniqueId())
                 ? this.lastMessageTime.get(player.getUniqueId()).longValue() : 0L;
@@ -176,10 +184,8 @@ public class YPvP implements Listener {
         if (now - last < MESSAGE_COOLDOWN) return;
         this.lastMessageTime.put(player.getUniqueId(), Long.valueOf(now));
 
-        player.sendMessage("");
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "  &6&lYPvP"));
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "  &7You cannot PvP above &eY=" + (int) this.yPvPLimit));
-        player.sendMessage("");
+        String out = this.message.replace("%y%", String.valueOf((int) this.yPvPLimit));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', out));
     }
 
     public boolean isEnabled() {

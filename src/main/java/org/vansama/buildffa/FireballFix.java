@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -32,10 +33,9 @@ public class FireballFix implements Listener {
     private final Map<UUID, Long> cooldown = new HashMap<UUID, Long>();
     private static final long COOLDOWN_MS = 500L;
 
-    // Vanilla Minecraft base fireball speed
+    // Vanilla Minecraft base fireball acceleration (dirX/Y/Z default)
     private static final double VANILLA_BASE = 2.0D;
 
-    // Config slider range
     public static final double SLIDER_MIN = -10.0D;
     public static final double SLIDER_MAX = 10.0D;
 
@@ -46,9 +46,9 @@ public class FireballFix implements Listener {
 
     // ============================================================
     //  SLIDER → MULTIPLIER
-    //  -10 → 0.0  (stopped)
-    //    0 → 1.0  (vanilla exact)
-    //  +10 → 2.0  (double speed)
+    //  -10 → 0.00x  (stopped)
+    //    0 → 1.00x  (vanilla exact)
+    //  +10 → 2.00x  (double acceleration)
     // ============================================================
     public static double sliderToMultiplier(double slider) {
         if (slider < SLIDER_MIN) slider = SLIDER_MIN;
@@ -64,7 +64,7 @@ public class FireballFix implements Listener {
     }
 
     // ============================================================
-    //  LAUNCH FIREBALL
+    //  LAUNCH FIREBALL — FIXED
     // ============================================================
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onRightClick(PlayerInteractEvent event) {
@@ -97,23 +97,38 @@ public class FireballFix implements Listener {
         }
         player.updateInventory();
 
-        Fireball fireball = player.launchProjectile(Fireball.class);
+        // ============================================================
+        //  FIX: compute direction & speed FIRST
+        // ============================================================
+        final Vector dir = player.getLocation().getDirection().normalize();
+        final double multiplier = getMultiplier();
+        final double speed = VANILLA_BASE * multiplier;
+
+        final Fireball fireball = player.launchProjectile(Fireball.class);
+
+        // ---- Step 1: set DIRECTION first (this is what 1.8.8 uses as acceleration) ----
+        fireball.setDirection(dir.clone().multiply(speed * 0.1D));
+
+        // ---- Step 2: THEN set velocity (initial speed) ----
+        fireball.setVelocity(dir.clone().multiply(speed));
+
+        // ---- Step 3: RE-APPLY on the next tick (1.8.8 wipes motX/Y/Z on first update) ----
+        Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
+            @Override
+            public void run() {
+                if (fireball.isValid() && !fireball.isDead()) {
+                    fireball.setDirection(dir.clone().multiply(speed * 0.1D));
+                    fireball.setVelocity(dir.clone().multiply(speed));
+                }
+            }
+        }, 1L);
 
         // ============================================================
-        //  SPEED: vanilla base × configurable multiplier
+        //  EXPLOSION / EFFECTS
         // ============================================================
-        Vector dir = player.getLocation().getDirection().normalize();
-        double finalSpeed = VANILLA_BASE * getMultiplier();
-
-        fireball.setVelocity(dir.clone().multiply(finalSpeed));
-
-        // Engine's base direction multiplier (keeps projectile stable in air)
-        fireball.setDirection(dir.clone().multiply(finalSpeed * 0.1D));
-
         double yield = this.plugin.getConfig().getDouble("fireball.yield", 1.0D);
         fireball.setYield((float) yield);
 
-        // Throw effects
         if (this.plugin.getConfig().getBoolean("fireball.throw-effects.enabled", false)) {
             List<String> effects = this.plugin.getConfig().getStringList("fireball.throw-effects.effects");
             if (effects != null) {

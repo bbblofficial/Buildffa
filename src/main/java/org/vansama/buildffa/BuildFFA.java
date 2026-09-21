@@ -264,13 +264,17 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "void.death-message", "&c%player% &7fell into the void");
         setIfMissing(cfg, "void.killed-by-message", "&c%player% &7was knocked into the void by &c%killer%");
 
+        // ==================== YPvP ====================
         setIfMissing(cfg, "ypvp.enabled", Boolean.valueOf(false));
         setIfMissing(cfg, "ypvp.y-level", Double.valueOf(150.0D));
         setIfMissing(cfg, "ypvp.block-projectiles", Boolean.valueOf(true));
+        setIfMissing(cfg, "ypvp.message", "&cYou cannot PvP here!");
+        // ==============================================
 
         // ==================== YPearl ====================
         setIfMissing(cfg, "ypearl.enabled", Boolean.valueOf(true));
         setIfMissing(cfg, "ypearl.y-level", Double.valueOf(61.5D));
+        setIfMissing(cfg, "ypearl.message", "&cYou cannot throw pearls here!");
         // ===============================================
 
         setIfMissing(cfg, "database.autosave", Boolean.valueOf(true));
