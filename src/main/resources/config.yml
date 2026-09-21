@@ -212,8 +212,14 @@ fireball:
   message: ''
 
   # Speed of the fireball
-  # 1.0 = slow, 2.0 = fast (recommended), 3.0 = very fast
-  speed: 2.0
+  # 0.0 = DEFAULT MINECRAFT speed (vanilla, not modified)
+  # 1.0 = slow
+  # 2.0 = fast (recommended)
+  # 3.0 = very fast
+  #
+  # When set to 0, the plugin does NOT touch the fireball's
+  # velocity — Minecraft's default behavior is used.
+  speed: 0.0
 
   # Explosion size (blocks)
   yield: 1.0
@@ -232,13 +238,13 @@ fireball:
     # Radius (in blocks) where players get knocked
     radius: 4.0
 
-    # Vertical knockback force (Lowered to 1.0 for balanced jump height)
+    # Vertical knockback force
     height-force: 1.0
 
-    # Horizontal knockback force (Lowered to 1.5 for balanced backward push)
+    # Horizontal knockback force
     radius-force: 1.5
 
-    # Extra damage on top of the distance-based damage (Fixed to exactly 0.5)
+    # Extra damage on top of the distance-based damage
     damage: 0.5
 
 # ----------------------------------------------------------

@@ -351,7 +351,8 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
         // ==================== Fireball ====================
         setIfMissing(cfg, "fireball.message", "");
-        setIfMissing(cfg, "fireball.speed", Double.valueOf(2.0D));
+        // 0.0 = default Minecraft speed (plugin does NOT modify velocity)
+        setIfMissing(cfg, "fireball.speed", Double.valueOf(0.0D));
         setIfMissing(cfg, "fireball.yield", Double.valueOf(1.0D));
 
         setIfMissing(cfg, "fireball.throw-effects.enabled", Boolean.valueOf(false));

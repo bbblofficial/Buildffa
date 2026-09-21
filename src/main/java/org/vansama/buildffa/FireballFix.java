@@ -39,13 +39,10 @@ public class FireballFix implements Listener {
 
     // ============================================================
     //  RIGHT-CLICK FIRE CHARGE → SHOOT FIREBALL
-    //  Works everywhere (air, block, entity) — no requirement
-    //  to be looking at a block.
+    //  Works everywhere (air, block, entity)
     // ============================================================
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onRightClick(PlayerInteractEvent event) {
-        // Accept RIGHT_CLICK_AIR and RIGHT_CLICK_BLOCK only.
-        // (LEFT_CLICK actions are ignored.)
         Action action = event.getAction();
         if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) {
             return;
@@ -57,7 +54,6 @@ public class FireballFix implements Listener {
 
         if (item.getType() != Material.FIREBALL) return;
 
-        // Cancel vanilla behavior (fire charge placement / etc.)
         event.setCancelled(true);
 
         long now = System.currentTimeMillis();
@@ -80,10 +76,21 @@ public class FireballFix implements Listener {
         // Launch fireball
         Fireball fireball = player.launchProjectile(Fireball.class);
 
-        double speed = this.plugin.getConfig().getDouble("fireball.speed", 2.0D);
-        Vector direction = player.getLocation().getDirection().multiply(speed);
-        fireball.setDirection(direction);
-        fireball.setVelocity(direction);
+        // ============================================================
+        //  SPEED HANDLING
+        //  If fireball.speed <= 0 → do NOT touch velocity.
+        //  Minecraft's default speed is used.
+        //  If fireball.speed  > 0 → apply custom velocity.
+        // ============================================================
+        double speed = this.plugin.getConfig().getDouble("fireball.speed", 0.0D);
+
+        if (speed > 0.0D) {
+            Vector direction = player.getLocation().getDirection().multiply(speed);
+            fireball.setDirection(direction);
+            fireball.setVelocity(direction);
+        }
+        // else: leave fireball velocity as vanilla default
+        // ============================================================
 
         fireball.setIsIncendiary(false);
 
