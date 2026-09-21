@@ -7,7 +7,7 @@ softdepend: [PlaceholderAPI]
 commands:
   buildffa:
     description: Main BuildFFA command
-    usage: /buildffa <help|kiteditor|setvoid|sethighlimit|setspawn|buildmode|ypvp|ypearl|sb|stats|top|resetstats|forceksreward|cc|creator|reload>
+    usage: /buildffa <help|kiteditor|setvoid|sethighlimit|setspawn|buildmode|ypvp|ypearl|fb-speed|sb|stats|top|resetstats|forceksreward|cc|creator|reload>
     aliases:
       - bffa
 permissions:
@@ -40,6 +40,9 @@ permissions:
     default: op
   buildffa.ypearl.bypass:
     description: Bypass the YPearl throw restriction
+    default: op
+  buildffa.fireball.speed:
+    description: Allows changing the fireball speed
     default: op
   buildffa.buildmode:
     description: Allows toggling build mode (high-limit bypass)

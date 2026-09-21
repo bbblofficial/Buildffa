@@ -298,6 +298,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "permissions.ypvp-bypass", "buildffa.ypvp.bypass");
         setIfMissing(cfg, "permissions.ypearl", "buildffa.ypearl");
         setIfMissing(cfg, "permissions.ypearl-bypass", "buildffa.ypearl.bypass");
+        setIfMissing(cfg, "permissions.fireball-speed", "buildffa.fireball.speed");
         setIfMissing(cfg, "permissions.kiteditor", "buildffa.kiteditor");
         setIfMissing(cfg, "permissions.setvoid", "buildffa.setvoid");
         setIfMissing(cfg, "permissions.sethighlimit", "buildffa.sethighlimit");
@@ -360,9 +361,10 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         // ======================================================
 
         // ==================== Fireball ====================
-        // NOTE: No speed option. The plugin uses VANILLA_BASE × 1.15
-        // internally — a tiny boost over vanilla, like BedWars.
+        // Speed is controlled with /buildffa fb-speed <value>
+        // Range: -10 (stopped) to +10 (double speed)
         setIfMissing(cfg, "fireball.message", "");
+        setIfMissing(cfg, "fireball.speed-level", Double.valueOf(1.5D));
         setIfMissing(cfg, "fireball.yield", Double.valueOf(1.0D));
 
         setIfMissing(cfg, "fireball.throw-effects.enabled", Boolean.valueOf(false));

@@ -6,14 +6,16 @@ import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
-import org.bukkit.entity.EnderPearl;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 public class YPearl implements Listener {
 
@@ -45,12 +47,6 @@ public class YPearl implements Listener {
         loadConfiguration();
     }
 
-    private boolean isAboveLimit(Player player) {
-        if (!this.enabled) return false;
-        if (player == null || !player.isOnline()) return false;
-        return player.getLocation().getY() >= this.yPearlLimit;
-    }
-
     private boolean shouldBypass(Player player) {
         if (player == null) return true;
         if (this.bypassPermission != null && !this.bypassPermission.isEmpty()
@@ -61,30 +57,68 @@ public class YPearl implements Listener {
     }
 
     // ============================================================
-    //  BLOCK ENDER PEARL THROW ABOVE Y LIMIT
-    //  The pearl is consumed and the player is told they can't.
+    //  LET THE PEARL FLY — track it every tick.
+    //  The moment it crosses above the Y limit, delete it and
+    //  tell the thrower: "You can't throw pearls!"
     // ============================================================
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onProjectileLaunch(ProjectileLaunchEvent event) {
         if (!this.enabled) return;
         if (!(event.getEntity() instanceof EnderPearl)) return;
         if (!(event.getEntity().getShooter() instanceof Player)) return;
 
-        Player shooter = (Player) event.getEntity().getShooter();
+        final EnderPearl pearl = (EnderPearl) event.getEntity();
+        final Player shooter = (Player) pearl.getShooter();
+
         if (shouldBypass(shooter)) return;
 
-        if (isAboveLimit(shooter)) {
-            // Remove the pearl entirely — exactly like the request says
-            event.setCancelled(true);
-            // Manually remove the projectile entity in case the event
-            // was already fired and the pearl is in the world.
-            event.getEntity().remove();
-
+        // If the player is already above the limit, delete instantly
+        // — the pearl would never be valid anyway.
+        if (shooter.getLocation().getY() >= this.yPearlLimit) {
+            pearl.remove();
             sendMessage(shooter);
+            return;
+        }
+
+        // Otherwise track the pearl while it flies
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                // Stop if pearl is gone
+                if (pearl.isDead() || !pearl.isValid()) {
+                    cancel();
+                    return;
+                }
+
+                // Pearl crossed above the limit → delete + message
+                if (pearl.getLocation().getY() >= yPearlLimit) {
+                    pearl.remove();
+                    sendMessage(shooter);
+                    cancel();
+                }
+            }
+        }.runTaskTimer(this.plugin, 1L, 1L);
+    }
+
+    // ============================================================
+    //  SAFETY NET: if the tracker somehow missed a tick and the
+    //  pearl teleported the player above the limit, cancel it.
+    // ============================================================
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPearlTeleport(PlayerTeleportEvent event) {
+        if (!this.enabled) return;
+        if (event.getCause() != PlayerTeleportEvent.TeleportCause.ENDER_PEARL) return;
+
+        Player player = event.getPlayer();
+        if (shouldBypass(player)) return;
+
+        if (event.getTo().getY() >= this.yPearlLimit) {
+            event.setCancelled(true);
+            sendMessage(player);
         }
     }
 
-    private void sendMessage(Player player) {
+    private void sendMessage(final Player player) {
         if (player == null || !player.isOnline()) return;
 
         long now = System.currentTimeMillis();
@@ -95,8 +129,8 @@ public class YPearl implements Listener {
         this.lastMessageTime.put(player.getUniqueId(), Long.valueOf(now));
 
         player.sendMessage("");
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "  &6&lYPearl"));
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "  &7You cannot throw Ender Pearls above &eY=" + (int) this.yPearlLimit));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "  &c&l✖ &cYou can't throw pearls here!"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "  &7Ender Pearls are disabled above &eY=" + (int) this.yPearlLimit));
         player.sendMessage("");
     }
 

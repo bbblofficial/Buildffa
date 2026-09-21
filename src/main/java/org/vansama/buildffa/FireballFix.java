@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -33,12 +32,12 @@ public class FireballFix implements Listener {
     private final Map<UUID, Long> cooldown = new HashMap<UUID, Long>();
     private static final long COOLDOWN_MS = 500L;
 
-    // Default vanilla base speed (Minecraft engine)
+    // Vanilla Minecraft base fireball speed
     private static final double VANILLA_BASE = 2.0D;
 
-    // Tiny boost over vanilla — like BedWars / other practice servers
-    // 1.15 = 15% faster than default. Keep it subtle.
-    private static final double SPEED_MULTIPLIER = 1.15D;
+    // Config slider range
+    public static final double SLIDER_MIN = -10.0D;
+    public static final double SLIDER_MAX = 10.0D;
 
     public FireballFix(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -46,7 +45,26 @@ public class FireballFix implements Listener {
     }
 
     // ============================================================
-    //  LAUNCH FIREBALL (Vanilla + tiny boost, no config speed)
+    //  SLIDER → MULTIPLIER
+    //  -10 → 0.0  (stopped)
+    //    0 → 1.0  (vanilla exact)
+    //  +10 → 2.0  (double speed)
+    // ============================================================
+    public static double sliderToMultiplier(double slider) {
+        if (slider < SLIDER_MIN) slider = SLIDER_MIN;
+        if (slider > SLIDER_MAX) slider = SLIDER_MAX;
+        return 1.0D + (slider / 10.0D);
+    }
+
+    private double getMultiplier() {
+        double slider = this.plugin.getConfig().getDouble("fireball.speed-level", 1.5D);
+        if (slider < SLIDER_MIN) slider = SLIDER_MIN;
+        if (slider > SLIDER_MAX) slider = SLIDER_MAX;
+        return sliderToMultiplier(slider);
+    }
+
+    // ============================================================
+    //  LAUNCH FIREBALL
     // ============================================================
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onRightClick(PlayerInteractEvent event) {
@@ -82,23 +100,20 @@ public class FireballFix implements Listener {
         Fireball fireball = player.launchProjectile(Fireball.class);
 
         // ============================================================
-        //  SPEED: vanilla base × tiny multiplier (no config)
-        //  This keeps the fireball feeling natural, just slightly
-        //  faster than vanilla — exactly like BedWars.
+        //  SPEED: vanilla base × configurable multiplier
         // ============================================================
         Vector dir = player.getLocation().getDirection().normalize();
-        double finalSpeed = VANILLA_BASE * SPEED_MULTIPLIER;
+        double finalSpeed = VANILLA_BASE * getMultiplier();
 
         fireball.setVelocity(dir.clone().multiply(finalSpeed));
 
-        // The engine's base direction multiplier (0.1) keeps the
-        // projectile stable in air — prevents it from "lagging".
+        // Engine's base direction multiplier (keeps projectile stable in air)
         fireball.setDirection(dir.clone().multiply(finalSpeed * 0.1D));
 
         double yield = this.plugin.getConfig().getDouble("fireball.yield", 1.0D);
         fireball.setYield((float) yield);
 
-        // Throw effects (optional, unchanged)
+        // Throw effects
         if (this.plugin.getConfig().getBoolean("fireball.throw-effects.enabled", false)) {
             List<String> effects = this.plugin.getConfig().getStringList("fireball.throw-effects.effects");
             if (effects != null) {
@@ -117,6 +132,11 @@ public class FireballFix implements Listener {
                     }
                 }
             }
+        }
+
+        String msg = this.plugin.getConfig().getString("fireball.message", "");
+        if (msg != null && !msg.isEmpty()) {
+            player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', msg));
         }
 
         try {

@@ -103,6 +103,14 @@ public class BuildFFACommand implements CommandExecutor {
             return handleYPearl(sender, args);
         }
 
+        if (sub.equals("fb-speed") || sub.equals("fbspeed") || sub.equals("fireball-speed")) {
+            if (!sender.hasPermission(getPerm("fireball-speed", "buildffa.fireball.speed"))) {
+                sendNoPerm(sender);
+                return true;
+            }
+            return handleFireballSpeed(sender, args);
+        }
+
         if (sub.equals("resetstats")) {
             if (!sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))) {
                 sendNoPerm(sender);
@@ -192,6 +200,50 @@ public class BuildFFACommand implements CommandExecutor {
         }
 
         sender.sendMessage(colorize("&cUnknown subcommand. Use /buildffa help"));
+        return true;
+    }
+
+    // ==========================================
+    // Fireball Speed Command
+    // /buildffa fb-speed <-10 to +10>
+    // ==========================================
+    private boolean handleFireballSpeed(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            double current = this.plugin.getConfig().getDouble("fireball.speed-level", 1.5D);
+            double mult = FireballFix.sliderToMultiplier(current);
+
+            sender.sendMessage(colorize("&8&m----------------------------------"));
+            sender.sendMessage(colorize("&6&lFireball Speed"));
+            sender.sendMessage(colorize("&7Current value: &e" + String.format("%.2f", current)));
+            sender.sendMessage(colorize("&7Multiplier: &e" + String.format("%.2f", mult) + "x"));
+            sender.sendMessage(colorize("&7Range: &e-10 &7to &e+10"));
+            sender.sendMessage(colorize("&7Usage: &e/buildffa fb-speed <value>"));
+            sender.sendMessage(colorize("&8&m----------------------------------"));
+            return true;
+        }
+
+        double value;
+        try {
+            value = Double.parseDouble(args[1]);
+        } catch (NumberFormatException e) {
+            sender.sendMessage(colorize("&cInvalid number: &e" + args[1]));
+            sender.sendMessage(colorize("&7Usage: &e/buildffa fb-speed <-10 to 10>"));
+            return true;
+        }
+
+        if (value < FireballFix.SLIDER_MIN || value > FireballFix.SLIDER_MAX) {
+            sender.sendMessage(colorize("&cValue must be between &e-10 &cand &e+10&c."));
+            return true;
+        }
+
+        FileConfiguration config = this.plugin.getConfig();
+        config.set("fireball.speed-level", Double.valueOf(value));
+        this.plugin.saveConfig();
+
+        double mult = FireballFix.sliderToMultiplier(value);
+
+        sender.sendMessage(colorize("&aFireball speed set to &e" + String.format("%.2f", value)
+                + " &a(multiplier: &e" + String.format("%.2f", mult) + "x&a)."));
         return true;
     }
 
@@ -969,7 +1021,7 @@ public class BuildFFACommand implements CommandExecutor {
         ypearl.setEnabled(true);
 
         sender.sendMessage(colorize("&aYPearl Y-level set to &e" + y + " &aand &lENABLED&a."));
-        sender.sendMessage(colorize("&7Players at Y >= &e" + y + " &7cannot throw Ender Pearls."));
+        sender.sendMessage(colorize("&7Players cannot throw Ender Pearls above &eY=" + y + "&7."));
         return true;
     }
 
@@ -1245,6 +1297,7 @@ public class BuildFFACommand implements CommandExecutor {
                 || sender.hasPermission(getPerm("buildmode", "buildffa.buildmode"))
                 || sender.hasPermission(getPerm("ypvp", "buildffa.ypvp"))
                 || sender.hasPermission(getPerm("ypearl", "buildffa.ypearl"))
+                || sender.hasPermission(getPerm("fireball-speed", "buildffa.fireball.speed"))
                 || sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))
                 || sender.hasPermission(getPerm("connectioncheck", "buildffa.connection"))
                 || sender.hasPermission(getPerm("reload", "buildffa.reload"));
@@ -1279,6 +1332,10 @@ public class BuildFFACommand implements CommandExecutor {
                 sender.sendMessage(colorize("&e/buildffa ypearl [y] &7- Set YPearl Y level & enable"));
                 sender.sendMessage(colorize("&e/buildffa ypearl toggle &7- Enable/Disable YPearl"));
                 sender.sendMessage(colorize("&e/buildffa ypearl off &7- Disable YPearl"));
+            }
+
+            if (sender.hasPermission(getPerm("fireball-speed", "buildffa.fireball.speed"))) {
+                sender.sendMessage(colorize("&e/buildffa fb-speed <value> &7- Set fireball speed (-10 to +10)"));
             }
 
             if (sender.hasPermission(getPerm("setspawn", "buildffa.setspawn"))) {

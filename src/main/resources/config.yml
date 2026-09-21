@@ -90,8 +90,9 @@ ypvp:
 
 # ----------------------------------------------------------
 #  YPearl (Y-Level Ender Pearl Restriction)
-#  Players at or above this Y level cannot throw Ender Pearls.
-#  The pearl is removed entirely and the player is told.
+#  Players below this Y level can throw pearls.
+#  The moment a pearl crosses ABOVE this Y level, it is
+#  deleted mid-air and the thrower is told.
 #  Set with /buildffa ypearl [y]
 # ----------------------------------------------------------
 ypearl:
@@ -216,15 +217,23 @@ feather-jump:
 #
 #  Algorithm inspired by BedWars Fireball knockback system.
 #
-#  SPEED: This plugin does NOT expose a speed config.
-#  The fireball flies at VANILLA BASE SPEED × 1.15
-#  (a tiny boost over vanilla — same feel as BedWars
-#  and other practice servers).
+#  SPEED LEVEL (set with /buildffa fb-speed <value>):
+#    -10.0 → fireball is stopped      (multiplier 0.00x)
+#     -5.0 → very slow                (multiplier 0.50x)
+#      0.0 → vanilla exact            (multiplier 1.00x)
+#     +5.0 → fast / BedWars feel      (multiplier 1.50x)
+#    +10.0 → extreme                  (multiplier 2.00x)
+#
+#  Final velocity = VANILLA_BASE (2.0) × multiplier
 # ----------------------------------------------------------
 fireball:
   # Message shown to the shooter (private)
   # Leave empty ('') to disable
   message: ''
+
+  # Speed slider value (-10 to +10)
+  # Default 1.5 → multiplier 1.15x (tiny boost over vanilla)
+  speed-level: 1.5
 
   # Explosion size (blocks)
   yield: 1.0
@@ -277,6 +286,7 @@ permissions:
   ypvp-bypass: buildffa.ypvp.bypass
   ypearl: buildffa.ypearl
   ypearl-bypass: buildffa.ypearl.bypass
+  fireball-speed: buildffa.fireball.speed
   kiteditor: buildffa.kiteditor
   setvoid: buildffa.setvoid
   sethighlimit: buildffa.sethighlimit
