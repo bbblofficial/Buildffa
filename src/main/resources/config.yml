@@ -89,6 +89,16 @@ ypvp:
   block-projectiles: true
 
 # ----------------------------------------------------------
+#  YPearl (Y-Level Ender Pearl Restriction)
+#  Players at or above this Y level cannot throw Ender Pearls.
+#  The pearl is removed entirely and the player is told.
+#  Set with /buildffa ypearl [y]
+# ----------------------------------------------------------
+ypearl:
+  enabled: true
+  y-level: 61.5
+
+# ----------------------------------------------------------
 #  Database (JSON storage in /db folder)
 #  Stores kills, deaths, killstreak, kdr per player
 # ----------------------------------------------------------
@@ -205,24 +215,16 @@ feather-jump:
 #  Works in Survival mode (vanilla only works in Creative).
 #
 #  Algorithm inspired by BedWars Fireball knockback system.
+#
+#  SPEED: This plugin does NOT expose a speed config.
+#  The fireball flies at VANILLA BASE SPEED × 1.15
+#  (a tiny boost over vanilla — same feel as BedWars
+#  and other practice servers).
 # ----------------------------------------------------------
 fireball:
   # Message shown to the shooter (private)
   # Leave empty ('') to disable
   message: ''
-
-  # Speed of the fireball
-  # 0.0  = DEFAULT MINECRAFT speed (plugin does NOT modify velocity)
-  # 0.25 = very slow
-  # 0.5  = slow
-  # 0.75 = medium
-  # 1.0  = fast
-  # 2.0  = very fast
-  # 3.0  = extreme
-  #
-  # The final velocity is: direction × (VANILLA_BASE × speed)
-  # where VANILLA_BASE = 2.0
-  speed: 0.0
 
   # Explosion size (blocks)
   yield: 1.0
@@ -273,6 +275,8 @@ infinite:
 permissions:
   ypvp: buildffa.ypvp
   ypvp-bypass: buildffa.ypvp.bypass
+  ypearl: buildffa.ypearl
+  ypearl-bypass: buildffa.ypearl.bypass
   kiteditor: buildffa.kiteditor
   setvoid: buildffa.setvoid
   sethighlimit: buildffa.sethighlimit

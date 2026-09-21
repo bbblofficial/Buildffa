@@ -31,6 +31,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     private Voice voice;
     private Connection connection;
     private FireballFix fireballFix;
+    private YPearl yPearl;
 
     // ==================== COUNTDOWN ====================
     private static int secondsUntilRefresh = 600;
@@ -71,6 +72,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         this.voice = new Voice(this);
         this.connection = new Connection(this);
         this.fireballFix = new FireballFix(this);
+        this.yPearl = new YPearl(this);
 
         // ==================== REGISTER LISTENERS ====================
         getServer().getPluginManager().registerEvents(this.blocks, (Plugin) this);
@@ -91,6 +93,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(new KitRestore(this, this.equip, this.kitEditor), (Plugin) this);
         getServer().getPluginManager().registerEvents(new SpawnManager(this), (Plugin) this);
         getServer().getPluginManager().registerEvents(new YPvP(this), (Plugin) this);
+        getServer().getPluginManager().registerEvents(this.yPearl, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.scoreboardManager, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.voice, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.connection, (Plugin) this);
@@ -265,6 +268,11 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "ypvp.y-level", Double.valueOf(150.0D));
         setIfMissing(cfg, "ypvp.block-projectiles", Boolean.valueOf(true));
 
+        // ==================== YPearl ====================
+        setIfMissing(cfg, "ypearl.enabled", Boolean.valueOf(true));
+        setIfMissing(cfg, "ypearl.y-level", Double.valueOf(61.5D));
+        // ===============================================
+
         setIfMissing(cfg, "database.autosave", Boolean.valueOf(true));
         setIfMissing(cfg, "database.autosave-interval", Long.valueOf(300L));
 
@@ -288,6 +296,8 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
         setIfMissing(cfg, "permissions.ypvp", "buildffa.ypvp");
         setIfMissing(cfg, "permissions.ypvp-bypass", "buildffa.ypvp.bypass");
+        setIfMissing(cfg, "permissions.ypearl", "buildffa.ypearl");
+        setIfMissing(cfg, "permissions.ypearl-bypass", "buildffa.ypearl.bypass");
         setIfMissing(cfg, "permissions.kiteditor", "buildffa.kiteditor");
         setIfMissing(cfg, "permissions.setvoid", "buildffa.setvoid");
         setIfMissing(cfg, "permissions.sethighlimit", "buildffa.sethighlimit");
@@ -350,9 +360,9 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         // ======================================================
 
         // ==================== Fireball ====================
+        // NOTE: No speed option. The plugin uses VANILLA_BASE × 1.15
+        // internally — a tiny boost over vanilla, like BedWars.
         setIfMissing(cfg, "fireball.message", "");
-        // 0.0 = default Minecraft speed (plugin does NOT modify velocity)
-        setIfMissing(cfg, "fireball.speed", Double.valueOf(0.0D));
         setIfMissing(cfg, "fireball.yield", Double.valueOf(1.0D));
 
         setIfMissing(cfg, "fireball.throw-effects.enabled", Boolean.valueOf(false));
@@ -485,5 +495,9 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
     public FireballFix getFireballFix() {
         return this.fireballFix;
+    }
+
+    public YPearl getYPearl() {
+        return this.yPearl;
     }
 }

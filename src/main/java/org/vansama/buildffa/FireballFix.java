@@ -33,13 +33,20 @@ public class FireballFix implements Listener {
     private final Map<UUID, Long> cooldown = new HashMap<UUID, Long>();
     private static final long COOLDOWN_MS = 500L;
 
+    // Default vanilla base speed (Minecraft engine)
+    private static final double VANILLA_BASE = 2.0D;
+
+    // Tiny boost over vanilla — like BedWars / other practice servers
+    // 1.15 = 15% faster than default. Keep it subtle.
+    private static final double SPEED_MULTIPLIER = 1.15D;
+
     public FireballFix(JavaPlugin plugin) {
         this.plugin = plugin;
         plugin.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
     }
 
     // ============================================================
-    //  LAUNCH FIREBALL (Default MC Speed + Slightly Faster)
+    //  LAUNCH FIREBALL (Vanilla + tiny boost, no config speed)
     // ============================================================
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onRightClick(PlayerInteractEvent event) {
@@ -74,18 +81,24 @@ public class FireballFix implements Listener {
 
         Fireball fireball = player.launchProjectile(Fireball.class);
 
-        // تنظیم سرعت مشابه ماینکرفت اما کمی تندتر (1.5 برابر)
-        double speed = this.plugin.getConfig().getDouble("fireball.speed", 1.5D);
-        Vector dir = player.getLocation().getDirection();
-        
-        fireball.setVelocity(dir.clone().multiply(speed));
-        // ضریب 0.1 برای شتاب‌دهنده انجین ماینکرفت جهت حفظ ثبات گلوله در هوا
-        fireball.setDirection(dir.clone().multiply(speed * 0.1D)); 
+        // ============================================================
+        //  SPEED: vanilla base × tiny multiplier (no config)
+        //  This keeps the fireball feeling natural, just slightly
+        //  faster than vanilla — exactly like BedWars.
+        // ============================================================
+        Vector dir = player.getLocation().getDirection().normalize();
+        double finalSpeed = VANILLA_BASE * SPEED_MULTIPLIER;
+
+        fireball.setVelocity(dir.clone().multiply(finalSpeed));
+
+        // The engine's base direction multiplier (0.1) keeps the
+        // projectile stable in air — prevents it from "lagging".
+        fireball.setDirection(dir.clone().multiply(finalSpeed * 0.1D));
 
         double yield = this.plugin.getConfig().getDouble("fireball.yield", 1.0D);
         fireball.setYield((float) yield);
 
-        // Throw effects
+        // Throw effects (optional, unchanged)
         if (this.plugin.getConfig().getBoolean("fireball.throw-effects.enabled", false)) {
             List<String> effects = this.plugin.getConfig().getStringList("fireball.throw-effects.effects");
             if (effects != null) {
@@ -117,14 +130,13 @@ public class FireballFix implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void fireballHit(ProjectileHitEvent e) {
         if (!(e.getEntity() instanceof Fireball)) return;
-        
+
         if (!this.plugin.getConfig().getBoolean("fireball.knockback.enabled", true)) return;
 
         Location location = e.getEntity().getLocation();
         if (location.getWorld() == null) return;
 
         double fireballExplosionSize = this.plugin.getConfig().getDouble("fireball.knockback.radius", 4.0D);
-        // در BedWars1058 نیروی افقی در 1- ضرب می‌شود تا بردار برعکس شود
         double fireballHorizontal = this.plugin.getConfig().getDouble("fireball.knockback.radius-force", 1.5D) * -1.0D;
         double fireballVertical = this.plugin.getConfig().getDouble("fireball.knockback.height-force", 0.9D);
         double damage = this.plugin.getConfig().getDouble("fireball.knockback.damage", 2.0D);
@@ -137,19 +149,19 @@ public class FireballFix implements Listener {
             Player player = (Player) entity;
 
             Vector playerVector = player.getLocation().toVector();
-            
+
             Vector normalizedVector = vector.clone().subtract(playerVector).normalize();
             Vector horizontalVector = normalizedVector.clone().multiply(fireballHorizontal);
-            
+
             double y = normalizedVector.getY();
             if (y < 0) y += 1.5;
-            
+
             if (y <= 0.5) {
-                y = fireballVertical * 1.5; // kb for not jumping
+                y = fireballVertical * 1.5;
             } else {
-                y = y * fireballVertical * 1.5; // kb for jumping
+                y = y * fireballVertical * 1.5;
             }
-            
+
             player.setVelocity(horizontalVector.setY(y));
 
             if (damage > 0) {
@@ -169,12 +181,11 @@ public class FireballFix implements Listener {
     }
 
     // ============================================================
-    //  BEDWARS1058 FIRE SETTINGS
+    //  FIRE SETTINGS
     // ============================================================
     @EventHandler
     public void fireballPrime(ExplosionPrimeEvent e) {
         if (!(e.getEntity() instanceof Fireball)) return;
-        
         e.setFire(false);
     }
 }

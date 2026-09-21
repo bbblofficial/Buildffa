@@ -95,6 +95,14 @@ public class BuildFFACommand implements CommandExecutor {
             return handleYPvP(sender, args);
         }
 
+        if (sub.equals("ypearl")) {
+            if (!sender.hasPermission(getPerm("ypearl", "buildffa.ypearl"))) {
+                sendNoPerm(sender);
+                return true;
+            }
+            return handleYPearl(sender, args);
+        }
+
         if (sub.equals("resetstats")) {
             if (!sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))) {
                 sendNoPerm(sender);
@@ -904,6 +912,79 @@ public class BuildFFACommand implements CommandExecutor {
     }
 
     // ==========================================
+    // YPearl Command
+    // ==========================================
+    private boolean handleYPearl(CommandSender sender, String[] args) {
+        YPearl ypearl = getYPearlListener();
+        if (ypearl == null) {
+            sender.sendMessage(colorize("&cError: YPearl listener not found. Try /buildffa reload"));
+            return true;
+        }
+
+        if (args.length < 2) {
+            sender.sendMessage(colorize("&8&m----------------------------------"));
+            sender.sendMessage(colorize("&6&lYPearl Status"));
+            sender.sendMessage(colorize("&7Enabled: " + (ypearl.isEnabled() ? "&aYES" : "&cNO")));
+            sender.sendMessage(colorize("&7Y-Level: &e" + ypearl.getYPearlLimit()));
+            sender.sendMessage(colorize("&7Usage: &e/buildffa ypearl [y] &7- Set Y level"));
+            sender.sendMessage(colorize("&7Usage: &e/buildffa ypearl toggle &7- Enable/Disable"));
+            sender.sendMessage(colorize("&7Usage: &e/buildffa ypearl off &7- Disable"));
+            sender.sendMessage(colorize("&8&m----------------------------------"));
+            return true;
+        }
+
+        String arg = args[1].toLowerCase();
+
+        if (arg.equals("toggle")) {
+            boolean newState = !ypearl.isEnabled();
+            ypearl.setEnabled(newState);
+            sender.sendMessage(colorize(newState
+                    ? "&aYPearl has been &lENABLED &aat Y >= &e" + ypearl.getYPearlLimit()
+                    : "&cYPearl has been &lDISABLED"));
+            return true;
+        }
+
+        if (arg.equals("off")) {
+            ypearl.setEnabled(false);
+            sender.sendMessage(colorize("&cYPearl has been &lDISABLED"));
+            return true;
+        }
+
+        if (arg.equals("on")) {
+            ypearl.setEnabled(true);
+            sender.sendMessage(colorize("&aYPearl has been &lENABLED &aat Y >= &e" + ypearl.getYPearlLimit()));
+            return true;
+        }
+
+        double y;
+        try {
+            y = Double.parseDouble(arg);
+        } catch (NumberFormatException e) {
+            sender.sendMessage(colorize("&cInvalid number: &e" + args[1]));
+            sender.sendMessage(colorize("&7Usage: &e/buildffa ypearl [y]"));
+            return true;
+        }
+
+        ypearl.setYPearlLimit(y);
+        ypearl.setEnabled(true);
+
+        sender.sendMessage(colorize("&aYPearl Y-level set to &e" + y + " &aand &lENABLED&a."));
+        sender.sendMessage(colorize("&7Players at Y >= &e" + y + " &7cannot throw Ender Pearls."));
+        return true;
+    }
+
+    private YPearl getYPearlListener() {
+        ArrayList<RegisteredListener> listeners = HandlerList.getRegisteredListeners(this.plugin);
+        for (RegisteredListener rl : listeners) {
+            Listener l = rl.getListener();
+            if (l instanceof YPearl) {
+                return (YPearl) l;
+            }
+        }
+        return null;
+    }
+
+    // ==========================================
     // Build Mode
     // ==========================================
     private boolean handleBuildMode(CommandSender sender, String[] args) {
@@ -1096,6 +1177,7 @@ public class BuildFFACommand implements CommandExecutor {
             if (l instanceof Void) ((Void) l).reloadConfig();
             if (l instanceof High) ((High) l).reloadConfig();
             if (l instanceof YPvP) ((YPvP) l).reloadConfig();
+            if (l instanceof YPearl) ((YPearl) l).reloadConfig();
             if (l instanceof Connection) ((Connection) l).reloadConfig();
             if (l instanceof Blocks) ((Blocks) l).reloadConfig();
         }
@@ -1162,6 +1244,7 @@ public class BuildFFACommand implements CommandExecutor {
                 || sender.hasPermission(getPerm("setspawn", "buildffa.setspawn"))
                 || sender.hasPermission(getPerm("buildmode", "buildffa.buildmode"))
                 || sender.hasPermission(getPerm("ypvp", "buildffa.ypvp"))
+                || sender.hasPermission(getPerm("ypearl", "buildffa.ypearl"))
                 || sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))
                 || sender.hasPermission(getPerm("connectioncheck", "buildffa.connection"))
                 || sender.hasPermission(getPerm("reload", "buildffa.reload"));
@@ -1190,6 +1273,12 @@ public class BuildFFACommand implements CommandExecutor {
                 sender.sendMessage(colorize("&e/buildffa ypvp [y] &7- Set YPvP Y level & enable"));
                 sender.sendMessage(colorize("&e/buildffa ypvp toggle &7- Enable/Disable YPvP"));
                 sender.sendMessage(colorize("&e/buildffa ypvp off &7- Disable YPvP"));
+            }
+
+            if (sender.hasPermission(getPerm("ypearl", "buildffa.ypearl"))) {
+                sender.sendMessage(colorize("&e/buildffa ypearl [y] &7- Set YPearl Y level & enable"));
+                sender.sendMessage(colorize("&e/buildffa ypearl toggle &7- Enable/Disable YPearl"));
+                sender.sendMessage(colorize("&e/buildffa ypearl off &7- Disable YPearl"));
             }
 
             if (sender.hasPermission(getPerm("setspawn", "buildffa.setspawn"))) {
