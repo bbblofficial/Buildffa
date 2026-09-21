@@ -15,6 +15,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 public final class BuildFFA extends JavaPlugin implements Listener {
 
@@ -26,6 +27,25 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     private DatabaseManager databaseManager;
     private Voice voice;
     private Connection connection;
+
+    // ==================== COUNTDOWN ====================
+    /** Seconds remaining until next leaderboard refresh. */
+    private static int secondsUntilRefresh = 600;
+    /** Total interval in seconds (10:00 = 600). */
+    private static int refreshIntervalSeconds = 600;
+
+    public static int getSecondsUntilRefresh() {
+        return secondsUntilRefresh;
+    }
+
+    public static int getRefreshIntervalSeconds() {
+        return refreshIntervalSeconds;
+    }
+
+    public static void resetCountdown() {
+        secondsUntilRefresh = refreshIntervalSeconds;
+    }
+    // ===================================================
 
     @Override
     public void onEnable() {
@@ -78,6 +98,20 @@ public final class BuildFFA extends JavaPlugin implements Listener {
             getLogger().info("PlaceholderAPI not found - placeholders disabled.");
         }
         // ========================================================
+
+        // ==================== Live countdown ticker ====================
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (secondsUntilRefresh > 0) {
+                    secondsUntilRefresh--;
+                } else {
+                    // Reset when it hits 0
+                    secondsUntilRefresh = refreshIntervalSeconds;
+                }
+            }
+        }.runTaskTimer(this, 20L, 20L); // every 1 second
+        // ==============================================================
 
         getLogger().info("=================================================");
         getLogger().info("  BuildFFA v4.0 - Enabled");
@@ -163,10 +197,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         return true;
     }
 
-    /**
-     * Creates config.yml if missing, and merges any new keys WITHOUT overwriting
-     * existing user values. Safe to update the plugin without losing data.
-     */
     private void createConfigIfMissing() {
         File configFile = new File(getDataFolder(), "config.yml");
         boolean isNew = !configFile.exists();
@@ -250,6 +280,10 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "spawn.yaw", Float.valueOf(0.0F));
         setIfMissing(cfg, "spawn.pitch", Float.valueOf(0.0F));
 
+        // ==================== Countdown config ====================
+        setIfMissing(cfg, "leaderboard-refresh.interval-seconds", Integer.valueOf(600)); // 10:00
+        // ==========================================================
+
         try {
             cfg.save(configFile);
             if (isNew) {
@@ -260,12 +294,12 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         } catch (IOException e) {
             getLogger().warning("Could not save config.yml: " + e.getMessage());
         }
+
+        // Load the interval from config so the countdown matches it
+        refreshIntervalSeconds = cfg.getInt("leaderboard-refresh.interval-seconds", 600);
+        secondsUntilRefresh = refreshIntervalSeconds;
     }
 
-    /**
-     * Only sets the value if the path does NOT already exist.
-     * This prevents overwriting user settings on plugin update.
-     */
     private void setIfMissing(FileConfiguration cfg, String path, Object value) {
         if (!cfg.contains(path)) {
             cfg.set(path, value);

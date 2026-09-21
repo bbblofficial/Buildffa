@@ -62,6 +62,14 @@ database:
   autosave-interval: 300
 
 # ----------------------------------------------------------
+#  Leaderboard Refresh (used by hologram countdown)
+#  %buildffa_next_update% counts down from this value
+# ----------------------------------------------------------
+leaderboard-refresh:
+  # Refresh interval in seconds (600 = 10:00)
+  interval-seconds: 600
+
+# ----------------------------------------------------------
 #  Connection Check (Anti-Lag / High Ping Kick)
 #  Kicks players whose ping stays above threshold for too long
 # ----------------------------------------------------------

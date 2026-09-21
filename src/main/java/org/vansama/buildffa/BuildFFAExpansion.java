@@ -46,9 +46,17 @@ public class BuildFFAExpansion extends PlaceholderExpansion {
 
         String id = identifier.toLowerCase();
 
+        // ---------- Live countdown: %buildffa_next_update% ----------
+        if (id.equals("next_update") || id.equals("countdown")) {
+            int secs = BuildFFA.getSecondsUntilRefresh();
+            int minutes = secs / 60;
+            int seconds = secs % 60;
+            return String.format("%02d:%02d", minutes, seconds);
+        }
+        // ----------------------------------------------------------
+
         // ---------- Player's own stats ----------
         if (player != null && player.isOnline()) {
-            Player online = player.getPlayer();
             PlayerData data = database.getPlayer(player.getUniqueId());
             if (data == null) data = database.loadPlayer(player.getUniqueId());
 
@@ -64,8 +72,8 @@ public class BuildFFAExpansion extends PlaceholderExpansion {
             String[] parts = id.split("_");
             if (parts.length < 4) return "";
 
-            String mode = parts[1];   // "name" or "value"
-            String type = parts[2];   // "kills", "deaths", "kdr", "killstreak"
+            String mode = parts[1];
+            String type = parts[2];
             int rank;
             try {
                 rank = Integer.parseInt(parts[3]);
