@@ -242,7 +242,11 @@ feather-jump:
 #     +5.0 → fast / BedWars feel      (multiplier 1.50x)
 #    +10.0 → extreme                  (multiplier 2.00x)
 #
-#  Final velocity = VANILLA_BASE (2.0) × multiplier
+#  Final speed = VANILLA_BASE (1.0) × multiplier, held CONSTANT for the
+#  entire flight (fixed in v4.0.1 — it used to also call setVelocity()
+#  on top of setDirection(), which fought with it and made the fireball
+#  launch far faster than the slider said and kept speeding up in flight;
+#  it's now a single, constant, slider-accurate speed for the whole shot).
 # ----------------------------------------------------------
 fireball:
   # Message shown to the shooter (private)
