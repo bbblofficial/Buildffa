@@ -17,6 +17,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
@@ -38,7 +39,7 @@ public class FireballFix implements Listener {
     }
 
     // ============================================================
-    //  RIGHT-CLICK FIRE CHARGE → SHOOT BEDWARS FIREBALL
+    //  LAUNCH FIREBALL (Default MC Speed + Slightly Faster)
     // ============================================================
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onRightClick(PlayerInteractEvent event) {
@@ -64,7 +65,6 @@ public class FireballFix implements Listener {
         }
         cooldown.put(player.getUniqueId(), now);
 
-        // مصرف یک عدد فایربال
         if (item.getAmount() > 1) {
             item.setAmount(item.getAmount() - 1);
         } else {
@@ -72,21 +72,15 @@ public class FireballFix implements Listener {
         }
         player.updateInventory();
 
-        // پرتاب از سطح چشم پلیر برای جلوگیری از گیر کردن به بلاک زیر پا
-        Location eyeLoc = player.getEyeLocation();
-        Vector direction = eyeLoc.getDirection().normalize();
+        Fireball fireball = player.launchProjectile(Fireball.class);
 
-        Fireball fireball = player.getWorld().spawn(eyeLoc.add(direction.clone().multiply(1.2D)), Fireball.class);
-        fireball.setShooter(player);
-
-
-        double speed = this.plugin.getConfig().getDouble("fireball.speed", 1.25D);
-
-        Vector velocity = direction.clone().multiply(speed);
-        fireball.setVelocity(velocity);
-        fireball.setDirection(velocity.clone().multiply(0.1D));
-
-        fireball.setIsIncendiary(false);
+        // تنظیم سرعت مشابه ماینکرفت اما کمی تندتر (1.5 برابر)
+        double speed = this.plugin.getConfig().getDouble("fireball.speed", 1.5D);
+        Vector dir = player.getLocation().getDirection();
+        
+        fireball.setVelocity(dir.clone().multiply(speed));
+        // ضریب 0.1 برای شتاب‌دهنده انجین ماینکرفت جهت حفظ ثبات گلوله در هوا
+        fireball.setDirection(dir.clone().multiply(speed * 0.1D)); 
 
         double yield = this.plugin.getConfig().getDouble("fireball.yield", 1.0D);
         fireball.setYield((float) yield);
@@ -115,77 +109,72 @@ public class FireballFix implements Listener {
         try {
             player.playSound(player.getLocation(), Sound.GHAST_FIREBALL, 1.0F, 1.0F);
         } catch (Throwable ignored) {}
-
-        String msg = this.plugin.getConfig().getString("fireball.message", "");
-        if (msg != null && !msg.isEmpty()) {
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', msg));
-        }
     }
 
     // ============================================================
-    //  PROJECTILE HIT → HYPIXEL BEDWARS KNOCKBACK & JUMP
+    //  BEDWARS1058 EXACT KNOCKBACK LOGIC
     // ============================================================
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void fireballHit(ProjectileHitEvent event) {
-        if (!(event.getEntity() instanceof Fireball)) return;
-
-        Fireball fireball = (Fireball) event.getEntity();
+    public void fireballHit(ProjectileHitEvent e) {
+        if (!(e.getEntity() instanceof Fireball)) return;
+        
         if (!this.plugin.getConfig().getBoolean("fireball.knockback.enabled", true)) return;
 
-        Location hitLoc = fireball.getLocation();
-        if (hitLoc.getWorld() == null) return;
+        Location location = e.getEntity().getLocation();
+        if (location.getWorld() == null) return;
 
-        double radius = this.plugin.getConfig().getDouble("fireball.knockback.radius", 4.0D);
-        double horizontalForce = this.plugin.getConfig().getDouble("fireball.knockback.radius-force", 1.5D);
-        double verticalForce = this.plugin.getConfig().getDouble("fireball.knockback.height-force", 0.95D);
-        double damage = this.plugin.getConfig().getDouble("fireball.knockback.damage", 1.0D);
+        double fireballExplosionSize = this.plugin.getConfig().getDouble("fireball.knockback.radius", 4.0D);
+        // در BedWars1058 نیروی افقی در 1- ضرب می‌شود تا بردار برعکس شود
+        double fireballHorizontal = this.plugin.getConfig().getDouble("fireball.knockback.radius-force", 1.5D) * -1.0D;
+        double fireballVertical = this.plugin.getConfig().getDouble("fireball.knockback.height-force", 0.9D);
+        double damage = this.plugin.getConfig().getDouble("fireball.knockback.damage", 2.0D);
 
-        Collection<Entity> nearbyEntities = hitLoc.getWorld().getNearbyEntities(hitLoc, radius, radius, radius);
+        Vector vector = location.toVector();
+        Collection<Entity> nearbyEntities = location.getWorld().getNearbyEntities(location, fireballExplosionSize, fireballExplosionSize, fireballExplosionSize);
 
         for (Entity entity : nearbyEntities) {
             if (!(entity instanceof Player)) continue;
-            Player target = (Player) entity;
+            Player player = (Player) entity;
 
-            Location targetLoc = target.getLocation();
-            double distance = hitLoc.distance(targetLoc);
-            if (distance > radius) continue;
-
-            // محاسبه ضریب فاصله (هرچه نزدیک‌تر، پرتاب قوی‌تر)
-            double distanceFactor = 1.0D - (distance / radius);
-            if (distanceFactor < 0.2D) distanceFactor = 0.2D;
-
-            // بردار دافعه به سمت بیرون
-            Vector knockbackDir = targetLoc.toVector().subtract(hitLoc.toVector());
-            knockbackDir.setY(0); // جداسازی مؤلفه افقی
-
-            if (knockbackDir.lengthSquared() > 0.0001D) {
-                knockbackDir.normalize();
+            Vector playerVector = player.getLocation().toVector();
+            
+            Vector normalizedVector = vector.clone().subtract(playerVector).normalize();
+            Vector horizontalVector = normalizedVector.clone().multiply(fireballHorizontal);
+            
+            double y = normalizedVector.getY();
+            if (y < 0) y += 1.5;
+            
+            if (y <= 0.5) {
+                y = fireballVertical * 1.5; // kb for not jumping
             } else {
-                // اگر دقیقاً روی فایربال بود، به سمت عقب پلیر هل داده شود
-                knockbackDir = target.getLocation().getDirection().multiply(-1).setY(0).normalize();
+                y = y * fireballVertical * 1.5; // kb for jumping
             }
-
-            // اعمال نیروی افقی متناسب با فاصله
-            Vector finalVelocity = knockbackDir.multiply(horizontalForce * distanceFactor);
-
-            // اعمال پرش عمودی به سبک Fireball Jump بدوارز
-            finalVelocity.setY(verticalForce);
-
-            target.setVelocity(finalVelocity);
+            
+            player.setVelocity(horizontalVector.setY(y));
 
             if (damage > 0) {
-                target.damage(damage);
+                player.damage(damage);
             }
         }
     }
 
     // ============================================================
-    //  CANCEL DIRECT FIREBALL EXPLOSION DAMAGE OVERRIDE
+    //  CANCEL DIRECT HIT DAMAGE (Vanilla)
     // ============================================================
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void fireballDirectHit(EntityDamageByEntityEvent event) {
-        if (event.getDamager() instanceof Fireball && event.getEntity() instanceof Player) {
-            event.setCancelled(true);
+    public void fireballDirectHit(EntityDamageByEntityEvent e) {
+        if (e.getDamager() instanceof Fireball && e.getEntity() instanceof Player) {
+            e.setCancelled(true);
         }
+    }
+
+    // ============================================================
+    //  BEDWARS1058 FIRE SETTINGS
+    // ============================================================
+    @EventHandler
+    public void fireballPrime(ExplosionPrimeEvent e) {
+        if (!(e.getEntity() instanceof Fireball)) return;
+        
+        e.setFire(false);
     }
 }
