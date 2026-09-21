@@ -57,6 +57,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         reloadConfig();
         autoMergeScoreboard();
 
+        // Combat Mode timeout
         int combatTimeout = this.getConfig().getInt("combat.timeout-seconds", 15);
         CombatManager.setCombatTimeoutSeconds(combatTimeout);
 
@@ -69,6 +70,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         this.voice = new Voice(this);
         this.connection = new Connection(this);
 
+        // ==================== REGISTER LISTENERS ====================
         getServer().getPluginManager().registerEvents(this.blocks, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.equip, (Plugin) this);
         getServer().getPluginManager().registerEvents(new High(this), (Plugin) this);
@@ -90,6 +92,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this.voice, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.connection, (Plugin) this);
         getServer().getPluginManager().registerEvents(this, (Plugin) this);
+        // =============================================================
 
         getCommand("buildffa").setExecutor(new BuildFFACommand(this, this.kitEditor, this.scoreboardManager, this.databaseManager));
 
@@ -214,7 +217,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     }
 
     // ============================================================
-    //  CONFIG AUTO-MERGE
+    //  CONFIG AUTO-MERGE — never overwrites existing values
     // ============================================================
     private void createConfigIfMissing() {
         File configFile = new File(getDataFolder(), "config.yml");
@@ -231,6 +234,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
         FileConfiguration cfg = YamlConfiguration.loadConfiguration(configFile);
 
+        // ---- Load defaults from inside the JAR (src/main/resources/config.yml) ----
         InputStream defStream = this.getResource("config.yml");
         if (defStream != null) {
             YamlConfiguration defaults = YamlConfiguration.loadConfiguration(
@@ -238,6 +242,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
             cfg.setDefaults(defaults);
         }
 
+        // ---- Hardcoded fallbacks (in case JAR defaults are missing) ----
         setIfMissing(cfg, "kill-height", Double.valueOf(0.0D));
         setIfMissing(cfg, "high-limit", Double.valueOf(100.0D));
 
@@ -363,19 +368,23 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     }
 
     // ============================================================
-    //  SCOREBOARD AUTO-MERGE
+    //  SCOREBOARD AUTO-MERGE — keeps user-customized lines,
+    //  but adds any new default keys
     // ============================================================
     private void autoMergeScoreboard() {
         File sbFile = new File(getDataFolder(), "scoreboard.yml");
         boolean isNew = !sbFile.exists();
 
+        // First time: extract from JAR
         if (isNew) {
             saveResource("scoreboard.yml", false);
             return;
         }
 
+        // Load existing user file
         FileConfiguration userCfg = YamlConfiguration.loadConfiguration(sbFile);
 
+        // Load defaults from JAR
         InputStream defStream = this.getResource("scoreboard.yml");
         if (defStream == null) return;
 
@@ -384,6 +393,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
         boolean changed = false;
 
+        // Merge top-level scalar keys (only if missing)
         for (String key : defaults.getKeys(false)) {
             if (!userCfg.contains(key)) {
                 userCfg.set(key, defaults.get(key));
@@ -391,6 +401,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
             }
         }
 
+        // Merge nested title
         if (defaults.contains("title")) {
             for (String sub : defaults.getConfigurationSection("title").getKeys(true)) {
                 String path = "title." + sub;
@@ -401,6 +412,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
             }
         }
 
+        // Merge per-world section (only if user hasn't enabled it)
         if (!userCfg.contains("per-world")) {
             userCfg.set("per-world", defaults.get("per-world"));
             changed = true;

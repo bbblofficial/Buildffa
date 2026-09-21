@@ -22,18 +22,18 @@ public class FeatherJump implements Listener {
 
     private final JavaPlugin plugin;
 
-    // Players who are allowed to double-jump right now
+    // Players who can double-jump right now
     private final Map<UUID, Boolean> canDoubleJump = new HashMap<UUID, Boolean>();
 
-    // Cooldown per player
+    // Cooldown per player (3 seconds)
     private final Map<UUID, Long> cooldown = new HashMap<UUID, Long>();
-    private static final long COOLDOWN_MS = 500L;
+    private static final long COOLDOWN_MS = 3000L;
 
     public FeatherJump(JavaPlugin plugin) {
         this.plugin = plugin;
         plugin.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
 
-        // Ticker that re-enables flight when the player is on the ground
+        // Ticker — enables flight on the ground so Space can be detected in the air
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -45,13 +45,13 @@ public class FeatherJump implements Listener {
                     boolean onGround = player.isOnGround();
 
                     if (onGround) {
-                        // Player is on ground → enable flight so they can toggle it mid-air
+                        // On ground → enable flight so they can toggle it in the air
                         if (!player.getAllowFlight()) {
                             player.setAllowFlight(true);
                         }
                         canDoubleJump.put(player.getUniqueId(), Boolean.valueOf(true));
                     } else {
-                        // Player is in the air → keep flight enabled only if they can still double-jump
+                        // In the air → only keep flight enabled if they can still jump
                         Boolean allowed = canDoubleJump.get(player.getUniqueId());
                         if (allowed == null || !allowed.booleanValue()) {
                             if (player.getAllowFlight() && !player.isFlying()) {
@@ -68,11 +68,10 @@ public class FeatherJump implements Listener {
     public void onToggleFlight(PlayerToggleFlightEvent event) {
         Player player = event.getPlayer();
 
-        // Ignore creative/spectator
         if (player.getGameMode() == GameMode.CREATIVE) return;
         if (player.getGameMode() == GameMode.SPECTATOR) return;
 
-        // Ignore if the player is really trying to fly (not double jump)
+        // Block if the player is really trying to fly
         if (player.isFlying()) return;
 
         event.setCancelled(true);
@@ -83,14 +82,14 @@ public class FeatherJump implements Listener {
             return;
         }
 
-        // Check if they're allowed to double jump
+        // Must be allowed
         Boolean allowed = canDoubleJump.get(player.getUniqueId());
         if (allowed == null || !allowed.booleanValue()) {
             player.setAllowFlight(false);
             return;
         }
 
-        // Cooldown
+        // 3-second cooldown
         long now = System.currentTimeMillis();
         if (cooldown.containsKey(player.getUniqueId())) {
             long last = cooldown.get(player.getUniqueId()).longValue();
@@ -99,18 +98,18 @@ public class FeatherJump implements Listener {
                 return;
             }
         }
-        cooldown.put(player.getUniqueId(), Long.valueOf(now));
 
-        // Require a feather in the inventory
+        // Must have a Feather in the inventory
         if (!hasFeather(player)) {
             player.setAllowFlight(false);
             return;
         }
 
+        cooldown.put(player.getUniqueId(), Long.valueOf(now));
+
         // Consume 1 feather
         removeFeather(player);
 
-        // Prevent further double jumps until they touch ground
         canDoubleJump.put(player.getUniqueId(), Boolean.valueOf(false));
         player.setAllowFlight(false);
 
@@ -122,12 +121,10 @@ public class FeatherJump implements Listener {
 
         player.setFallDistance(0.0F);
 
-        // Sound
         try {
             player.playSound(player.getLocation(), Sound.BAT_TAKEOFF, 1.0F, 1.2F);
         } catch (Throwable ignored) {}
 
-        // Message
         String msg = this.plugin.getConfig().getString("feather-jump.message", "&b✦ &fDouble Jump!");
         if (msg != null && !msg.isEmpty()) {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', msg));
