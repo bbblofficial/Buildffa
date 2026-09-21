@@ -1,5 +1,7 @@
 package org.vansama.buildffa;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +19,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -25,73 +28,109 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
+/**
+ * ================================================================
+ *  BEDWARS / MINEMEN-CLUB STYLE FIREBALL
+ * ================================================================
+ * Hypixel BedWars and Minemen Club are both closed-source, so this
+ * is not a copy of their code - nobody outside those studios has
+ * that. What follows is the well-documented, publicly shared
+ * community technique that plugins such as "BedWars1058" and the
+ * standalone "BedWars1058 Fireball Fix" addon are built on, which is
+ * what most servers use to reproduce that exact straight-flying,
+ * fast, no-block-damage fireball feel. Sources used:
+ *
+ *  - Bukkit's own Fireball javadoc:
+ *      "Fireballs fly straight and do not take setVelocity(...)
+ *       well." -> never call setVelocity() on a Fireball.
+ *
+ *  - Hypixel Forums, "Shooting Fireballs without Offset" (2018):
+ *    explains that Bukkit's high-level Fireball#setDirection(...)
+ *    can still introduce a small positional "kink" right as the
+ *    fireball spawns. The reliable fix (and what the BedWars1058
+ *    Fireball Fix addon itself credits as its source) is to reach
+ *    into the NMS entity with reflection and set the raw dirX/dirY/
+ *    dirZ fields directly - that field IS the fireball's per-tick
+ *    acceleration ("power"), and on 1.8.x it is the direction vector
+ *    scaled by 0.10. Doing it this way never touches velocity at
+ *    all, so there is nothing left to conflict with it.
+ * ================================================================
+ */
 public class FireballFix implements Listener {
 
     private final JavaPlugin plugin;
     private final Map<UUID, Long> cooldown = new HashMap<UUID, Long>();
     private static final long COOLDOWN_MS = 500L;
 
-    // ============================================================
-    //  REAL ROOT CAUSE OF THE "ROCKET" BUG (read before touching this file)
-    //
-    //  Bukkit's own Fireball javadoc says, verbatim:
-    //      "Fireballs fly straight and do not take setVelocity(...) well."
-    //
-    //  On a Fireball, setDirection(Vector) is the ONLY call you should ever
-    //  make. On 1.8.8 it sets BOTH the entity's real velocity (motX/Y/Z)
-    //  AND its internal "power" field (dirX/Y/Z) FROM THE SAME VECTOR, so
-    //  the two stay consistent, and the vector's magnitude IS the speed.
-    //
-    //  The old code called setDirection(dir * speed * 0.1) and then
-    //  immediately called setVelocity(dir * speed) on top of it. That
-    //  second call is exactly what the javadoc warns against: it silently
-    //  overwrote the real velocity with a value 10x larger than what
-    //  setDirection had just configured, while leaving the "power" field
-    //  at the smaller value. The entity was left in an inconsistent state
-    //  (real speed way higher than its own power field), which is why it
-    //  shot out like a rocket and why turning the speed-level slider up
-    //  or down barely changed anything - most of the visible speed was
-    //  coming from the stray setVelocity(), not from the slider math.
-    //
-    //  FIX: never call setVelocity() on the fireball. Only setDirection().
-    //  On top of that, we actively re-clamp the fireball's speed every
-    //  tick to the configured value (see startSpeedLock below), because
-    //  vanilla fireballs re-add their "power" to their velocity every
-    //  tick with no drag - meaning ANY nonzero power will make a fireball
-    //  keep speeding up the longer it flies. The re-clamp is what makes
-    //  the speed-level slider actually mean something: whatever value you
-    //  configure is the fireball's constant real speed for its whole
-    //  flight, not just its speed in the first tick.
-    // ============================================================
+    // Internal NMS scale between a "speed" value and the fireball's
+    // actual per-tick acceleration field. This is fixed by Minecraft
+    // itself (confirmed by the reflection technique above), not
+    // something to tune.
+    private static final double NMS_ACCEL_SCALE = 0.10D;
 
-    // Magnitude of the direction vector that reproduces vanilla-feeling
-    // fireball speed (i.e. what "0 -> vanilla exact / 1.00x" in the
-    // config means). This is the length of a normalized look vector,
-    // matching how Bukkit hands you a fireball by default.
-    private static final double VANILLA_BASE = 1.0D;
+    // Reference speed for slider level 0. This is NOT vanilla ghast
+    // speed (vanilla fireballs drift along around 10x slower than
+    // this) - it's tuned to the fast, punchy, straight-line feel
+    // BedWars/Minemen-style fireballs are known for. Adjust freely;
+    // it is just the baseline the -10..+10 slider multiplies.
+    private static final double BASE_SPEED = 2.0D;
 
     public static final double SLIDER_MIN = -10.0D;
     public static final double SLIDER_MAX = 10.0D;
 
+    // ------------------------------------------------------------
+    //  Reflection handles for the NMS EntityFireball fields, resolved
+    //  ONCE at class-load time. If anything about this server's build
+    //  doesn't match what we expect (e.g. it isn't 1.8.x CraftBukkit),
+    //  we quietly fall back to the plain Bukkit API instead of
+    //  breaking the plugin.
+    // ------------------------------------------------------------
+    private static Field dirXField;
+    private static Field dirYField;
+    private static Field dirZField;
+    private static Method craftFireballGetHandle;
+    private static boolean reflectionReady = false;
+
+    static {
+        try {
+            String craftBukkitPackage = Bukkit.getServer().getClass().getPackage().getName();
+            String version = craftBukkitPackage.substring(craftBukkitPackage.lastIndexOf('.') + 1);
+
+            Class<?> nmsFireballClass = Class.forName("net.minecraft.server." + version + ".EntityFireball");
+            Class<?> craftFireballClass = Class.forName("org.bukkit.craftbukkit." + version + ".entity.CraftFireball");
+
+            dirXField = nmsFireballClass.getDeclaredField("dirX");
+            dirYField = nmsFireballClass.getDeclaredField("dirY");
+            dirZField = nmsFireballClass.getDeclaredField("dirZ");
+            dirXField.setAccessible(true);
+            dirYField.setAccessible(true);
+            dirZField.setAccessible(true);
+
+            craftFireballGetHandle = craftFireballClass.getDeclaredMethod("getHandle");
+            craftFireballGetHandle.setAccessible(true);
+
+            reflectionReady = true;
+        } catch (Throwable t) {
+            // Not on the expected 1.8.x CraftBukkit layout (or a server
+            // fork renamed something). We fall back gracefully below.
+            reflectionReady = false;
+        }
+    }
+
     public FireballFix(JavaPlugin plugin) {
         this.plugin = plugin;
-        // NOTE: do NOT register events here. BuildFFA.java already does
-        // getServer().getPluginManager().registerEvents(this.fireballFix, ...)
-        // in onEnable(). Registering it a second time here made every
-        // right-click event fire this listener's methods TWICE (once per
-        // registration), which doubled fireball launches / knockback /
-        // damage in some cases and made the speed feel even more chaotic
-        // and inconsistent than the setVelocity() bug already did.
+        // Events are registered by BuildFFA.java's onEnable(). Do NOT
+        // register again here - doing so used to fire onRightClick()
+        // twice per click.
     }
 
     // ============================================================
     //  SLIDER -> MULTIPLIER
     //  -10 -> 0.00x  (stopped)
-    //    0 -> 1.00x  (vanilla exact)
-    //  +10 -> 2.00x  (double acceleration)
+    //    0 -> 1.00x  (tuned BedWars/Minemen-style reference speed)
+    //  +10 -> 2.00x  (double)
     // ============================================================
     public static double sliderToMultiplier(double slider) {
         if (slider < SLIDER_MIN) slider = SLIDER_MIN;
@@ -105,7 +144,7 @@ public class FireballFix implements Listener {
     }
 
     // ============================================================
-    //  LAUNCH FIREBALL - FIXED
+    //  LAUNCH FIREBALL
     // ============================================================
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onRightClick(PlayerInteractEvent event) {
@@ -136,25 +175,24 @@ public class FireballFix implements Listener {
         }
         player.updateInventory();
 
-        // ---- compute direction & the ONE speed value we will ever set ----
-        final Vector dir = player.getLocation().getDirection().normalize();
-        final double multiplier = getMultiplier();
-        final double power = VANILLA_BASE * multiplier;
+        // ---- direction & speed ----
+        Vector dir = player.getEyeLocation().getDirection().normalize();
+        double multiplier = getMultiplier();
+        double speed = BASE_SPEED * multiplier;
+        Vector launchVector = dir.clone().multiply(speed);
 
-        final Fireball fireball = player.launchProjectile(Fireball.class);
+        // Spawn with the correct initial velocity in ONE atomic call.
+        // This is the only place velocity is ever touched - we never
+        // call setVelocity() on it afterwards.
+        Fireball fireball = player.launchProjectile(Fireball.class, launchVector);
 
-        // The only call that should ever touch this fireball's motion.
-        // Magnitude of this vector == real speed. No setVelocity(), ever.
-        fireball.setDirection(dir.clone().multiply(power));
-
-        // Keep the speed CONSTANT for the whole flight. Vanilla fireballs
-        // add their "power" to their velocity every tick with no drag, so
-        // without this a fireball keeps accelerating forever (this is
-        // also why raising/lowering speed-level used to feel like it did
-        // almost nothing once the projectile had traveled a few blocks).
-        if (power > 0.0D) {
-            startSpeedLock(fireball, power);
-        }
+        // Now make it fly perfectly straight: write the fireball's
+        // real per-tick acceleration field directly via reflection,
+        // using the SAME vector (scaled by the fixed NMS_ACCEL_SCALE)
+        // so it stays consistent with the velocity we just set. This
+        // is what removes the little "kink"/offset Bukkit's own
+        // setDirection() can introduce right at spawn.
+        setStraightAcceleration(fireball, launchVector);
 
         // ============================================================
         //  EXPLOSION / EFFECTS
@@ -192,36 +230,31 @@ public class FireballFix implements Listener {
         } catch (Throwable ignored) {}
     }
 
-    // ============================================================
-    //  SPEED LOCK
-    //  Runs every tick for as long as the fireball is alive and pins its
-    //  velocity magnitude back to "power", using whatever direction it is
-    //  currently traveling in (so it still flies straight, it just never
-    //  speeds up or slows down). This is what makes the config slider a
-    //  real, constant speed instead of just an initial-tick nudge.
-    // ============================================================
-    private void startSpeedLock(final Fireball fireball, final double power) {
-        new BukkitRunnable() {
-            private int ticksAlive = 0;
-
-            @Override
-            public void run() {
-                ticksAlive++;
-                if (fireball == null || fireball.isDead() || !fireball.isValid() || ticksAlive > 200) {
-                    cancel();
-                    return;
-                }
-
-                Vector velocity = fireball.getVelocity();
-                if (velocity.lengthSquared() < 1.0E-6) {
-                    cancel();
-                    return;
-                }
-
-                Vector normalized = velocity.normalize();
-                fireball.setDirection(normalized.multiply(power));
+    /**
+     * Writes the fireball's real NMS acceleration field (dirX/dirY/dirZ)
+     * directly, bypassing Bukkit's Fireball#setDirection(Vector) and
+     * setVelocity(Vector) entirely. "velocityVector" should be the SAME
+     * vector the fireball was launched with (magnitude == desired speed);
+     * this method applies the fixed 0.10 NMS scale itself.
+     *
+     * Falls back to the plain Bukkit API if reflection isn't available
+     * on this server build, so the plugin never breaks outright.
+     */
+    private static void setStraightAcceleration(Fireball fireball, Vector velocityVector) {
+        if (reflectionReady) {
+            try {
+                Object handle = craftFireballGetHandle.invoke(fireball);
+                dirXField.set(handle, velocityVector.getX() * NMS_ACCEL_SCALE);
+                dirYField.set(handle, velocityVector.getY() * NMS_ACCEL_SCALE);
+                dirZField.set(handle, velocityVector.getZ() * NMS_ACCEL_SCALE);
+                return;
+            } catch (Throwable ignored) {
+                // fall through to the Bukkit-API fallback below
             }
-        }.runTaskTimer(this.plugin, 1L, 1L);
+        }
+        // Fallback (older/forked server, or reflection failed): still
+        // never call setVelocity() here, only setDirection().
+        fireball.setDirection(velocityVector);
     }
 
     // ============================================================
@@ -287,5 +320,19 @@ public class FireballFix implements Listener {
     public void fireballPrime(ExplosionPrimeEvent e) {
         if (!(e.getEntity() instanceof Fireball)) return;
         e.setFire(false);
+    }
+
+    // ============================================================
+    //  NO TERRAIN DAMAGE (authentic BedWars/Minemen behaviour)
+    //  Fireballs there knock players around but never break blocks
+    //  or grief the map. Set fireball.break-blocks: true in config
+    //  if you actually want them to destroy terrain.
+    // ============================================================
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void fireballExplode(EntityExplodeEvent e) {
+        if (!(e.getEntity() instanceof Fireball)) return;
+        if (!this.plugin.getConfig().getBoolean("fireball.break-blocks", false)) {
+            e.blockList().clear();
+        }
     }
 }

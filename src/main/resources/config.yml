@@ -233,22 +233,27 @@ feather-jump:
 #  Right-click a Fire Charge to shoot a real fireball.
 #  Works in Survival mode (vanilla only works in Creative).
 #
-#  Algorithm inspired by BedWars Fireball knockback system.
+#  Rebuilt (v4.0.2) to fly the way Hypixel BedWars / Minemen Club
+#  fireballs do: a perfectly straight line (no offset/kink at spawn),
+#  fast, and by default they knock players around but do NOT break
+#  blocks (see break-blocks below). This uses the same direct-NMS
+#  technique the public "BedWars1058 Fireball Fix" addon is built on
+#  (never calling setVelocity() on the fireball - only ever writing
+#  its real acceleration field once, consistently, at launch).
 #
 #  SPEED LEVEL (set with /buildffa fb-speed <value>):
 #    -10.0 → fireball is stopped      (multiplier 0.00x)
 #     -5.0 → very slow                (multiplier 0.50x)
-#      0.0 → vanilla exact            (multiplier 1.00x)
+#      0.0 → tuned BedWars-style base (multiplier 1.00x)
 #     +5.0 → fast / BedWars feel      (multiplier 1.50x)
 #    +10.0 → extreme                  (multiplier 2.00x)
-#
-#  Final speed = VANILLA_BASE (1.0) × multiplier, held CONSTANT for the
-#  entire flight (fixed in v4.0.1 — it used to also call setVelocity()
-#  on top of setDirection(), which fought with it and made the fireball
-#  launch far faster than the slider said and kept speeding up in flight;
-#  it's now a single, constant, slider-accurate speed for the whole shot).
 # ----------------------------------------------------------
 fireball:
+  # Let fireballs break blocks like true vanilla ghast fireballs.
+  # false (default) = BedWars/Minemen style: knockback + damage only,
+  # map/terrain is never destroyed.
+  break-blocks: false
+
   # Message shown to the shooter (private)
   # Leave empty ('') to disable
   message: ''

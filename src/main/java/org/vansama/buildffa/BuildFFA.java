@@ -370,6 +370,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "fireball.message", "");
         setIfMissing(cfg, "fireball.speed-level", Double.valueOf(1.5D));
         setIfMissing(cfg, "fireball.yield", Double.valueOf(1.0D));
+        setIfMissing(cfg, "fireball.break-blocks", Boolean.valueOf(false));
 
         setIfMissing(cfg, "fireball.throw-effects.enabled", Boolean.valueOf(false));
 
