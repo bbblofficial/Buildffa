@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -20,7 +19,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
@@ -122,24 +120,25 @@ public class FireballFix implements Listener {
     }
 
     // ============================================================
-    //  EXPLODE → KNOCKBACK + DAMAGE
+    //  EXPLODE → BEDWARS KNOCKBACK + DAMAGE
     // ============================================================
     @EventHandler
     public void onExplode(EntityExplodeEvent event) {
+        if (event.getEntityType() != EntityType.FIREBALL) return;
+        
         Location l = event.getLocation();
         double radius = this.plugin.getConfig().getDouble("fireball.knockback.radius", 4.0D);
 
         Collection<Entity> nearby = l.getWorld().getNearbyEntities(l, radius, radius, radius);
 
-        if (event.getEntityType() == EntityType.FIREBALL
-                && this.plugin.getConfig().getBoolean("fireball.knockback.enabled", true)) {
-
-            double hf = this.plugin.getConfig().getDouble("fireball.knockback.height-force", 1.5D) / 2.0D;
-            double rf = this.plugin.getConfig().getDouble("fireball.knockback.radius-force", 2.0D) / 2.0D;
+        if (this.plugin.getConfig().getBoolean("fireball.knockback.enabled", true)) {
+            // Note: Removed the "/ 2.0D" from the original code so the config values are accurate and forceful
+            double hf = this.plugin.getConfig().getDouble("fireball.knockback.height-force", 1.5D);
+            double rf = this.plugin.getConfig().getDouble("fireball.knockback.radius-force", 2.0D);
 
             for (Entity entity : nearby) {
                 if (entity instanceof Player) {
-                    pushAway((LivingEntity) entity, l, hf, rf, event);
+                    pushAway((LivingEntity) entity, l, hf, rf);
                 }
             }
         }
@@ -157,20 +156,27 @@ public class FireballFix implements Listener {
     }
 
     // ============================================================
-    //  PUSH + DAMAGE
+    //  PUSH + DAMAGE (BEDWARS MATH)
     // ============================================================
-    void pushAway(LivingEntity player, Location l, double hf, double rf, EntityExplodeEvent event) {
-        Location loc = player.getLocation();
+    void pushAway(LivingEntity player, Location explodeLoc, double hf, double rf) {
+        Location playerLoc = player.getLocation();
         double damage = this.plugin.getConfig().getDouble("fireball.knockback.damage", 1.0D);
 
-        double hf1 = Math.max(-4.0D, Math.min(4.0D, hf));
-        double rf1 = Math.max(-4.0D, Math.min(4.0D, -1.0D * rf));
+        // Bedwars vector math: Subtract explosion location from player location (pushes AWAY from center)
+        Vector direction = playerLoc.toVector().subtract(explodeLoc.toVector());
+        
+        // Prevent NaN errors if the explosion perfectly overlaps the player's exact coordinate
+        if (direction.lengthSquared() == 0) {
+            direction = new Vector(0, 1, 0);
+        } else {
+            direction.normalize();
+        }
 
-        player.setVelocity(l.toVector()
-                .subtract(loc.toVector())
-                .normalize()
-                .multiply(rf1)
-                .setY(hf1));
+        // Apply config forces
+        direction.multiply(rf);
+        direction.setY(hf);
+
+        player.setVelocity(direction);
 
         double finalDamage = damage;
         if (finalDamage < 0) finalDamage = 0;
