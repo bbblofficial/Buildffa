@@ -7,6 +7,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -18,35 +19,66 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class Blocks implements Listener {
   private JavaPlugin plugin;
   private Map<Location, Long> placedBlocks = new HashMap<Location, Long>();
-  
-  // 9 seconds = 180 ticks for natural block restore
-  private static final long RESTORE_DELAY_TICKS = 180L;
-  // Player-placed blocks decay after 5 seconds
-  private static final long DECAY_DELAY_TICKS = 100L;
-  
+
+  // Loaded from config.yml (in seconds), converted to ticks internally
+  private long naturalRestoreTicks = 180L;   // default 9 sec
+  private long placedDecayTicks = 100L;      // default 5 sec
+
   public Blocks(JavaPlugin plugin) {
     this.plugin = plugin;
+    loadConfiguration();
     Bukkit.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
   }
-  
+
   /**
-   * Track player-placed blocks so they decay after 5 seconds.
-   * Uses MONITOR priority + ignoreCancelled to avoid interfering with
-   * other listeners (like High.java) that decide whether the place is allowed.
+   * Loads block timings from config.yml.
+   * If the keys are missing they are added with default values.
    */
+  public void loadConfiguration() {
+    FileConfiguration config = this.plugin.getConfig();
+
+    // Auto-add keys if missing (never overwrite existing values)
+    if (!config.contains("blocks.natural-restore-seconds")) {
+      config.set("blocks.natural-restore-seconds", Integer.valueOf(9));
+      this.plugin.saveConfig();
+    }
+    if (!config.contains("blocks.placed-decay-seconds")) {
+      config.set("blocks.placed-decay-seconds", Integer.valueOf(5));
+      this.plugin.saveConfig();
+    }
+
+    int naturalSeconds = config.getInt("blocks.natural-restore-seconds", 9);
+    int placedSeconds = config.getInt("blocks.placed-decay-seconds", 5);
+
+    // Sanity limits (1 second → 10 minutes)
+    if (naturalSeconds < 1) naturalSeconds = 1;
+    if (naturalSeconds > 600) naturalSeconds = 600;
+    if (placedSeconds < 1) placedSeconds = 1;
+    if (placedSeconds > 600) placedSeconds = 600;
+
+    this.naturalRestoreTicks = naturalSeconds * 20L;
+    this.placedDecayTicks = placedSeconds * 20L;
+
+    this.plugin.getLogger().info("BuildFFA block timings loaded: natural=" + naturalSeconds
+            + "s, placed=" + placedSeconds + "s");
+  }
+
+  public void reloadConfig() {
+    loadConfiguration();
+  }
+
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onBlockPlace(BlockPlaceEvent event) {
     if (event.getPlayer().getGameMode() == GameMode.CREATIVE) return;
-    
+
     final Block block = event.getBlockPlaced();
     if (block.getType() == Material.AIR) return;
-    
+
     final Location loc = block.getLocation().clone();
     final Material originalType = block.getType();
-    
+
     this.placedBlocks.put(loc, Long.valueOf(System.currentTimeMillis()));
-    
-    // Player-placed blocks decay after 5 seconds
+
     Bukkit.getScheduler().scheduleSyncDelayedTask((Plugin) this.plugin, new Runnable() {
       @Override
       public void run() {
@@ -58,39 +90,31 @@ public class Blocks implements Listener {
           placedBlocks.remove(loc);
         }
       }
-    }, DECAY_DELAY_TICKS);
+    }, placedDecayTicks);
   }
-  
-  /**
-   * On break:
-   *   - Cancel the event so no items drop
-   *   - Manually remove the block
-   *   - If it was a player-placed block: just remove (no restore)
-   *   - If it was a natural block: schedule restore after 9 seconds (180 ticks)
-   *     preserving both the Material AND the data value (color/wood type/slab shape)
-   */
+
   @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
   public void onBlockBreak(BlockBreakEvent event) {
     if (event.getPlayer().getGameMode() == GameMode.CREATIVE) return;
-    
+
     final Block block = event.getBlock();
     final Location loc = block.getLocation().clone();
     final Material blockType = block.getType();
     final byte blockData = block.getData();
-    
+
     // Cancel so no drops are created
     event.setCancelled(true);
-    
+
     // Manually remove the block
     block.setType(Material.AIR);
-    
+
     // If it was a player-placed block, just remove from tracking — no restore
     if (this.placedBlocks.containsKey(loc)) {
       this.placedBlocks.remove(loc);
       return;
     }
-    
-    // Natural block — restore after 9 seconds with original data value
+
+    // Natural block — restore after the configured time
     Bukkit.getScheduler().scheduleSyncDelayedTask((Plugin) this.plugin, new Runnable() {
       @Override
       public void run() {
@@ -111,9 +135,9 @@ public class Blocks implements Listener {
           Bukkit.getScheduler().scheduleSyncDelayedTask((Plugin) Blocks.this.plugin, this, 10L);
         }
       }
-    }, RESTORE_DELAY_TICKS);
+    }, naturalRestoreTicks);
   }
-  
+
   public void onDisable() {
     for (Location loc : this.placedBlocks.keySet()) {
       Block b = loc.getBlock();

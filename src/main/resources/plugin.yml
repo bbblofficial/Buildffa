@@ -36,8 +36,8 @@ permissions:
     description: Bypass the YPvP PvP restriction
     default: op
   buildffa.buildmode:
-    description: Allows toggling build mode decorative command
-    default: true
+    description: Allows toggling build mode (high-limit bypass)
+    default: op
   buildffa.scoreboard.toggle:
     description: Allows toggling the scoreboard visibility
     default: true

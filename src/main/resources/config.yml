@@ -5,41 +5,18 @@
 #  Made by PixelValley
 #  Version: 4.0 (1.8.8 Compatible)
 # ==========================================================
+#
+#  This file is AUTO-MERGED on plugin update.
+#  New keys are added automatically.
+#  Your existing values are NEVER overwritten.
+# ==========================================================
 
 # ----------------------------------------------------------
 #  Void Kill Height
 #  Players who fall below this Y level will die OR teleport.
 #  Set with /buildffa setvoid [y]
 # ----------------------------------------------------------
-kill-height: 0.0
-
-# ----------------------------------------------------------
-#  Void Behaviour
-#  What happens when a player falls below kill-height
-# ----------------------------------------------------------
-void:
-  # If true  -> teleport to spawn + full heal, BUT death is
-  #             still registered in stats (kills/deaths/kdr).
-  # If false -> kill the player normally (death also counted).
-  teleport-instead-of-kill: true
-
-  # Delay before teleporting (in ticks, 20 ticks = 1 sec)
-  # Set to 0 for instant teleport
-  teleport-delay: 0
-
-  # Message shown to the player who fell (private)
-  # %player% = player name
-  teleport-message: '&c%player% &7fell into the void! &7Teleported to spawn.'
-
-  # Broadcast message shown to everyone when NOBODY is credited
-  # %player% = player name
-  death-message: '&c%player% &7fell into the void'
-
-  # Broadcast message shown when someone knocked the player in
-  # (they were hit in the last 10 seconds)
-  # %player% = victim name
-  # %killer% = attacker who last hit them
-  killed-by-message: '&c%player% &7was knocked into the void by &c%killer%'
+kill-height: 64.0
 
 # ----------------------------------------------------------
 #  High Build Limit
@@ -49,91 +26,87 @@ void:
 high-limit: 100.0
 
 # ----------------------------------------------------------
+#  Block Timings
+#  How long blocks take to restore / disappear.
+#  All values are in SECONDS.
+# ----------------------------------------------------------
+blocks:
+  # Natural blocks (stone, dirt, wood…) broken by players
+  # will reappear after this many seconds.
+  natural-restore-seconds: 9
+
+  # Player-placed blocks disappear after this many seconds.
+  placed-decay-seconds: 5
+
+# ----------------------------------------------------------
+#  Void Behaviour
+# ----------------------------------------------------------
+void:
+  # If true  -> teleport to spawn + full heal, BUT death is
+  #             still registered in stats (kills/deaths/kdr).
+  # If false -> kill the player normally (death also counted).
+  teleport-instead-of-kill: true
+
+  # Delay before teleporting (in ticks, 20 ticks = 1 sec)
+  teleport-delay: 0
+
+  # Private message shown to the player who fell.
+  # Leave empty ('') to disable the private message.
+  # %player% = player name
+  teleport-message: ''
+
+  # Broadcast message when NOBODY is credited
+  # %player% = player name
+  death-message: '&c%player% &7fell into the void'
+
+  # Broadcast message when someone knocked the player in
+  # (they were hit in the last 10 seconds)
+  # %player% = victim name
+  # %killer% = attacker who last hit them
+  killed-by-message: '&c%player% &7was knocked into the void by &c%killer%'
+
+# ----------------------------------------------------------
 #  YPvP (Y-Level PvP Restriction)
-#  Players at or above this Y level cannot hit or be hit.
-#  Set with /buildffa ypvp [y]
 # ----------------------------------------------------------
 ypvp:
-  enabled: false
-  y-level: 150.0
+  enabled: true
+  y-level: 136.0
   block-projectiles: true
 
 # ----------------------------------------------------------
-#  Database (JSON storage in /db folder)
-#  Stores kills, deaths, killstreak, kdr per player
+#  Database
 # ----------------------------------------------------------
 database:
-  # Automatically save all player data periodically
   autosave: true
-  # Save interval in SECONDS (300 = 5 minutes)
   autosave-interval: 300
 
 # ----------------------------------------------------------
-#  Leaderboard Refresh (used by hologram countdown)
-#  %buildffa_next_update% counts down from this value
-# ----------------------------------------------------------
-leaderboard-refresh:
-  # Refresh interval in seconds (600 = 10:00)
-  interval-seconds: 600
-
-# ----------------------------------------------------------
-#  Connection Check (Anti-Lag / High Ping Kick)
-#  Kicks players whose ping stays above threshold for too long
+#  Connection Check
 # ----------------------------------------------------------
 connection-check:
-  # Enable or disable the entire system
   enabled: true
-
-  # Ping threshold in milliseconds
-  # Players above this for grace-seconds will be kicked
   ping-threshold: 150
-
-  # How often to check ping (in ticks, 20 ticks = 1 sec)
   check-interval: 20
-
-  # Grace period before kicking (in seconds)
-  # Player must stay above threshold for this long to be kicked
   grace-seconds: 30
-
-  # Cooldown between countdown warnings (in seconds)
   warn-cooldown: 5
-
-  # Kick message shown to the player (private)
-  # %ping% = player's ping, %max% = threshold
-  kick-message: "&cUnstable connection\n&fYour ping is too high: &e%ping%ms&7/&e%max%ms"
-
-  # Broadcast message shown to everyone when a player is kicked
-  # %player% = player name, %ping% = player's ping, %max% = threshold
+  kick-message: |-
+    &cUnstable connection
+    &fYour ping is too high: &e%ping%ms&7/&e%max%ms
   broadcast-message: '&c%player% &7was kicked for &eUnstable Connection &7(&c%ping%ms&7)'
-
-  # Bypass permission (default false — OP players are NOT auto-bypassed)
-  # To bypass a player, use: /buildffa cc bypass <player>
-  # Or grant this permission manually with LuckPerms
-  bypass-permission: 'buildffa.connection.bypass'
-
-# ----------------------------------------------------------
-#  Sounds
-#  Sound effects for kills, deaths, joins
-#  NOTE: No sound on hits (too spammy)
-# ----------------------------------------------------------
-sounds:
-  enabled: true
-  kill: true
-  death: true
-  join: true
-  chat: false
-  volume: 1.0
-  pitch: 1.0
+  bypass-permission: buildffa.connection.bypass
 
 # ----------------------------------------------------------
 #  Messages
+#  Normal PvP kill message
+#  %killer% = killer name (GREEN)
+#  %loser%  = victim name (RED)
 # ----------------------------------------------------------
-kill: '&c%killer% &7killed &a%loser%'
+kill: '&a%killer% &7killed &c%loser%'
 
 Title-Suffix: ' &7Kill'
 SubTitle-kill: '&e+1 Kill'
-join-message: '&a%player% &7joined the game &8(&e%online%&7/&e100&8)'
-quit-message: '&a%player% &7left the game &8(&e%online%&7/&e100&8)'
+join-message: '&e%player% &7joined the game &8(&e%online%&7/&e100&8)'
+quit-message: '&e%player% &7left the game &8(&e%online%&7/&e100&8)'
 
 infinite:
   food: true
@@ -143,18 +116,18 @@ infinite:
 #  Permissions
 # ----------------------------------------------------------
 permissions:
-  ypvp: 'buildffa.ypvp'
-  ypvp-bypass: 'buildffa.ypvp.bypass'
-  kiteditor: 'buildffa.kiteditor'
-  setvoid: 'buildffa.setvoid'
-  sethighlimit: 'buildffa.sethighlimit'
-  setspawn: 'buildffa.setspawn'
-  buildmode: 'buildffa.buildmode'
-  reload: 'buildffa.reload'
-  scoreboard-toggle: 'buildffa.scoreboard.toggle'
-  highlimit-bypass: 'buildffa.highlimit.bypass'
-  resetstats: 'buildffa.resetstats'
-  connectioncheck: 'buildffa.connection'
+  ypvp: buildffa.ypvp
+  ypvp-bypass: buildffa.ypvp.bypass
+  kiteditor: buildffa.kiteditor
+  setvoid: buildffa.setvoid
+  sethighlimit: buildffa.sethighlimit
+  setspawn: buildffa.setspawn
+  buildmode: buildffa.buildmode
+  reload: buildffa.reload
+  scoreboard-toggle: buildffa.scoreboard.toggle
+  highlimit-bypass: buildffa.highlimit.bypass
+  resetstats: buildffa.resetstats
+  connectioncheck: buildffa.connection
 
 messages:
   no-permission: '&cYou do not have permission to do this.'
@@ -170,13 +143,31 @@ kill-screen:
   chat-message: '&a+1 Kill!'
 
 # ----------------------------------------------------------
+#  Sounds
+# ----------------------------------------------------------
+sounds:
+  enabled: true
+  kill: true
+  death: true
+  join: true
+  chat: false
+  volume: 1.0
+  pitch: 1.0
+
+# ----------------------------------------------------------
 #  Spawn
 #  Set with /buildffa setspawn
 # ----------------------------------------------------------
 spawn:
   world: world
-  x: 0.5152370197481
+  x: 0.5372841193081425
   y: 147.0
-  z: -4.358150765211774
-  yaw: 0.60649663
-  pitch: -2.2577302
+  z: -4.17030647534353
+  yaw: 0.14419287
+  pitch: -1.5645014
+
+# ----------------------------------------------------------
+#  Leaderboard Refresh (for hologram countdown)
+# ----------------------------------------------------------
+leaderboard-refresh:
+  interval-seconds: 600

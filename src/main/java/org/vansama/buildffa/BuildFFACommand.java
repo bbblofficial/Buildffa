@@ -2,10 +2,7 @@ package org.vansama.buildffa;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -25,8 +22,6 @@ public class BuildFFACommand implements CommandExecutor {
     private final KitEditor kitEditor;
     private final ScoreboardManager scoreboardManager;
     private final DatabaseManager database;
-
-    private final Set<UUID> buildModePlayers = new HashSet<UUID>();
 
     public BuildFFACommand(JavaPlugin plugin, KitEditor kitEditor, ScoreboardManager scoreboardManager, DatabaseManager database) {
         this.plugin = plugin;
@@ -57,7 +52,7 @@ public class BuildFFACommand implements CommandExecutor {
         if (sub.equals("setvoid")) return handleSetVoid(sender, args);
         if (sub.equals("sethighlimit")) return handleSetHighLimit(sender, args);
         if (sub.equals("setspawn")) return handleSetSpawn(sender);
-        if (sub.equals("buildmode")) return handleBuildMode(sender);
+        if (sub.equals("buildmode")) return handleBuildMode(sender, args);
         if (sub.equals("ypvp")) return handleYPvP(sender, args);
         if (sub.equals("scoreboard") || sub.equals("sb")) return handleScoreboard(sender, args);
         if (sub.equals("stats")) return handleStats(sender, args);
@@ -434,7 +429,7 @@ public class BuildFFACommand implements CommandExecutor {
     // ==========================================
     // Build Mode
     // ==========================================
-    private boolean handleBuildMode(CommandSender sender) {
+    private boolean handleBuildMode(CommandSender sender, String[] args) {
         if (!(sender instanceof Player)) {
             sender.sendMessage(colorize("&cOnly players can use this command."));
             return true;
@@ -445,15 +440,39 @@ public class BuildFFACommand implements CommandExecutor {
         }
 
         Player player = (Player) sender;
-        UUID uuid = player.getUniqueId();
 
-        if (this.buildModePlayers.contains(uuid)) {
-            this.buildModePlayers.remove(uuid);
-            sendActionBar(player, "&fYou are currently &aNORMAL MODE");
-        } else {
-            this.buildModePlayers.add(uuid);
-            sendActionBar(player, "&fYou are currently &cBUILD MODE");
+        String action = "toggle";
+        if (args.length >= 2) {
+            action = args[1].toLowerCase();
         }
+
+        if (action.equals("on")) {
+            BuildModeManager.setBuildMode(player, true);
+            sendActionBar(player, "&fYou are currently &aBUILD MODE &7(high-limit bypassed)");
+            player.sendMessage(colorize("&aBuild Mode &lENABLED&a. You can now build above the high limit."));
+            return true;
+        }
+
+        if (action.equals("off")) {
+            BuildModeManager.setBuildMode(player, false);
+            sendActionBar(player, "&fYou are currently &cNORMAL MODE");
+            player.sendMessage(colorize("&cBuild Mode &lDISABLED&c. High limit is now enforced."));
+            return true;
+        }
+
+        if (action.equals("toggle")) {
+            boolean nowEnabled = BuildModeManager.toggleBuildMode(player);
+            if (nowEnabled) {
+                sendActionBar(player, "&fYou are currently &aBUILD MODE &7(high-limit bypassed)");
+                player.sendMessage(colorize("&aBuild Mode &lENABLED&a."));
+            } else {
+                sendActionBar(player, "&fYou are currently &cNORMAL MODE");
+                player.sendMessage(colorize("&cBuild Mode &lDISABLED&c."));
+            }
+            return true;
+        }
+
+        player.sendMessage(colorize("&cUsage: /buildffa buildmode <on|off|toggle>"));
         return true;
     }
 
@@ -623,6 +642,7 @@ public class BuildFFACommand implements CommandExecutor {
             if (l instanceof High) ((High) l).reloadConfig();
             if (l instanceof YPvP) ((YPvP) l).reloadConfig();
             if (l instanceof Connection) ((Connection) l).reloadConfig();
+            if (l instanceof Blocks) ((Blocks) l).reloadConfig();
         }
     }
 
@@ -665,6 +685,7 @@ public class BuildFFACommand implements CommandExecutor {
         sender.sendMessage(colorize("&e/buildffa kiteditor &7- Open the Kit Editor GUI"));
         sender.sendMessage(colorize("&e/buildffa kiteditor reset &7- Reset your kit"));
         sender.sendMessage(colorize("&e/buildffa buildmode &7- Toggle Build Mode"));
+        sender.sendMessage(colorize("&e/buildffa buildmode on|off &7- Set Build Mode"));
         sender.sendMessage(colorize("&e/buildffa setvoid &7- Set void Y to your current Y"));
         sender.sendMessage(colorize("&e/buildffa setvoid [y] &7- Set void Y to a specific value"));
         sender.sendMessage(colorize("&e/buildffa sethighlimit &7- Set high limit to your current Y"));

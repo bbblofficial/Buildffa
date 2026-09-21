@@ -179,6 +179,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         this.databaseManager.unloadPlayer(event.getPlayer().getUniqueId());
+        BuildModeManager.clear(event.getPlayer());
     }
 
     private boolean isEmpty(Player player) {
@@ -194,10 +195,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         return true;
     }
 
-    /**
-     * Creates config.yml if missing, and merges any new keys WITHOUT
-     * overwriting existing user values. Safe to update without losing data.
-     */
     private void createConfigIfMissing() {
         File configFile = new File(getDataFolder(), "config.yml");
         boolean isNew = !configFile.exists();
@@ -216,9 +213,14 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "kill-height", Double.valueOf(0.0D));
         setIfMissing(cfg, "high-limit", Double.valueOf(100.0D));
 
+        // ==================== Block timings (new) ====================
+        setIfMissing(cfg, "blocks.natural-restore-seconds", Integer.valueOf(9));
+        setIfMissing(cfg, "blocks.placed-decay-seconds", Integer.valueOf(5));
+        // =============================================================
+
         setIfMissing(cfg, "void.teleport-instead-of-kill", Boolean.valueOf(true));
         setIfMissing(cfg, "void.teleport-delay", Long.valueOf(0L));
-        setIfMissing(cfg, "void.teleport-message", "&cYou fell into the void!.");
+        setIfMissing(cfg, "void.teleport-message", "");
         setIfMissing(cfg, "void.death-message", "&c%player% &7fell into the void");
         setIfMissing(cfg, "void.killed-by-message", "&c%player% &7was knocked into the void by &c%killer%");
 
@@ -296,7 +298,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
             getLogger().warning("Could not save config.yml: " + e.getMessage());
         }
 
-        // Reload interval from config so countdown matches
         refreshIntervalSeconds = cfg.getInt("leaderboard-refresh.interval-seconds", 600);
         secondsUntilRefresh = refreshIntervalSeconds;
     }
@@ -318,6 +319,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         if (this.scoreboardManager != null) {
             this.scoreboardManager.shutdown();
         }
+        BuildModeManager.clearAll();
         getLogger().info("BuildFFA disabled.");
     }
 
