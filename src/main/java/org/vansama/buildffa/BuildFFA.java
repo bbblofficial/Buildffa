@@ -57,7 +57,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         reloadConfig();
         autoMergeScoreboard();
 
-        // Combat Mode timeout
         int combatTimeout = this.getConfig().getInt("combat.timeout-seconds", 15);
         CombatManager.setCombatTimeoutSeconds(combatTimeout);
 
@@ -79,6 +78,8 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(new Items(this, this.kitEditor), (Plugin) this);
         getServer().getPluginManager().registerEvents(new Fall(this), (Plugin) this);
         getServer().getPluginManager().registerEvents(new FeatherJump(this), (Plugin) this);
+        getServer().getPluginManager().registerEvents(new FireballFix(this), (Plugin) this);
+        getServer().getPluginManager().registerEvents(new PotionFix(this), (Plugin) this);
         getServer().getPluginManager().registerEvents(this.killListener, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.kitEditor, (Plugin) this);
         getServer().getPluginManager().registerEvents(new Infinite(this), (Plugin) this);
@@ -213,7 +214,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     }
 
     // ============================================================
-    //  CONFIG AUTO-MERGE — never overwrites existing values
+    //  CONFIG AUTO-MERGE
     // ============================================================
     private void createConfigIfMissing() {
         File configFile = new File(getDataFolder(), "config.yml");
@@ -230,7 +231,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
         FileConfiguration cfg = YamlConfiguration.loadConfiguration(configFile);
 
-        // ---- Load defaults from inside the JAR (src/main/resources/config.yml) ----
         InputStream defStream = this.getResource("config.yml");
         if (defStream != null) {
             YamlConfiguration defaults = YamlConfiguration.loadConfiguration(
@@ -238,7 +238,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
             cfg.setDefaults(defaults);
         }
 
-        // ---- Hardcoded fallbacks (in case JAR defaults are missing) ----
         setIfMissing(cfg, "kill-height", Double.valueOf(0.0D));
         setIfMissing(cfg, "high-limit", Double.valueOf(100.0D));
 
@@ -324,7 +323,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
         setIfMissing(cfg, "killstreak-rewards.rewards.4",  "gapple:1 fb:1 speed:1");
         setIfMissing(cfg, "killstreak-rewards.rewards.5",  "gapple:2 speed:2 jump:1");
-        setIfMissing(cfg, "killstreak-rewards.rewards.6",  "gapple:2 fb:1 jump:1 speed:1");
+        setIfMissing(cfg, "killstreak-rewards.rewards.6",  "gapple:2 fb:1 jump:5 speed:1");
         setIfMissing(cfg, "killstreak-rewards.rewards.7",  "perl:1 gapple:1 speed:2");
         setIfMissing(cfg, "killstreak-rewards.rewards.8",  "gapple:1 fb:1");
         setIfMissing(cfg, "killstreak-rewards.rewards.9",  "gapple:1 perl:1");
@@ -337,6 +336,10 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "feather-jump.boost", Double.valueOf(1.0D));
         setIfMissing(cfg, "feather-jump.message", "&b✦ &fDouble Jump!");
         // ======================================================
+
+        // ==================== Fireball ====================
+        setIfMissing(cfg, "fireball.message", "");
+        // ===================================================
 
         try {
             cfg.save(configFile);

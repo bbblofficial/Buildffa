@@ -9,6 +9,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -22,6 +23,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 public class Void implements Listener {
 
@@ -36,6 +38,7 @@ public class Void implements Listener {
     private final Set<UUID> teleportingPlayers = new HashSet<UUID>();
     private final Set<UUID> dyingPlayers = new HashSet<UUID>();
 
+    // victim -> attacker (last hit)
     private final Map<UUID, UUID> lastDamager = new HashMap<UUID, UUID>();
     private final Map<UUID, Long> lastDamageTime = new HashMap<UUID, Long>();
 
@@ -75,8 +78,20 @@ public class Void implements Listener {
         voidDeaths.remove(uuid);
     }
 
+    // ============================================================
+    //  Track last hit (for kill credit)
+    // ============================================================
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onDamageLowest(EntityDamageByEntityEvent event) {
+        trackDamage(event);
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onDamage(EntityDamageByEntityEvent event) {
+    public void onDamageMonitor(EntityDamageByEntityEvent event) {
+        trackDamage(event);
+    }
+
+    private void trackDamage(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof Player)) return;
 
         Player victim = (Player) event.getEntity();
@@ -98,6 +113,9 @@ public class Void implements Listener {
         this.lastDamageTime.put(victim.getUniqueId(), Long.valueOf(System.currentTimeMillis()));
     }
 
+    // ============================================================
+    //  Detect falling below kill-height
+    // ============================================================
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
@@ -111,7 +129,7 @@ public class Void implements Listener {
         if (to.getY() < this.killHeight) {
             if (this.teleportInsteadOfKill) {
                 this.teleportingPlayers.add(player.getUniqueId());
-                registerVoidDeath(player);
+                handleVoidFall(player);
                 teleportToSpawn(player);
             } else {
                 this.dyingPlayers.add(player.getUniqueId());
@@ -120,55 +138,21 @@ public class Void implements Listener {
         }
     }
 
-    private void registerVoidDeath(Player player) {
+    private void handleVoidFall(Player player) {
         voidDeaths.add(player.getUniqueId());
 
-        Player killer = null;
-        UUID damagerId = this.lastDamager.get(player.getUniqueId());
-        Long damageTime = this.lastDamageTime.get(player.getUniqueId());
+        Player killer = findKiller(player);
 
-        if (damagerId != null && damageTime != null) {
-            long elapsed = System.currentTimeMillis() - damageTime.longValue();
-            if (elapsed <= DAMAGE_WINDOW_MS) {
-                Player online = Bukkit.getPlayer(damagerId);
-                if (online != null && online.isOnline()) {
-                    killer = online;
-                }
-            }
-        }
+        // ---- Stats ----
+        saveStats(player, killer);
 
-        try {
-            BuildFFA bffa = (BuildFFA) this.plugin;
-            DatabaseManager db = bffa.getDatabaseManager();
-            if (db != null) {
-                PlayerData victimData = db.getPlayer(player.getUniqueId());
-                if (victimData == null) victimData = db.loadPlayer(player.getUniqueId());
-                if (victimData != null) {
-                    victimData.addDeath();
-                    victimData.resetKillstreak();
-                    db.savePlayer(victimData);
-                }
-
-                if (killer != null) {
-                    PlayerData killerData = db.getPlayer(killer.getUniqueId());
-                    if (killerData == null) killerData = db.loadPlayer(killer.getUniqueId());
-                    if (killerData != null) {
-                        killerData.addKill();
-                        killerData.addKillstreak();
-                        db.savePlayer(killerData);
-                    }
-                }
-            }
-        } catch (Throwable t) {
-            this.plugin.getLogger().warning("Void death save failed: " + t.getMessage());
-        }
-
-        // Full heal killer
+        // ---- Full heal killer + reward ----
         if (killer != null) {
             fullHeal(killer);
-            killer.getInventory().addItem(new ItemStack(Material.GOLDEN_APPLE, 1));
+            giveKillstreakReward(killer);
         }
 
+        // ---- Broadcast ----
         String finalMessage;
         if (killer != null) {
             finalMessage = this.voidKilledByMessage
@@ -185,6 +169,174 @@ public class Void implements Listener {
 
         this.lastDamager.remove(player.getUniqueId());
         this.lastDamageTime.remove(player.getUniqueId());
+    }
+
+    /**
+     * Find the killer using lastDamager + fallback to direct player references.
+     */
+    private Player findKiller(Player victim) {
+        UUID damagerId = this.lastDamager.get(victim.getUniqueId());
+        Long damageTime = this.lastDamageTime.get(victim.getUniqueId());
+
+        if (damagerId == null || damageTime == null) return null;
+
+        long elapsed = System.currentTimeMillis() - damageTime.longValue();
+        if (elapsed > DAMAGE_WINDOW_MS) return null;
+
+        Player online = Bukkit.getPlayer(damagerId);
+        if (online != null && online.isOnline()) {
+            return online;
+        }
+        return null;
+    }
+
+    /**
+     * Save victim death + attacker kill using direct DB cache.
+     */
+    private void saveStats(Player victim, Player killer) {
+        try {
+            BuildFFA bffa = (BuildFFA) this.plugin;
+            DatabaseManager db = bffa.getDatabaseManager();
+            if (db == null) return;
+
+            // Victim: +1 death, reset killstreak
+            PlayerData victimData = db.getPlayer(victim.getUniqueId());
+            if (victimData == null) victimData = db.loadPlayer(victim.getUniqueId());
+            if (victimData != null) {
+                victimData.addDeath();
+                victimData.resetKillstreak();
+                db.savePlayer(victimData);
+            }
+
+            // Killer: +1 kill, +1 killstreak
+            if (killer != null) {
+                PlayerData killerData = db.getPlayer(killer.getUniqueId());
+                if (killerData == null) killerData = db.loadPlayer(killer.getUniqueId());
+                if (killerData != null) {
+                    killerData.addKill();
+                    killerData.addKillstreak();
+                    db.savePlayer(killerData);
+                }
+            }
+
+        } catch (Throwable t) {
+            this.plugin.getLogger().warning("Void save stats failed: " + t.getMessage());
+        }
+    }
+
+    /**
+     * Give killstreak reward to the killer (same logic as Kill.java)
+     */
+    private void giveKillstreakReward(Player killer) {
+        if (killer == null) return;
+
+        DatabaseManager db = ((BuildFFA) this.plugin).getDatabaseManager();
+        if (db == null) return;
+
+        PlayerData data = db.getPlayer(killer.getUniqueId());
+        if (data == null) return;
+
+        int streak = data.getKillstreak();
+        if (streak <= 0) {
+            killer.getInventory().addItem(new ItemStack(Material.GOLDEN_APPLE, 1));
+            return;
+        }
+
+        if (!this.plugin.getConfig().getBoolean("killstreak-rewards.enabled", true)) {
+            killer.getInventory().addItem(new ItemStack(Material.GOLDEN_APPLE, 1));
+            return;
+        }
+
+        boolean repeatFrom12 = this.plugin.getConfig().getBoolean("killstreak-rewards.repeat-from-12", true);
+
+        int level = resolveLevel(streak, repeatFrom12);
+        if (level == -1 || !giveRewardForLevel(killer, level)) {
+            killer.getInventory().addItem(new ItemStack(Material.GOLDEN_APPLE, 1));
+        }
+
+        killer.sendMessage(ChatColor.translateAlternateColorCodes('&',
+                "&a&l★ &aKillstreak &e" + streak + " &a— reward received!"));
+        try {
+            killer.playSound(killer.getLocation(), Sound.LEVEL_UP, 1.0F, 1.5F);
+        } catch (Throwable ignored) {}
+    }
+
+    private int resolveLevel(int streak, boolean repeatFrom12) {
+        if (this.plugin.getConfig().contains("killstreak-rewards.rewards." + streak)) {
+            return streak;
+        }
+        if (repeatFrom12 && streak > 12) {
+            int wrapped = ((streak - 1) % 12) + 1;
+            if (this.plugin.getConfig().contains("killstreak-rewards.rewards." + wrapped)) {
+                return wrapped;
+            }
+        }
+        for (int i = streak - 1; i >= 1; i--) {
+            if (this.plugin.getConfig().contains("killstreak-rewards.rewards." + i)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private boolean giveRewardForLevel(Player player, int level) {
+        String rewardString = this.plugin.getConfig().getString("killstreak-rewards.rewards." + level, "");
+        if (rewardString == null || rewardString.isEmpty()) return false;
+
+        String[] parts = rewardString.split(" ");
+        boolean gaveAny = false;
+
+        for (String part : parts) {
+            if (part.isEmpty()) continue;
+            String[] split = part.split(":");
+            if (split.length != 2) continue;
+            String itemName = split[0].toLowerCase();
+            int amount;
+            try {
+                amount = Integer.parseInt(split[1]);
+            } catch (NumberFormatException e) { continue; }
+            if (amount <= 0) continue;
+
+            ItemStack item = buildItem(itemName, amount);
+            if (item != null) {
+                player.getInventory().addItem(item);
+                gaveAny = true;
+            }
+        }
+        return gaveAny;
+    }
+
+    private ItemStack buildItem(String name, int amount) {
+        if (name.equals("gapple") || name.equals("golden_apple") || name.equals("gap"))
+            return new ItemStack(Material.GOLDEN_APPLE, amount);
+        if (name.equals("fb") || name.equals("fireball") || name.equals("fire_charge"))
+            return new ItemStack(Material.FIREBALL, amount);
+        if (name.equals("perl") || name.equals("pearl") || name.equals("ender_pearl"))
+            return new ItemStack(Material.ENDER_PEARL, amount);
+        if (name.equals("feather"))
+            return new ItemStack(Material.FEATHER, amount);
+        if (name.equals("speed"))
+            return makePotion(1, amount);
+        if (name.equals("jump"))
+            return makePotion(2, amount);
+        return null;
+    }
+
+    private ItemStack makePotion(int kind, int level) {
+        ItemStack potion = new ItemStack(Material.POTION, 1);
+        short data;
+        if (kind == 1) {
+            if (level <= 1) data = 8194;
+            else data = 8226;
+        } else {
+            if (level <= 1) data = 8203;
+            else if (level == 2) data = 8235;
+            else if (level == 3) data = 8267;
+            else if (level == 4) data = 8299;
+            else data = 8331;
+        }
+        potion.setDurability(data);
+        return potion;
     }
 
     private void fullHeal(Player player) {
@@ -262,9 +414,7 @@ public class Void implements Listener {
 
     private Location getSpawnLocation() {
         FileConfiguration config = this.plugin.getConfig();
-        if (!config.contains("spawn.world")) {
-            return null;
-        }
+        if (!config.contains("spawn.world")) return null;
         String worldName = config.getString("spawn.world");
         if (worldName == null) return null;
 
@@ -285,20 +435,15 @@ public class Void implements Listener {
         event.setDeathMessage(null);
 
         Player player = event.getEntity();
+        UUID victimId = player.getUniqueId();
 
-        if (player.getKiller() == null && this.dyingPlayers.remove(player.getUniqueId())) {
-            Player killer = null;
-            UUID damagerId = this.lastDamager.get(player.getUniqueId());
-            Long damageTime = this.lastDamageTime.get(player.getUniqueId());
+        // If this is a real death (not teleport), and we know the killer, credit
+        if (player.getKiller() == null && this.dyingPlayers.remove(victimId)) {
+            Player killer = findKiller(player);
+            if (killer == null) killer = player.getKiller();
 
-            if (damagerId != null && damageTime != null) {
-                long elapsed = System.currentTimeMillis() - damageTime.longValue();
-                if (elapsed <= DAMAGE_WINDOW_MS) {
-                    Player online = Bukkit.getPlayer(damagerId);
-                    if (online != null && online.isOnline()) {
-                        killer = online;
-                    }
-                }
+            if (killer != null) {
+                fullHeal(killer);
             }
 
             String msg;
@@ -306,7 +451,6 @@ public class Void implements Listener {
                 msg = this.voidKilledByMessage
                         .replace("%player%", player.getName())
                         .replace("%killer%", killer.getName());
-                fullHeal(killer);
             } else {
                 msg = this.voidMessage.replace("%player%", player.getName());
             }
@@ -315,11 +459,11 @@ public class Void implements Listener {
                 Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', msg));
             }
 
-            this.lastDamager.remove(player.getUniqueId());
-            this.lastDamageTime.remove(player.getUniqueId());
+            this.lastDamager.remove(victimId);
+            this.lastDamageTime.remove(victimId);
         }
 
-        this.teleportingPlayers.remove(player.getUniqueId());
+        this.teleportingPlayers.remove(victimId);
     }
 
     public boolean isTeleporting(UUID uuid) {
