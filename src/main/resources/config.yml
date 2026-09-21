@@ -31,9 +31,15 @@ void:
   # %player% = player name
   teleport-message: '&c%player% &7fell into the void! &7Teleported to spawn.'
 
-  # Broadcast message shown to everyone
+  # Broadcast message shown to everyone when NOBODY is credited
   # %player% = player name
   death-message: '&c%player% &7fell into the void'
+
+  # Broadcast message shown when someone knocked the player in
+  # (they were hit in the last 10 seconds)
+  # %player% = victim name
+  # %killer% = attacker who last hit them
+  killed-by-message: '&c%player% &7was knocked into the void by &c%killer%'
 
 # ----------------------------------------------------------
 #  High Build Limit
