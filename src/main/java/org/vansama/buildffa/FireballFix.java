@@ -12,7 +12,6 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Fireball;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -122,7 +121,7 @@ public class FireballFix implements Listener {
     // ============================================================
     //  EXPLODE → BEDWARS KNOCKBACK + DAMAGE
     // ============================================================
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onExplode(EntityExplodeEvent event) {
         if (event.getEntityType() != EntityType.FIREBALL) return;
         
@@ -132,13 +131,14 @@ public class FireballFix implements Listener {
         Collection<Entity> nearby = l.getWorld().getNearbyEntities(l, radius, radius, radius);
 
         if (this.plugin.getConfig().getBoolean("fireball.knockback.enabled", true)) {
-            // Note: Removed the "/ 2.0D" from the original code so the config values are accurate and forceful
             double hf = this.plugin.getConfig().getDouble("fireball.knockback.height-force", 1.5D);
             double rf = this.plugin.getConfig().getDouble("fireball.knockback.radius-force", 2.0D);
+            
+            double damage = this.plugin.getConfig().getDouble("fireball.knockback.damage", 0.5D);
 
             for (Entity entity : nearby) {
                 if (entity instanceof Player) {
-                    pushAway((LivingEntity) entity, l, hf, rf);
+                    pushAway((Player) entity, l, hf, rf, damage);
                 }
             }
         }
@@ -147,42 +147,36 @@ public class FireballFix implements Listener {
     // ============================================================
     //  CANCEL DIRECT FIREBALL DAMAGE
     // ============================================================
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void fireballDirectHit(EntityDamageByEntityEvent event) {
         if (event.getDamager() instanceof Fireball) {
             event.setCancelled(true);
-            return;
         }
     }
 
     // ============================================================
     //  PUSH + DAMAGE (BEDWARS MATH)
     // ============================================================
-    void pushAway(LivingEntity player, Location explodeLoc, double hf, double rf) {
+    void pushAway(Player player, Location explodeLoc, double hf, double rf, double damage) {
         Location playerLoc = player.getLocation();
-        double damage = this.plugin.getConfig().getDouble("fireball.knockback.damage", 1.0D);
-
-        // Bedwars vector math: Subtract explosion location from player location (pushes AWAY from center)
-        Vector direction = playerLoc.toVector().subtract(explodeLoc.toVector());
         
-        // Prevent NaN errors if the explosion perfectly overlaps the player's exact coordinate
+        double x = playerLoc.getX() - explodeLoc.getX();
+        double z = playerLoc.getZ() - explodeLoc.getZ();
+        
+        Vector direction = new Vector(x, 0, z);
+        
         if (direction.lengthSquared() == 0) {
-            direction = new Vector(0, 1, 0);
-        } else {
-            direction.normalize();
+            direction = new Vector(0.1, 0, 0.1);
         }
-
-        // Apply config forces
-        direction.multiply(rf);
+        
+        direction.normalize().multiply(rf);
+        
         direction.setY(hf);
 
         player.setVelocity(direction);
 
-        double finalDamage = damage;
-        if (finalDamage < 0) finalDamage = 0;
-
-        if (finalDamage > 0) {
-            player.damage(finalDamage);
+        if (damage > 0) {
+            player.damage(damage);
         }
     }
 }
