@@ -42,7 +42,7 @@ public class Void implements Listener {
         this.teleportInsteadOfKill = config.getBoolean("void.teleport-instead-of-kill", true);
         this.teleportDelay = config.getLong("void.teleport-delay", 0L);
         this.teleportMessage = config.getString("void.teleport-message",
-                "&cYou fell into the void!.");
+                "&c%player% &7fell into the void! &7Teleported to spawn.");
     }
 
     public void reloadConfig() {
@@ -95,8 +95,14 @@ public class Void implements Listener {
                 }
 
                 if (teleportMessage != null && !teleportMessage.isEmpty()) {
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&',
-                            teleportMessage.replace("%player%", player.getName())));
+                    String msg = teleportMessage.replace("%player%", player.getName());
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', msg));
+                }
+
+                // Broadcast به همه که فلانی افتاد تو void
+                if (voidMessage != null && !voidMessage.isEmpty()) {
+                    String broadcast = voidMessage.replace("%player%", player.getName());
+                    Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', broadcast));
                 }
 
                 Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
@@ -143,9 +149,8 @@ public class Void implements Listener {
 
         if (player.getKiller() == null && this.dyingPlayers.remove(player.getUniqueId())) {
             if (this.voidMessage != null && !this.voidMessage.isEmpty()) {
-                String msg = ChatColor.translateAlternateColorCodes('&',
-                        this.voidMessage.replace("%player%", player.getName()));
-                Bukkit.broadcastMessage(msg);
+                String msg = this.voidMessage.replace("%player%", player.getName());
+                Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', msg));
             }
         }
 

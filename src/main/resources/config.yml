@@ -26,10 +26,12 @@ void:
   # Set to 0 for instant teleport
   teleport-delay: 0
 
-  # Message shown to player when teleported
-  teleport-message: '&cYou fell into the void! &7Teleported to spawn.'
+  # Message shown to the player who fell (private)
+  # %player% = player name
+  teleport-message: '&c%player% &7fell into the void! &7Teleported to spawn.'
 
-  # Broadcast message (only used when teleport-instead-of-kill is false)
+  # Broadcast message shown to everyone
+  # %player% = player name
   death-message: '&c%player% &7fell into the void'
 
 # ----------------------------------------------------------
