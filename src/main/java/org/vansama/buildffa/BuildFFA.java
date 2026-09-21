@@ -29,9 +29,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     private Connection connection;
 
     // ==================== COUNTDOWN ====================
-    /** Seconds remaining until next leaderboard refresh. */
     private static int secondsUntilRefresh = 600;
-    /** Total interval in seconds (10:00 = 600). */
     private static int refreshIntervalSeconds = 600;
 
     public static int getSecondsUntilRefresh() {
@@ -106,11 +104,10 @@ public final class BuildFFA extends JavaPlugin implements Listener {
                 if (secondsUntilRefresh > 0) {
                     secondsUntilRefresh--;
                 } else {
-                    // Reset when it hits 0
                     secondsUntilRefresh = refreshIntervalSeconds;
                 }
             }
-        }.runTaskTimer(this, 20L, 20L); // every 1 second
+        }.runTaskTimer(this, 20L, 20L);
         // ==============================================================
 
         getLogger().info("=================================================");
@@ -197,6 +194,10 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         return true;
     }
 
+    /**
+     * Creates config.yml if missing, and merges any new keys WITHOUT
+     * overwriting existing user values. Safe to update without losing data.
+     */
     private void createConfigIfMissing() {
         File configFile = new File(getDataFolder(), "config.yml");
         boolean isNew = !configFile.exists();
@@ -219,6 +220,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "void.teleport-delay", Long.valueOf(0L));
         setIfMissing(cfg, "void.teleport-message", "&cYou fell into the void!.");
         setIfMissing(cfg, "void.death-message", "&c%player% &7fell into the void");
+        setIfMissing(cfg, "void.killed-by-message", "&c%player% &7was knocked into the void by &c%killer%");
 
         setIfMissing(cfg, "ypvp.enabled", Boolean.valueOf(false));
         setIfMissing(cfg, "ypvp.y-level", Double.valueOf(150.0D));
@@ -233,9 +235,10 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "connection-check.grace-seconds", Integer.valueOf(30));
         setIfMissing(cfg, "connection-check.warn-cooldown", Integer.valueOf(5));
         setIfMissing(cfg, "connection-check.kick-message", "&cUnstable connection\n&fYour ping is too high: &e%ping%ms&7/&e%max%ms");
+        setIfMissing(cfg, "connection-check.broadcast-message", "&c%player% &7was kicked for &eUnstable Connection &7(&c%ping%ms&7)");
         setIfMissing(cfg, "connection-check.bypass-permission", "buildffa.connection.bypass");
 
-        setIfMissing(cfg, "kill", "&e%killer% &7killed &e%loser% &7(&e%killcount% &7kills)");
+        setIfMissing(cfg, "kill", "&a%killer% &7killed &c%loser%");
         setIfMissing(cfg, "Title-Suffix", " &7Kill");
         setIfMissing(cfg, "SubTitle-kill", "&e+1 Kill");
         setIfMissing(cfg, "join-message", "&e%player% &7joined the game &8(&e%online%&7/&e100&8)");
@@ -280,9 +283,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "spawn.yaw", Float.valueOf(0.0F));
         setIfMissing(cfg, "spawn.pitch", Float.valueOf(0.0F));
 
-        // ==================== Countdown config ====================
-        setIfMissing(cfg, "leaderboard-refresh.interval-seconds", Integer.valueOf(600)); // 10:00
-        // ==========================================================
+        setIfMissing(cfg, "leaderboard-refresh.interval-seconds", Integer.valueOf(600));
 
         try {
             cfg.save(configFile);
@@ -295,7 +296,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
             getLogger().warning("Could not save config.yml: " + e.getMessage());
         }
 
-        // Load the interval from config so the countdown matches it
+        // Reload interval from config so countdown matches
         refreshIntervalSeconds = cfg.getInt("leaderboard-refresh.interval-seconds", 600);
         secondsUntilRefresh = refreshIntervalSeconds;
     }

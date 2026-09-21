@@ -31,18 +31,16 @@ public class Kill implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
-        // Remove default "was slain by" message
         event.setDeathMessage(null);
 
         Player deathPlayer = event.getEntity();
         UUID victimId = deathPlayer.getUniqueId();
 
-        // ==== Skip if this death was already handled by Void ====
+        // Skip if Void already handled this death
         if (Void.isVoidDeath(victimId)) {
             Void.clearVoidDeath(victimId);
             return;
         }
-        // ========================================================
 
         long now = System.currentTimeMillis();
 

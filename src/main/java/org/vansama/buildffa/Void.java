@@ -33,14 +33,11 @@ public class Void implements Listener {
     private final Set<UUID> teleportingPlayers = new HashSet<UUID>();
     private final Set<UUID> dyingPlayers = new HashSet<UUID>();
 
-    // Track who last hit who (UUID victim -> UUID attacker) and when
     private final Map<UUID, UUID> lastDamager = new HashMap<UUID, UUID>();
     private final Map<UUID, Long> lastDamageTime = new HashMap<UUID, Long>();
 
-    // How long after being hit does a void fall still count as a kill
-    private static final long DAMAGE_WINDOW_MS = 10000L; // 10 seconds
+    private static final long DAMAGE_WINDOW_MS = 10000L;
 
-    // Flag shared with Kill.java
     private static final Set<UUID> voidDeaths = new HashSet<UUID>();
 
     public Void(JavaPlugin plugin) {
@@ -73,9 +70,6 @@ public class Void implements Listener {
         voidDeaths.remove(uuid);
     }
 
-    /**
-     * Records who hit who, so we can credit the kill if they fall into the void.
-     */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDamage(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof Player)) return;
@@ -124,7 +118,6 @@ public class Void implements Listener {
     private void registerVoidDeath(Player player) {
         voidDeaths.add(player.getUniqueId());
 
-        // ==== Figure out if someone knocked them in ====
         Player killer = null;
         UUID damagerId = this.lastDamager.get(player.getUniqueId());
         Long damageTime = this.lastDamageTime.get(player.getUniqueId());
@@ -139,12 +132,10 @@ public class Void implements Listener {
             }
         }
 
-        // ==== Save stats ====
         try {
             BuildFFA bffa = (BuildFFA) this.plugin;
             DatabaseManager db = bffa.getDatabaseManager();
             if (db != null) {
-                // victim death
                 PlayerData victimData = db.getPlayer(player.getUniqueId());
                 if (victimData == null) victimData = db.loadPlayer(player.getUniqueId());
                 if (victimData != null) {
@@ -153,7 +144,6 @@ public class Void implements Listener {
                     db.savePlayer(victimData);
                 }
 
-                // killer kill (only if credited)
                 if (killer != null) {
                     PlayerData killerData = db.getPlayer(killer.getUniqueId());
                     if (killerData == null) killerData = db.loadPlayer(killer.getUniqueId());
@@ -168,7 +158,6 @@ public class Void implements Listener {
             this.plugin.getLogger().warning("Void death save failed: " + t.getMessage());
         }
 
-        // ==== Broadcast message ====
         String finalMessage;
         if (killer != null) {
             finalMessage = this.voidKilledByMessage
@@ -183,7 +172,6 @@ public class Void implements Listener {
             Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', finalMessage));
         }
 
-        // ==== Cleanup ====
         this.lastDamager.remove(player.getUniqueId());
         this.lastDamageTime.remove(player.getUniqueId());
     }
@@ -260,7 +248,6 @@ public class Void implements Listener {
         Player player = event.getEntity();
 
         if (player.getKiller() == null && this.dyingPlayers.remove(player.getUniqueId())) {
-            // Real death (not teleport) — check last damager
             Player killer = null;
             UUID damagerId = this.lastDamager.get(player.getUniqueId());
             Long damageTime = this.lastDamageTime.get(player.getUniqueId());

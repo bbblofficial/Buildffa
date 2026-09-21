@@ -1,6 +1,7 @@
 # ==========================================================
 #  BuildFFA Scoreboard Configuration
 #  Version: 4.0  |  Compatible: 1.8.8
+#  Theme: Aqua / White / Dark-Aqua (No Bold)
 #  Created by Muvixo | Author: VanSaMa | Made by PixelValley
 # ==========================================================
 
@@ -9,44 +10,43 @@ update-interval: 10
 join-delay: 5
 
 # ----------------------------------------------------------
-#  Title Animation
+#  Title Animation (Aqua & White, no bold)
 # ----------------------------------------------------------
 title:
   animated: true
-  static: '&6&lBuildFFA'
+  static: '&bBuildFFA'
   frames:
-    - '&6&lB&e&luildFFA'
-    - '&6&lBu&e&lildFFA'
-    - '&6&lBui&e&lldFFA'
-    - '&6&lBuil&e&ldFFA'
-    - '&6&lBuild&e&lFFA'
-    - '&6&lBuildF&e&lFA'
-    - '&6&lBuildFF&e&lA'
-    - '&6&lBuildFFA'
+    - '&bB&fuildFFA'
+    - '&bBu&fildFFA'
+    - '&bBui&flldFFA'
+    - '&bBuil&fdFFA'
+    - '&bBuild&fFFA'
+    - '&bBuildF&fFA'
+    - '&bBuildFF&fA'
+    - '&bBuildFFA'
 
 # ----------------------------------------------------------
 #  Scoreboard Lines
-#  Max 16 visible chars per line on 1.8.8
-#  No unicode emoji — use text or symbols like :
-#  Placeholders: %player% %kills% %deaths% %kdr%
-#                %killstreak% %best_killstreak%
-#                %online% %max_online% %world% %ping%
-#                %health% %food% %y% %highlimit% %void%
+#  Theme:
+#    &b  = Aqua (main accent)
+#    &f  = White (values)
+#    &3  = Dark Aqua (dividers)
+#    &7  = Gray (subtle)
+#    &8  = Dark Gray (separator)
 # ----------------------------------------------------------
 lines:
-  - '&7&m----------------'
-  - '&fPlayer: &e%player%'
-  - '&fKills: &a%kills%'
-  - '&fDeaths: &c%deaths%'
-  - '&fKDR: &e%kdr%'
-  - '&fStreak: &b%killstreak%'
-  - '&7&m----------------'
-  - '&fOnline: &b%online%&7/&b%max_online%'
-  - '&fWorld: &d%world%'
-  - '&fPing: &e%ping%ms'
-  - '&7&m----------------'
-  - '&6Play.MineStorm.iR'
-  - '&7&m----------------'
+  - '&3&m----------------'
+  - '&bPlayer &8» &f%player%'
+  - '&bKills &8» &f%kills%'
+  - '&bDeaths &8» &f%deaths%'
+  - '&bKDR &8» &f%kdr%'
+  - '&bStreak &8» &f%killstreak%'
+  - '&3&m----------------'
+  - '&bOnline &8» &f%online%&7/&f%max_online%'
+  - '&bPing &8» &f%ping%ms'
+  - '&3&m----------------'
+  - '&bPlay.MineStorm.iR'
+  - '&3&m----------------'
 
 # ----------------------------------------------------------
 #  Per-World Scoreboards
@@ -55,31 +55,31 @@ per-world:
   enabled: false
   worlds:
     world:
-      - '&7&m----------------'
-      - '&a&lOVERWORLD'
-      - '&7&m----------------'
-      - '&fPlayer: &e%player%'
-      - '&fKills: &a%kills%'
-      - '&fDeaths: &c%deaths%'
-      - '&fKDR: &e%kdr%'
-      - '&7&m----------------'
-      - '&fOnline: &b%online%'
-      - '&7&m----------------'
-      - '&6Play.MineStorm.iR'
-      - '&7&m----------------'
+      - '&3&m----------------'
+      - '&bOVERWORLD'
+      - '&3&m----------------'
+      - '&bPlayer &8» &f%player%'
+      - '&bKills &8» &f%kills%'
+      - '&bDeaths &8» &f%deaths%'
+      - '&bKDR &8» &f%kdr%'
+      - '&3&m----------------'
+      - '&bOnline &8» &f%online%'
+      - '&3&m----------------'
+      - '&bPlay.MineStorm.iR'
+      - '&3&m----------------'
     world_nether:
-      - '&7&m----------------'
-      - '&c&lNETHER'
-      - '&7&m----------------'
-      - '&fPlayer: &e%player%'
-      - '&fKills: &a%kills%'
-      - '&fDeaths: &c%deaths%'
-      - '&fKDR: &e%kdr%'
-      - '&7&m----------------'
-      - '&fOnline: &b%online%'
-      - '&7&m----------------'
-      - '&6Play.MineStorm.iR'
-      - '&7&m----------------'
+      - '&3&m----------------'
+      - '&bNETHER'
+      - '&3&m----------------'
+      - '&bPlayer &8» &f%player%'
+      - '&bKills &8» &f%kills%'
+      - '&bDeaths &8» &f%deaths%'
+      - '&bKDR &8» &f%kdr%'
+      - '&3&m----------------'
+      - '&bOnline &8» &f%online%'
+      - '&3&m----------------'
+      - '&bPlay.MineStorm.iR'
+      - '&3&m----------------'
 
 # ----------------------------------------------------------
 #  Toggle
