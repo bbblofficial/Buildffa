@@ -10,8 +10,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -26,40 +24,55 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class KitEditor implements Listener {
-  
+
   private final JavaPlugin plugin;
+  private final KitDatabase kitDatabase;
+
   private final Map<UUID, Inventory> openEditors = new HashMap<UUID, Inventory>();
   private final Map<UUID, Boolean> editingKit = new HashMap<UUID, Boolean>();
   private final Map<UUID, Boolean> saving = new HashMap<UUID, Boolean>();
-  
+
   private static final int SIZE = 36;
-  
+
   private static final int SLOT_SAVE = 32;
   private static final int SLOT_CANCEL = 33;
   private static final int SLOT_RESET = 34;
   private static final int SLOT_INFO = 35;
   private static final int SLOT_SPACER = 31;
-  
+
   public KitEditor(JavaPlugin plugin) {
     this.plugin = plugin;
+    this.kitDatabase = new KitDatabase(plugin);
     Bukkit.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
   }
-  
+
+  public KitDatabase getKitDatabase() {
+    return this.kitDatabase;
+  }
+
   public void openKitEditorGUI(final Player player) {
     Inventory inv = Bukkit.createInventory(null, SIZE, colorize("&6&lKit Editor"));
-    
-    FileConfiguration config = this.plugin.getConfig();
-    ConfigurationSection kitSection = config.getConfigurationSection("kits." + player.getUniqueId().toString());
-    
+
+    UUID uuid = player.getUniqueId();
+
     ItemStack[] kitContents;
     ItemStack helmet, chestplate, leggings, boots;
-    
-    if (kitSection != null) {
-      kitContents = loadKitContentsFromConfig(kitSection);
-      helmet = kitSection.getItemStack("helmet");
-      chestplate = kitSection.getItemStack("chestplate");
-      leggings = kitSection.getItemStack("leggings");
-      boots = kitSection.getItemStack("boots");
+
+    if (kitDatabase.hasKit(uuid)) {
+      List<?> contentsList = kitDatabase.getContents(uuid);
+      kitContents = new ItemStack[36];
+      if (contentsList != null) {
+        for (int i = 0; i < contentsList.size() && i < 36; i++) {
+          Object obj = contentsList.get(i);
+          if (obj instanceof ItemStack) {
+            kitContents[i] = (ItemStack) obj;
+          }
+        }
+      }
+      helmet = kitDatabase.getHelmet(uuid);
+      chestplate = kitDatabase.getChestplate(uuid);
+      leggings = kitDatabase.getLeggings(uuid);
+      boots = kitDatabase.getBoots(uuid);
     } else {
       kitContents = getDefaultKitContents();
       helmet = unbreakable(new ItemStack(Material.IRON_HELMET));
@@ -67,18 +80,18 @@ public class KitEditor implements Listener {
       leggings = unbreakable(new ItemStack(Material.DIAMOND_LEGGINGS));
       boots = unbreakable(new ItemStack(Material.DIAMOND_BOOTS));
     }
-    
+
     for (int i = 0; i < 27 && i < kitContents.length; i++) {
       if (kitContents[i] != null) {
         inv.setItem(i, kitContents[i]);
       }
     }
-    
+
     inv.setItem(27, helmet);
     inv.setItem(28, chestplate);
     inv.setItem(29, leggings);
     inv.setItem(30, boots);
-    
+
     ItemStack saveBtn = createButton(Material.EMERALD_BLOCK, colorize("&a&lSave Kit"), Arrays.asList(
         colorize("&7Click to save your current kit")
     ));
@@ -91,69 +104,47 @@ public class KitEditor implements Listener {
     ));
     ItemStack infoBtn = createButton(Material.BOOK, colorize("&b&lInfo"), Arrays.asList(
         colorize("&7Top 27 slots = kit contents"),
-        colorize("&7Slots 27-30 = armor"),
+        colorize("&7Armor is locked (cannot be edited)"),
         colorize("&7Click Save when done")
     ));
-    
+
     inv.setItem(SLOT_SAVE, saveBtn);
     inv.setItem(SLOT_CANCEL, cancelBtn);
     inv.setItem(SLOT_RESET, resetBtn);
     inv.setItem(SLOT_INFO, infoBtn);
-    
+
     this.openEditors.put(player.getUniqueId(), inv);
     this.editingKit.put(player.getUniqueId(), Boolean.valueOf(true));
     this.saving.put(player.getUniqueId(), Boolean.valueOf(false));
-    
+
     player.openInventory(inv);
     player.sendMessage(colorize("&8&m----------------------------------"));
     player.sendMessage(colorize("&6&lKit Editor &7opened"));
     player.sendMessage(colorize("&7Move items freely, then click &aSave &7or &cCancel"));
     player.sendMessage(colorize("&8&m----------------------------------"));
   }
-  
-  private ItemStack[] loadKitContentsFromConfig(ConfigurationSection section) {
-    ItemStack[] contents = new ItemStack[36];
-    if (section.contains("contents")) {
-      List<?> list = section.getList("contents");
-      if (list != null) {
-        for (int i = 0; i < list.size() && i < 36; i++) {
-          Object obj = list.get(i);
-          if (obj instanceof ItemStack) {
-            contents[i] = (ItemStack) obj;
-          }
-        }
-      }
-    }
-    return contents;
-  }
-  
+
   private ItemStack[] getDefaultKitContents() {
     ItemStack[] contents = new ItemStack[36];
-    
-    // Slot 0: Stone Sword (Sharpness II, Unbreakable)
+
     ItemStack sword = new ItemStack(Material.STONE_SWORD);
     sword.addUnsafeEnchantment(Enchantment.DAMAGE_ALL, 2);
     contents[0] = unbreakable(sword);
-    
-    // Slot 1: Cyan Wool x 64
+
     contents[1] = new ItemStack(Material.WOOL, 64, (short) 9);
-    
-    // Slot 2: Shears (Unbreakable)
     contents[2] = unbreakable(new ItemStack(Material.SHEARS));
-    
-    // Slot 3: Iron Pickaxe (Efficiency II, Unbreakable)
+
     ItemStack pickaxe = new ItemStack(Material.IRON_PICKAXE);
     pickaxe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 2);
     contents[3] = unbreakable(pickaxe);
-    
-    // Slot 4: Iron Axe (Efficiency I, Unbreakable)
+
     ItemStack axe = new ItemStack(Material.IRON_AXE);
     axe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 1);
     contents[4] = unbreakable(axe);
-    
+
     return contents;
   }
-  
+
   private ItemStack createButton(Material mat, String name, List<String> lore) {
     ItemStack item = new ItemStack(mat);
     ItemMeta meta = item.getItemMeta();
@@ -162,7 +153,7 @@ public class KitEditor implements Listener {
     item.setItemMeta(meta);
     return item;
   }
-  
+
   public static ItemStack unbreakable(ItemStack item) {
     if (item == null) return null;
     ItemMeta meta = item.getItemMeta();
@@ -171,44 +162,44 @@ public class KitEditor implements Listener {
     item.setItemMeta(meta);
     return item;
   }
-  
+
   public void saveKit(Player player) {
     Inventory inv = this.openEditors.get(player.getUniqueId());
     if (inv == null) {
       player.sendMessage(colorize("&cError: editor inventory was lost."));
       return;
     }
-    
+
     this.saving.put(player.getUniqueId(), Boolean.valueOf(true));
-    
-    FileConfiguration config = this.plugin.getConfig();
-    String path = "kits." + player.getUniqueId().toString();
-    
-    config.set(path + ".helmet", inv.getItem(27));
-    config.set(path + ".chestplate", inv.getItem(28));
-    config.set(path + ".leggings", inv.getItem(29));
-    config.set(path + ".boots", inv.getItem(30));
-    
+
+    UUID uuid = player.getUniqueId();
+
     List<ItemStack> contents = new ArrayList<ItemStack>();
     for (int i = 0; i < 27; i++) {
       contents.add(inv.getItem(i));
     }
-    config.set(path + ".contents", contents);
-    
-    this.plugin.saveConfig();
-    
+
+    kitDatabase.saveKit(
+        uuid,
+        inv.getItem(27),
+        inv.getItem(28),
+        inv.getItem(29),
+        inv.getItem(30),
+        contents
+    );
+
     this.editingKit.remove(player.getUniqueId());
     this.openEditors.remove(player.getUniqueId());
     this.saving.remove(player.getUniqueId());
-    
+
     player.closeInventory();
     player.sendMessage(colorize("&aYour kit has been saved!"));
     player.playSound(player.getLocation(), Sound.LEVEL_UP, 1.0F, 1.0F);
-    
+
     Equip equip = new Equip(this.plugin);
     equip.giveDiamondArmor(player);
   }
-  
+
   public void cancelKit(Player player) {
     this.saving.put(player.getUniqueId(), Boolean.valueOf(true));
     this.editingKit.remove(player.getUniqueId());
@@ -217,64 +208,45 @@ public class KitEditor implements Listener {
     player.closeInventory();
     player.sendMessage(colorize("&cKit editing cancelled."));
   }
-  
+
   public void resetKit(Player player) {
     this.saving.put(player.getUniqueId(), Boolean.valueOf(true));
-    
-    FileConfiguration config = this.plugin.getConfig();
-    config.set("kits." + player.getUniqueId().toString(), null);
-    this.plugin.saveConfig();
-    
+
+    kitDatabase.deleteKit(player.getUniqueId());
+
     this.editingKit.remove(player.getUniqueId());
     this.openEditors.remove(player.getUniqueId());
     this.saving.remove(player.getUniqueId());
-    
+
     player.closeInventory();
-    
+
     if (player.isOnline()) {
       Equip equip = new Equip(this.plugin);
       equip.giveDiamondArmor(player);
     }
-    
+
     player.sendMessage(colorize("&aYour kit has been reset to the default kit."));
   }
-  
+
   public boolean isEditing(Player player) {
-    return this.editingKit.containsKey(player.getUniqueId()) && this.editingKit.get(player.getUniqueId()).booleanValue();
+    return this.editingKit.containsKey(player.getUniqueId())
+        && this.editingKit.get(player.getUniqueId()).booleanValue();
   }
-  
-  /**
-   * Handle clicks:
-   * - Only cancel clicks on BUTTON slots (31-35)
-   * - Allow everything else: freely move, pick up, swap, drop into any slot
-   *   (including slots in the player's own inventory below the GUI)
-   */
+
   @EventHandler
   public void onInventoryClick(InventoryClickEvent event) {
-    if (!(event.getWhoClicked() instanceof Player)) {
-      return;
-    }
+    if (!(event.getWhoClicked() instanceof Player)) return;
     Player player = (Player) event.getWhoClicked();
-    
-    if (!isEditing(player)) {
-      return;
-    }
-    
+
+    if (!isEditing(player)) return;
+
     Inventory editor = this.openEditors.get(player.getUniqueId());
     if (editor == null) return;
-    
-    // Only care about clicks inside the editor GUI's top area
-    // event.getRawSlot() gives the absolute slot index:
-    //   0..35 → top GUI (our editor)
-    //   36+ → player inventory
+
     int slot = event.getRawSlot();
-    
-    // Clicks in the player's own inventory (slot >= 36) → allow freely
-    if (slot >= SIZE) {
-      return;
-    }
-    
-    // Buttons & spacer in the editor
+
+    if (slot >= SIZE) return;
+
     if (slot == SLOT_SAVE) {
       event.setCancelled(true);
       saveKit(player);
@@ -298,55 +270,58 @@ public class KitEditor implements Listener {
       event.setCancelled(true);
       return;
     }
-    
-    // Slots 0-30: FULLY ALLOWED — pick up, place, swap, move, shift-click, everything.
-    // No further code.
-  }
-  
-  /**
-   * Handle drags — allow all drags.
-   * A drag that touches any button slot is cancelled.
-   * A drag that stays in slots 0-30 or extends into the player inventory is allowed.
-   */
-  @EventHandler
-  public void onInventoryDrag(InventoryDragEvent event) {
-    if (!(event.getWhoClicked() instanceof Player)) {
+
+    // ==== ARMOR SLOTS LOCKED ====
+    if (slot >= 27 && slot <= 30) {
+      event.setCancelled(true);
+      player.sendMessage(colorize("&cYou cannot change the armor in the Kit Editor."));
       return;
     }
+  }
+
+  @EventHandler
+  public void onInventoryDrag(InventoryDragEvent event) {
+    if (!(event.getWhoClicked() instanceof Player)) return;
     Player player = (Player) event.getWhoClicked();
     if (!isEditing(player)) return;
-    
+
     Inventory editor = this.openEditors.get(player.getUniqueId());
     if (editor == null) return;
-    
-    // Cancel only if a drag touches a button slot
+
     for (Integer rawSlot : event.getRawSlots()) {
       int s = rawSlot.intValue();
+
       if (s == SLOT_SAVE || s == SLOT_CANCEL || s == SLOT_RESET
           || s == SLOT_INFO || s == SLOT_SPACER) {
         event.setCancelled(true);
         return;
       }
+
+      if (s >= 27 && s <= 30) {
+        event.setCancelled(true);
+        player.sendMessage(colorize("&cYou cannot change the armor in the Kit Editor."));
+        return;
+      }
     }
-    // Otherwise allow the drag
   }
-  
+
   @EventHandler
   public void onInventoryClose(InventoryCloseEvent event) {
     if (!(event.getPlayer() instanceof Player)) return;
     Player player = (Player) event.getPlayer();
-    
-    if (this.saving.containsKey(player.getUniqueId()) && this.saving.get(player.getUniqueId()).booleanValue()) {
+
+    if (this.saving.containsKey(player.getUniqueId())
+        && this.saving.get(player.getUniqueId()).booleanValue()) {
       return;
     }
-    
+
     if (isEditing(player)) {
       this.editingKit.remove(player.getUniqueId());
       this.openEditors.remove(player.getUniqueId());
       player.sendMessage(colorize("&7Kit editor closed (not saved)."));
     }
   }
-  
+
   private String colorize(String message) {
     return ChatColor.translateAlternateColorCodes('&', message);
   }

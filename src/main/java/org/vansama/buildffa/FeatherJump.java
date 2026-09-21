@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
@@ -22,48 +23,26 @@ public class FeatherJump implements Listener {
 
     private final JavaPlugin plugin;
 
-    // Players who can double-jump right now
-    private final Map<UUID, Boolean> canDoubleJump = new HashMap<UUID, Boolean>();
+    // Players who already used their double jump since last ground touch
+    private final Map<UUID, Boolean> usedDoubleJump = new HashMap<UUID, Boolean>();
 
     // Cooldown per player (3 seconds)
     private final Map<UUID, Long> cooldown = new HashMap<UUID, Long>();
     private static final long COOLDOWN_MS = 3000L;
 
+    // Track last space-press (jump) time per player
+    private final Map<UUID, Long> lastJumpTime = new HashMap<UUID, Long>();
+
     public FeatherJump(JavaPlugin plugin) {
         this.plugin = plugin;
         plugin.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
-
-        // Ticker — enables flight on the ground so Space can be detected in the air
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                for (Player player : plugin.getServer().getOnlinePlayers()) {
-                    if (player.getGameMode() == GameMode.CREATIVE) continue;
-                    if (player.getGameMode() == GameMode.SPECTATOR) continue;
-                    if (player.isFlying()) continue;
-
-                    boolean onGround = player.isOnGround();
-
-                    if (onGround) {
-                        // On ground → enable flight so they can toggle it in the air
-                        if (!player.getAllowFlight()) {
-                            player.setAllowFlight(true);
-                        }
-                        canDoubleJump.put(player.getUniqueId(), Boolean.valueOf(true));
-                    } else {
-                        // In the air → only keep flight enabled if they can still jump
-                        Boolean allowed = canDoubleJump.get(player.getUniqueId());
-                        if (allowed == null || !allowed.booleanValue()) {
-                            if (player.getAllowFlight() && !player.isFlying()) {
-                                player.setAllowFlight(false);
-                            }
-                        }
-                    }
-                }
-            }
-        }.runTaskTimer(plugin, 0L, 1L);
     }
 
+    /**
+     * Detect when player presses jump while in the air.
+     * In vanilla, pressing space mid-air with flight enabled triggers PlayerToggleFlightEvent.
+     * We enable allowFlight on the ground and disable it after each jump.
+     */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onToggleFlight(PlayerToggleFlightEvent event) {
         Player player = event.getPlayer();
@@ -71,47 +50,43 @@ public class FeatherJump implements Listener {
         if (player.getGameMode() == GameMode.CREATIVE) return;
         if (player.getGameMode() == GameMode.SPECTATOR) return;
 
-        // Block if the player is really trying to fly
-        if (player.isFlying()) return;
+        // Block real flying
+        if (player.isFlying()) {
+            event.setCancelled(true);
+            player.setFlying(false);
+            player.setAllowFlight(false);
+            return;
+        }
 
+        // We want to intercept the toggle and turn it into a double-jump
         event.setCancelled(true);
 
+        // Disable flight immediately to prevent flying
+        player.setAllowFlight(false);
+        player.setFlying(false);
+
         // Must be in the air
-        if (player.isOnGround()) {
-            player.setAllowFlight(false);
-            return;
-        }
+        if (player.isOnGround()) return;
 
-        // Must be allowed
-        Boolean allowed = canDoubleJump.get(player.getUniqueId());
-        if (allowed == null || !allowed.booleanValue()) {
-            player.setAllowFlight(false);
-            return;
-        }
+        // Already used double jump since last ground?
+        Boolean used = usedDoubleJump.get(player.getUniqueId());
+        if (used != null && used.booleanValue()) return;
 
-        // 3-second cooldown
+        // Cooldown
         long now = System.currentTimeMillis();
         if (cooldown.containsKey(player.getUniqueId())) {
             long last = cooldown.get(player.getUniqueId()).longValue();
-            if (now - last < COOLDOWN_MS) {
-                player.setAllowFlight(false);
-                return;
-            }
+            if (now - last < COOLDOWN_MS) return;
         }
 
-        // Must have a Feather in the inventory
-        if (!hasFeather(player)) {
-            player.setAllowFlight(false);
-            return;
-        }
+        // Must have a feather
+        if (!hasFeather(player)) return;
 
         cooldown.put(player.getUniqueId(), Long.valueOf(now));
+        usedDoubleJump.put(player.getUniqueId(), Boolean.valueOf(true));
 
-        // Consume 1 feather
+        // Consume feather
         removeFeather(player);
-
-        canDoubleJump.put(player.getUniqueId(), Boolean.valueOf(false));
-        player.setAllowFlight(false);
 
         // Apply boost
         double boost = this.plugin.getConfig().getDouble("feather-jump.boost", 1.0D);
@@ -128,6 +103,31 @@ public class FeatherJump implements Listener {
         String msg = this.plugin.getConfig().getString("feather-jump.message", "&b✦ &fDouble Jump!");
         if (msg != null && !msg.isEmpty()) {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', msg));
+        }
+    }
+
+    /**
+     * Fallback detection — if the player pressed space and their Y velocity went up,
+     * but PlayerToggleFlightEvent didn't fire, we handle it here.
+     * Also reset double-jump flag when the player lands.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+
+        if (player.getGameMode() == GameMode.CREATIVE) return;
+        if (player.getGameMode() == GameMode.SPECTATOR) return;
+
+        boolean onGround = player.isOnGround();
+
+        if (onGround) {
+            // Reset double-jump on landing
+            usedDoubleJump.remove(player.getUniqueId());
+
+            // Enable flight so they can toggle it mid-air
+            if (!player.getAllowFlight() && !player.isFlying()) {
+                player.setAllowFlight(true);
+            }
         }
     }
 

@@ -30,6 +30,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     private DatabaseManager databaseManager;
     private Voice voice;
     private Connection connection;
+    private FireballFix fireballFix;
 
     // ==================== COUNTDOWN ====================
     private static int secondsUntilRefresh = 600;
@@ -69,6 +70,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         this.scoreboardManager = new ScoreboardManager(this, this.killListener, this.databaseManager);
         this.voice = new Voice(this);
         this.connection = new Connection(this);
+        this.fireballFix = new FireballFix(this);
 
         // ==================== REGISTER LISTENERS ====================
         getServer().getPluginManager().registerEvents(this.blocks, (Plugin) this);
@@ -80,7 +82,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(new Items(this, this.kitEditor), (Plugin) this);
         getServer().getPluginManager().registerEvents(new Fall(this), (Plugin) this);
         getServer().getPluginManager().registerEvents(new FeatherJump(this), (Plugin) this);
-        getServer().getPluginManager().registerEvents(new FireballFix(this), (Plugin) this);
+        getServer().getPluginManager().registerEvents(this.fireballFix, (Plugin) this);
         getServer().getPluginManager().registerEvents(new PotionFix(this), (Plugin) this);
         getServer().getPluginManager().registerEvents(this.killListener, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.kitEditor, (Plugin) this);
@@ -136,6 +138,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getLogger().info("  Plugin made by PixelValley");
         getLogger().info("  Author: muvixo");
         getLogger().info("  Database folder: " + this.databaseManager.getDbFolder().getPath());
+        getLogger().info("  Kits folder: " + this.kitEditor.getKitDatabase().getKitsFolder().getPath());
         getLogger().info("=================================================");
 
         Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) this, new Runnable() {
@@ -217,7 +220,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     }
 
     // ============================================================
-    //  CONFIG AUTO-MERGE — never overwrites existing values
+    //  CONFIG AUTO-MERGE
     // ============================================================
     private void createConfigIfMissing() {
         File configFile = new File(getDataFolder(), "config.yml");
@@ -234,7 +237,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
         FileConfiguration cfg = YamlConfiguration.loadConfiguration(configFile);
 
-        // ---- Load defaults from inside the JAR (src/main/resources/config.yml) ----
         InputStream defStream = this.getResource("config.yml");
         if (defStream != null) {
             YamlConfiguration defaults = YamlConfiguration.loadConfiguration(
@@ -242,7 +244,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
             cfg.setDefaults(defaults);
         }
 
-        // ---- Hardcoded fallbacks (in case JAR defaults are missing) ----
         setIfMissing(cfg, "kill-height", Double.valueOf(0.0D));
         setIfMissing(cfg, "high-limit", Double.valueOf(100.0D));
 
@@ -344,6 +345,12 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
         // ==================== Fireball ====================
         setIfMissing(cfg, "fireball.message", "");
+        setIfMissing(cfg, "fireball.explosion-size", Double.valueOf(3.0D));
+        setIfMissing(cfg, "fireball.make-fire", Boolean.valueOf(false));
+        setIfMissing(cfg, "fireball.knockback-horizontal", Double.valueOf(1.2D));
+        setIfMissing(cfg, "fireball.knockback-vertical", Double.valueOf(0.9D));
+        setIfMissing(cfg, "fireball.damage-self", Double.valueOf(3.0D));
+        setIfMissing(cfg, "fireball.damage-enemy", Double.valueOf(4.0D));
         // ===================================================
 
         try {
@@ -368,23 +375,19 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     }
 
     // ============================================================
-    //  SCOREBOARD AUTO-MERGE — keeps user-customized lines,
-    //  but adds any new default keys
+    //  SCOREBOARD AUTO-MERGE
     // ============================================================
     private void autoMergeScoreboard() {
         File sbFile = new File(getDataFolder(), "scoreboard.yml");
         boolean isNew = !sbFile.exists();
 
-        // First time: extract from JAR
         if (isNew) {
             saveResource("scoreboard.yml", false);
             return;
         }
 
-        // Load existing user file
         FileConfiguration userCfg = YamlConfiguration.loadConfiguration(sbFile);
 
-        // Load defaults from JAR
         InputStream defStream = this.getResource("scoreboard.yml");
         if (defStream == null) return;
 
@@ -393,7 +396,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
         boolean changed = false;
 
-        // Merge top-level scalar keys (only if missing)
         for (String key : defaults.getKeys(false)) {
             if (!userCfg.contains(key)) {
                 userCfg.set(key, defaults.get(key));
@@ -401,7 +403,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
             }
         }
 
-        // Merge nested title
         if (defaults.contains("title")) {
             for (String sub : defaults.getConfigurationSection("title").getKeys(true)) {
                 String path = "title." + sub;
@@ -412,7 +413,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
             }
         }
 
-        // Merge per-world section (only if user hasn't enabled it)
         if (!userCfg.contains("per-world")) {
             userCfg.set("per-world", defaults.get("per-world"));
             changed = true;
@@ -470,5 +470,9 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
     public Connection getConnection() {
         return this.connection;
+    }
+
+    public FireballFix getFireballFix() {
+        return this.fireballFix;
     }
 }
