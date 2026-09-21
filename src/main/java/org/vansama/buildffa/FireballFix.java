@@ -38,7 +38,7 @@ public class FireballFix implements Listener {
     }
 
     // ============================================================
-    //  RIGHT-CLICK FIRE CHARGE → SHOOT FIREBALL
+    //  RIGHT-CLICK FIRE CHARGE → SHOOT BEDWARS FIREBALL
     // ============================================================
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onRightClick(PlayerInteractEvent event) {
@@ -49,22 +49,22 @@ public class FireballFix implements Listener {
 
         Player player = event.getPlayer();
         ItemStack item = player.getItemInHand();
-        if (item == null) return;
-
-        if (item.getType() != Material.FIREBALL) return;
+        if (item == null || item.getType() != Material.FIREBALL) {
+            return;
+        }
 
         event.setCancelled(true);
 
         long now = System.currentTimeMillis();
         if (cooldown.containsKey(player.getUniqueId())) {
-            long last = cooldown.get(player.getUniqueId()).longValue();
+            long last = cooldown.get(player.getUniqueId());
             if (now - last < COOLDOWN_MS) {
                 return;
             }
         }
-        cooldown.put(player.getUniqueId(), Long.valueOf(now));
+        cooldown.put(player.getUniqueId(), now);
 
-        // Consume one fire charge
+        // مصرف یک عدد فایربال
         if (item.getAmount() > 1) {
             item.setAmount(item.getAmount() - 1);
         } else {
@@ -72,22 +72,19 @@ public class FireballFix implements Listener {
         }
         player.updateInventory();
 
-        // Launch fireball
-        Fireball fireball = player.launchProjectile(Fireball.class);
+        // پرتاب از سطح چشم پلیر برای جلوگیری از گیر کردن به بلاک زیر پا
+        Location eyeLoc = player.getEyeLocation();
+        Vector direction = eyeLoc.getDirection().normalize();
 
-        // ============================================================
-        //  SPEED HANDLING (Fixed)
-        //  حذف شرط > 0 برای پشتیبانی از مقادیر منفی، صدم و دهم.
-        //  مقدار وارد شده در کانفیگ دقیقاً به عنوان ضریب سرعت تنظیم می‌شود.
-        // ============================================================
-        double speed = this.plugin.getConfig().getDouble("fireball.speed", 2.0D);
-        
-        Vector direction = player.getLocation().getDirection().normalize();
-        Vector velocity = direction.multiply(speed);
+        Fireball fireball = player.getWorld().spawn(eyeLoc.add(direction.clone().multiply(1.2D)), Fireball.class);
+        fireball.setShooter(player);
 
-        fireball.setDirection(velocity);
+
+        double speed = this.plugin.getConfig().getDouble("fireball.speed", 1.25D);
+
+        Vector velocity = direction.clone().multiply(speed);
         fireball.setVelocity(velocity);
-        // ============================================================
+        fireball.setDirection(velocity.clone().multiply(0.1D));
 
         fireball.setIsIncendiary(false);
 
@@ -126,60 +123,69 @@ public class FireballFix implements Listener {
     }
 
     // ============================================================
-    //  PROJECTILE HIT → BEDWARS KNOCKBACK + DAMAGE
+    //  PROJECTILE HIT → HYPIXEL BEDWARS KNOCKBACK & JUMP
     // ============================================================
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void fireballHit(ProjectileHitEvent event) {
         if (!(event.getEntity() instanceof Fireball)) return;
 
+        Fireball fireball = (Fireball) event.getEntity();
         if (!this.plugin.getConfig().getBoolean("fireball.knockback.enabled", true)) return;
 
-        Location location = event.getEntity().getLocation();
+        Location hitLoc = fireball.getLocation();
+        if (hitLoc.getWorld() == null) return;
 
         double radius = this.plugin.getConfig().getDouble("fireball.knockback.radius", 4.0D);
-        
-        // برداشته شدن ضربدر منفی ۱ برای استاندارد شدن ناک‌بک
-        double horizontalForce = this.plugin.getConfig().getDouble("fireball.knockback.radius-force", 1.5D); 
-        double verticalForce = this.plugin.getConfig().getDouble("fireball.knockback.height-force", 1.0D);
-        double damage = this.plugin.getConfig().getDouble("fireball.knockback.damage", 0.5D);
+        double horizontalForce = this.plugin.getConfig().getDouble("fireball.knockback.radius-force", 1.5D);
+        double verticalForce = this.plugin.getConfig().getDouble("fireball.knockback.height-force", 0.95D);
+        double damage = this.plugin.getConfig().getDouble("fireball.knockback.damage", 1.0D);
 
-        if (location.getWorld() == null) return;
-
-        Vector fireballVector = location.toVector();
-        Collection<Entity> nearbyEntities = location.getWorld().getNearbyEntities(location, radius, radius, radius);
+        Collection<Entity> nearbyEntities = hitLoc.getWorld().getNearbyEntities(hitLoc, radius, radius, radius);
 
         for (Entity entity : nearbyEntities) {
             if (!(entity instanceof Player)) continue;
-            Player player = (Player) entity;
+            Player target = (Player) entity;
 
-            Vector playerVector = player.getLocation().toVector();
+            Location targetLoc = target.getLocation();
+            double distance = hitLoc.distance(targetLoc);
+            if (distance > radius) continue;
 
-            // فیکس بزرگ: کسر مکان فایربال از پلیر برای پرتاب کردن پلیر به سمت بیرون
-            Vector normalizedVector = playerVector.clone().subtract(fireballVector).normalize();
-            
-            // ضرب کردن جهت در نیروی افقی تنظیم شده در کانفیگ
-            Vector knockback = normalizedVector.multiply(horizontalForce);
+            // محاسبه ضریب فاصله (هرچه نزدیک‌تر، پرتاب قوی‌تر)
+            double distanceFactor = 1.0D - (distance / radius);
+            if (distanceFactor < 0.2D) distanceFactor = 0.2D;
 
-            // اعمال ارتفاع استاندارد به سبک بدوارز
-            knockback.setY(verticalForce);
+            // بردار دافعه به سمت بیرون
+            Vector knockbackDir = targetLoc.toVector().subtract(hitLoc.toVector());
+            knockbackDir.setY(0); // جداسازی مؤلفه افقی
 
-            player.setVelocity(knockback);
+            if (knockbackDir.lengthSquared() > 0.0001D) {
+                knockbackDir.normalize();
+            } else {
+                // اگر دقیقاً روی فایربال بود، به سمت عقب پلیر هل داده شود
+                knockbackDir = target.getLocation().getDirection().multiply(-1).setY(0).normalize();
+            }
+
+            // اعمال نیروی افقی متناسب با فاصله
+            Vector finalVelocity = knockbackDir.multiply(horizontalForce * distanceFactor);
+
+            // اعمال پرش عمودی به سبک Fireball Jump بدوارز
+            finalVelocity.setY(verticalForce);
+
+            target.setVelocity(finalVelocity);
 
             if (damage > 0) {
-                player.damage(damage);
+                target.damage(damage);
             }
         }
     }
 
     // ============================================================
-    //  CANCEL DIRECT FIREBALL DAMAGE
+    //  CANCEL DIRECT FIREBALL EXPLOSION DAMAGE OVERRIDE
     // ============================================================
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void fireballDirectHit(EntityDamageByEntityEvent event) {
-        if (event.getDamager() instanceof Fireball) {
-            if (event.getEntity() instanceof Player) {
-                event.setCancelled(true);
-            }
+        if (event.getDamager() instanceof Fireball && event.getEntity() instanceof Player) {
+            event.setCancelled(true);
         }
     }
 }
