@@ -32,17 +32,6 @@ public class FireballFix implements Listener {
     private final Map<UUID, Long> cooldown = new HashMap<UUID, Long>();
     private static final long COOLDOWN_MS = 500L;
 
-    // ============================================================
-    //  Vanilla fireball base velocity (blocks per tick).
-    //  Bigger base = wider tuning range for small speed values.
-    //  With BASE = 2.0:
-    //      speed 0.25 → slow      (0.5 blocks/tick)
-    //      speed 0.5  → medium    (1.0 blocks/tick)
-    //      speed 1.0  → fast      (2.0 blocks/tick)
-    //      speed 2.0  → very fast (4.0 blocks/tick)
-    // ============================================================
-    private static final double VANILLA_BASE = 2.0D;
-
     public FireballFix(JavaPlugin plugin) {
         this.plugin = plugin;
         plugin.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
@@ -50,7 +39,6 @@ public class FireballFix implements Listener {
 
     // ============================================================
     //  RIGHT-CLICK FIRE CHARGE → SHOOT FIREBALL
-    //  Works everywhere (air, block, entity)
     // ============================================================
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onRightClick(PlayerInteractEvent event) {
@@ -88,30 +76,17 @@ public class FireballFix implements Listener {
         Fireball fireball = player.launchProjectile(Fireball.class);
 
         // ============================================================
-        //  SPEED HANDLING
-        //
-        //  speed = 0.0  → vanilla Minecraft speed (untouched)
-        //  speed = 0.25 → slow
-        //  speed = 0.5  → medium
-        //  speed = 1.0  → fast
-        //  speed = 2.0  → very fast
-        //
-        //  The final velocity is:
-        //      direction × (VANILLA_BASE × speed)
-        //
-        //  When speed <= 0, the plugin does NOT touch velocity
-        //  at all — Minecraft's default fireball speed is used.
+        //  SPEED HANDLING (Fixed)
+        //  حذف شرط > 0 برای پشتیبانی از مقادیر منفی، صدم و دهم.
+        //  مقدار وارد شده در کانفیگ دقیقاً به عنوان ضریب سرعت تنظیم می‌شود.
         // ============================================================
-        double speed = this.plugin.getConfig().getDouble("fireball.speed", 0.0D);
+        double speed = this.plugin.getConfig().getDouble("fireball.speed", 2.0D);
+        
+        Vector direction = player.getLocation().getDirection().normalize();
+        Vector velocity = direction.multiply(speed);
 
-        if (speed > 0.0D) {
-            Vector direction = player.getLocation().getDirection().normalize();
-            Vector velocity = direction.multiply(VANILLA_BASE * speed);
-
-            fireball.setDirection(velocity);
-            fireball.setVelocity(velocity);
-        }
-        // else: leave fireball velocity as vanilla default
+        fireball.setDirection(velocity);
+        fireball.setVelocity(velocity);
         // ============================================================
 
         fireball.setIsIncendiary(false);
@@ -162,8 +137,10 @@ public class FireballFix implements Listener {
         Location location = event.getEntity().getLocation();
 
         double radius = this.plugin.getConfig().getDouble("fireball.knockback.radius", 4.0D);
-        double horizontalForce = this.plugin.getConfig().getDouble("fireball.knockback.radius-force", 2.0D) * -1.0D;
-        double verticalForce = this.plugin.getConfig().getDouble("fireball.knockback.height-force", 1.5D);
+        
+        // برداشته شدن ضربدر منفی ۱ برای استاندارد شدن ناک‌بک
+        double horizontalForce = this.plugin.getConfig().getDouble("fireball.knockback.radius-force", 1.5D); 
+        double verticalForce = this.plugin.getConfig().getDouble("fireball.knockback.height-force", 1.0D);
         double damage = this.plugin.getConfig().getDouble("fireball.knockback.damage", 0.5D);
 
         if (location.getWorld() == null) return;
@@ -177,20 +154,16 @@ public class FireballFix implements Listener {
 
             Vector playerVector = player.getLocation().toVector();
 
-            Vector normalizedVector = fireballVector.clone().subtract(playerVector).normalize();
-            Vector horizontalVector = normalizedVector.clone().multiply(horizontalForce);
+            // فیکس بزرگ: کسر مکان فایربال از پلیر برای پرتاب کردن پلیر به سمت بیرون
+            Vector normalizedVector = playerVector.clone().subtract(fireballVector).normalize();
+            
+            // ضرب کردن جهت در نیروی افقی تنظیم شده در کانفیگ
+            Vector knockback = normalizedVector.multiply(horizontalForce);
 
-            double y = normalizedVector.getY();
+            // اعمال ارتفاع استاندارد به سبک بدوارز
+            knockback.setY(verticalForce);
 
-            if (y < 0) y += 1.0;
-
-            if (y <= 0.5) {
-                y = verticalForce;
-            } else {
-                y = y * verticalForce;
-            }
-
-            player.setVelocity(horizontalVector.setY(y));
+            player.setVelocity(knockback);
 
             if (damage > 0) {
                 player.damage(damage);
