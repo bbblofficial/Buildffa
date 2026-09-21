@@ -162,7 +162,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
                 cfg.set("void.teleport-instead-of-kill", Boolean.valueOf(true));
                 cfg.set("void.teleport-delay", Long.valueOf(0L));
-                cfg.set("void.teleport-message", "&cYou fell into the void! &7Teleported to spawn.");
+                cfg.set("void.teleport-message", "&cYou fell into the void!.");
                 cfg.set("void.death-message", "&c%player% &7fell into the void");
 
                 cfg.set("ypvp.enabled", Boolean.valueOf(false));

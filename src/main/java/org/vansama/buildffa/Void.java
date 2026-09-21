@@ -42,7 +42,7 @@ public class Void implements Listener {
         this.teleportInsteadOfKill = config.getBoolean("void.teleport-instead-of-kill", true);
         this.teleportDelay = config.getLong("void.teleport-delay", 0L);
         this.teleportMessage = config.getString("void.teleport-message",
-                "&cYou fell into the void!");
+                "&cYou fell into the void!.");
     }
 
     public void reloadConfig() {

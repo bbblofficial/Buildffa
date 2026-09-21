@@ -17,7 +17,7 @@ kill-height: 0.0
 void:
   teleport-instead-of-kill: true
   teleport-delay: 0
-  teleport-message: '&cYou fell into the void! &7Teleported to spawn.'
+  teleport-message: '&cYou fell into the void!.'
   death-message: '&c%player% &7fell into the void'
 
 # ----------------------------------------------------------
