@@ -40,13 +40,28 @@ public class BuildFFAExpansion extends PlaceholderExpansion {
         return true;
     }
 
+    // ============================================================
+    //  ✅ Main entry with try/catch
+    // ============================================================
     @Override
     public String onRequest(OfflinePlayer player, String identifier) {
+        try {
+            return handleRequest(player, identifier);
+        } catch (Throwable t) {
+            this.plugin.getLogger().warning(
+                "Placeholder error for '" + identifier + "': " + t.getMessage());
+            return "ERR";
+        }
+    }
+
+    private String handleRequest(OfflinePlayer player, String identifier) {
         if (identifier == null) return "";
 
         String id = identifier.toLowerCase();
 
-        // Live countdown
+        // ============================================================
+        //  Live countdown
+        // ============================================================
         if (id.equals("next_update") || id.equals("countdown")) {
             int secs = BuildFFA.getSecondsUntilRefresh();
             int minutes = secs / 60;
@@ -54,25 +69,33 @@ public class BuildFFAExpansion extends PlaceholderExpansion {
             return String.format("%02d:%02d", minutes, seconds);
         }
 
-        // Player stats
+        // ============================================================
+        //  Player stats
+        // ============================================================
         if (player != null && player.isOnline()) {
             PlayerData data = database.getPlayer(player.getUniqueId());
             if (data == null) data = database.loadPlayer(player.getUniqueId());
 
-            if (id.equals("kills")) return String.valueOf(data.getKills());
-            if (id.equals("deaths")) return String.valueOf(data.getDeaths());
-            if (id.equals("kdr")) return String.format("%.2f", data.getKDR());
-            if (id.equals("killstreak") || id.equals("streak")) return String.valueOf(data.getKillstreak());
-            if (id.equals("best_killstreak") || id.equals("beststreak")) return String.valueOf(data.getBestKillstreak());
+            if (data != null) {
+                if (id.equals("kills")) return String.valueOf(data.getKills());
+                if (id.equals("deaths")) return String.valueOf(data.getDeaths());
+                if (id.equals("kdr")) return String.format("%.2f", data.getKDR());
+                if (id.equals("killstreak") || id.equals("streak")) return String.valueOf(data.getKillstreak());
+                if (id.equals("best_killstreak") || id.equals("beststreak")) return String.valueOf(data.getBestKillstreak());
+            }
         }
 
-        // Top placeholders
+        // ============================================================
+        //  Top placeholders:  top_<mode>_<type>_<rank>
+        //  Example:  top_name_killstreak_1
+        //            top_value_kills_1
+        // ============================================================
         if (id.startsWith("top_") && !id.startsWith("top_rank_")) {
             String[] parts = id.split("_");
             if (parts.length < 4) return "";
 
-            String mode = parts[1];
-            String type = parts[2];
+            String mode = parts[1];       // name | value
+            String type = parts[2];       // kills | deaths | kdr | killstreak
             int rank;
             try {
                 rank = Integer.parseInt(parts[3]);
@@ -103,7 +126,9 @@ public class BuildFFAExpansion extends PlaceholderExpansion {
             PlayerData entry = top.get(rank - 1);
 
             if (mode.equals("name")) {
-                return entry.getName();
+                String name = entry.getName();
+                if (name == null || name.isEmpty()) return "---";
+                return name;
             } else {
                 if (type.equals("kdr")) return String.format("%.2f", entry.getKDR());
                 if (type.equals("deaths")) return String.valueOf(entry.getDeaths());
@@ -112,7 +137,11 @@ public class BuildFFAExpansion extends PlaceholderExpansion {
             }
         }
 
-        // Own rank
+        // ============================================================
+        //  Own rank:  top_rank_<type>
+        //  Example:  top_rank_kills
+        //            top_rank_kdr
+        // ============================================================
         if (id.startsWith("top_rank_")) {
             if (player == null) return "?";
 

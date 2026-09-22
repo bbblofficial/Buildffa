@@ -58,12 +58,13 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         reloadConfig();
         autoMergeScoreboard();
 
-        // Combat Mode timeout
+        // ==================== Combat Mode timeout ====================
         int combatTimeout = this.getConfig().getInt("combat.timeout-seconds", 15);
         CombatManager.setCombatTimeoutSeconds(combatTimeout);
+        // ==============================================================
 
         // ==================== INIT ORDER MATTERS ====================
-        // 1) Database FIRST (because KitEditor needs it)
+        // 1) Database FIRST (because KitEditor + ScoreboardManager + Expansion need it)
         this.databaseManager = new DatabaseManager(this);
 
         // 2) Everything else
@@ -111,6 +112,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
                 getLogger().info("PlaceholderAPI expansion registered!");
             } catch (Throwable t) {
                 getLogger().warning("Failed to register PlaceholderAPI expansion: " + t.getMessage());
+                t.printStackTrace();
             }
         } else {
             getLogger().info("PlaceholderAPI not found - placeholders disabled.");
@@ -160,6 +162,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
                 }
             }
         }, 0L, 60L);
+        // ==============================================================
 
         // ==================== Auto kit restore ====================
         Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) this, new Runnable() {
@@ -174,6 +177,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
                 }
             }
         }, 20L, 40L);
+        // ==============================================================
     }
 
     private void createFolders() {
@@ -444,7 +448,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         if (this.databaseManager != null) {
-            this.databaseManager.shutdown();  // ← ذخیره نهایی + backup + بستن اتصال
+            this.databaseManager.shutdown();  // ذخیره نهایی + backup + بستن اتصال
         }
         if (this.blocks != null) {
             this.blocks.onDisable();
@@ -457,6 +461,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getLogger().info("BuildFFA disabled.");
     }
 
+    // ==================== GETTERS ====================
     public KitEditor getKitEditor() {
         return this.kitEditor;
     }

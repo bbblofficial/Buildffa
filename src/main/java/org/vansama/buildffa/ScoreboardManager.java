@@ -39,12 +39,19 @@ public class ScoreboardManager implements Listener {
     private int animationFrame = 0;
     private int taskId = -1;
 
+    // ✅ PlaceholderAPI detection (once at startup)
+    private final boolean placeholderApiAvailable;
+
     private static final int MAX_LINES = 15;
 
     public ScoreboardManager(JavaPlugin plugin, KillListener killListener, DatabaseManager database) {
         this.plugin = plugin;
         this.killListener = killListener;
         this.database = database;
+
+        // ✅ Check PlaceholderAPI once
+        this.placeholderApiAvailable = (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null);
+
         loadScoreboardConfig();
         Bukkit.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
         startUpdateTask();
@@ -253,6 +260,9 @@ public class ScoreboardManager implements Listener {
         return c1.toString() + c2.toString() + ChatColor.RESET;
     }
 
+    // ============================================================
+    //  ✅ APPLY PLACEHOLDERS (internal + PlaceholderAPI)
+    // ============================================================
     private String applyPlaceholders(Player player, String line) {
         if (line == null) return "";
 
@@ -274,6 +284,10 @@ public class ScoreboardManager implements Listener {
         double voidKill = this.plugin.getConfig().getDouble("kill-height", 0.0D);
 
         String out = line;
+
+        // ============================================================
+        //  INTERNAL placeholders (handled by ScoreboardManager itself)
+        // ============================================================
         out = out.replace("%player%", player.getName());
         out = out.replace("%kills%", String.valueOf(kills));
         out = out.replace("%deaths%", String.valueOf(deaths));
@@ -289,6 +303,17 @@ public class ScoreboardManager implements Listener {
         out = out.replace("%y%", String.valueOf(y));
         out = out.replace("%highlimit%", String.valueOf((int) highLimit));
         out = out.replace("%void%", String.valueOf((int) voidKill));
+
+        // ============================================================
+        //  ✅ PlaceholderAPI placeholders (%buildffa_*%, %vault_*%, etc.)
+        // ============================================================
+        if (this.placeholderApiAvailable && out.contains("%")) {
+            try {
+                out = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, out);
+            } catch (Throwable t) {
+                // silent ignore — if PAPI fails, just leave the raw placeholder
+            }
+        }
 
         return colorize(out);
     }

@@ -4,11 +4,6 @@
 #  Theme: Aqua / White / Dark-Aqua (No Bold)
 #  Created by Muvixo | Author: VanSaMa | Made by PixelValley
 # ==========================================================
-#
-#  This file is AUTO-MERGED on plugin update.
-#  New keys are added automatically.
-#  Your existing lines are NEVER overwritten.
-# ==========================================================
 
 enabled: true
 update-interval: 10
@@ -32,6 +27,21 @@ title:
 
 # ----------------------------------------------------------
 #  Scoreboard Lines
+#  Internal placeholders (handled by ScoreboardManager):
+#    %player% %kills% %deaths% %kdr% %killstreak% %best_killstreak%
+#    %online% %max_online% %world% %ping% %health% %food% %y%
+#    %highlimit% %void%
+#
+#  PlaceholderAPI placeholders (handled by BuildFFAExpansion):
+#    %buildffa_kills% %buildffa_deaths% %buildffa_kdr%
+#    %buildffa_killstreak% %buildffa_best_killstreak%
+#    %buildffa_top_name_killstreak_1%
+#    %buildffa_top_value_killstreak_1%
+#    %buildffa_top_name_kills_1%
+#    %buildffa_top_value_kills_1%
+#    %buildffa_top_rank_kills%
+#    %buildffa_top_rank_kdr%
+#    %buildffa_next_update%
 # ----------------------------------------------------------
 lines:
   - '&3&m----------------'
