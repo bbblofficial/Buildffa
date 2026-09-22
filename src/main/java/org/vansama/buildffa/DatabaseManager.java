@@ -11,8 +11,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -49,7 +47,6 @@ public class DatabaseManager {
     public DatabaseManager(JavaPlugin plugin) {
         this.plugin = plugin;
 
-        // پوشه اصلی
         if (!plugin.getDataFolder().exists()) {
             plugin.getDataFolder().mkdirs();
         }
@@ -64,16 +61,14 @@ public class DatabaseManager {
         try {
             Class.forName("org.sqlite.JDBC");
         } catch (ClassNotFoundException e) {
-            // تلاش برای درایور shaded
             try {
                 Class.forName("org.vansama.buildffa.libs.sqlite.JDBC");
             } catch (ClassNotFoundException e2) {
-                plugin.getLogger().severe("SQLite JDBC driver not found! Plugin cannot work.");
+                plugin.getLogger().severe("SQLite JDBC driver not found!");
                 throw new RuntimeException("SQLite driver missing", e2);
             }
         }
 
-        // اتصال به دیتابیس
         try {
             openConnection();
             createTables();
@@ -83,7 +78,6 @@ public class DatabaseManager {
             e.printStackTrace();
         }
 
-        // خوندن کانفیگ
         try {
             FileConfiguration config = plugin.getConfig();
             this.autosaveEnabled = config.getBoolean("database.autosave", true);
@@ -128,7 +122,6 @@ public class DatabaseManager {
             Connection c = getConnection();
             Statement st = c.createStatement();
 
-            // جدول استت پلیر
             st.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS players (" +
                 "  uuid TEXT PRIMARY KEY," +
@@ -141,7 +134,6 @@ public class DatabaseManager {
                 ")"
             );
 
-            // جدول کیتها (base64 serialized ItemStack)
             st.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS kits (" +
                 "  uuid TEXT PRIMARY KEY," +
@@ -154,7 +146,6 @@ public class DatabaseManager {
                 ")"
             );
 
-            // ایندکسها برای سرعت leaderboard
             st.executeUpdate("CREATE INDEX IF NOT EXISTS idx_kills ON players(kills DESC)");
             st.executeUpdate("CREATE INDEX IF NOT EXISTS idx_deaths ON players(deaths DESC)");
             st.executeUpdate("CREATE INDEX IF NOT EXISTS idx_best_ks ON players(best_killstreak DESC)");
@@ -164,7 +155,7 @@ public class DatabaseManager {
     }
 
     // ============================================================
-    //  MIGRATION از فایلهای قدیمی .json / .yml / kits/*.yml
+    //  MIGRATION
     // ============================================================
     private void migrateLegacyFiles() {
         try {
@@ -174,7 +165,6 @@ public class DatabaseManager {
             int migratedPlayers = 0;
             int migratedKits = 0;
 
-            // --- پلیرها ---
             if (oldDbFolder.exists() && oldDbFolder.isDirectory()) {
                 File[] files = oldDbFolder.listFiles();
                 if (files != null) {
@@ -190,7 +180,6 @@ public class DatabaseManager {
                             continue;
                         }
 
-                        // اگه توی دیتابیس هست، رد شو
                         if (playerExists(uuid)) continue;
 
                         try {
@@ -215,7 +204,6 @@ public class DatabaseManager {
                     }
                 }
 
-                // rename پوشه قدیمی بعد از مهاجرت
                 if (migratedPlayers > 0) {
                     File renamed = new File(plugin.getDataFolder(),
                             "db_legacy_" + System.currentTimeMillis());
@@ -223,7 +211,6 @@ public class DatabaseManager {
                 }
             }
 
-            // --- کیتها ---
             if (oldKitsFolder.exists() && oldKitsFolder.isDirectory()) {
                 File[] files = oldKitsFolder.listFiles();
                 if (files != null) {
@@ -283,6 +270,9 @@ public class DatabaseManager {
         }
     }
 
+    // ============================================================
+    //  PLAYER — private helpers
+    // ============================================================
     private boolean playerExists(UUID uuid) {
         try {
             synchronized (dbLock) {
@@ -300,26 +290,6 @@ public class DatabaseManager {
         }
     }
 
-    private boolean hasKit(UUID uuid) {
-        try {
-            synchronized (dbLock) {
-                PreparedStatement ps = getConnection().prepareStatement(
-                        "SELECT 1 FROM kits WHERE uuid = ? LIMIT 1");
-                ps.setString(1, uuid.toString());
-                ResultSet rs = ps.executeQuery();
-                boolean exists = rs.next();
-                rs.close();
-                ps.close();
-                return exists;
-            }
-        } catch (SQLException e) {
-            return false;
-        }
-    }
-
-    // ============================================================
-    //  PLAYER
-    // ============================================================
     public PlayerData getPlayer(UUID uuid) {
         PlayerData data = this.cache.get(uuid);
         if (data != null) return data;
@@ -381,7 +351,6 @@ public class DatabaseManager {
     public void savePlayer(PlayerData data) {
         if (data == null) return;
 
-        // debounce
         long now = System.currentTimeMillis();
         Long last = this.lastSaveTime.get(data.getUuid());
         if (last != null && now - last < SAVE_DEBOUNCE_MS) {
@@ -392,7 +361,6 @@ public class DatabaseManager {
         savePlayerImmediate(data);
     }
 
-    /** بدون debounce — برای مهاجرت و shutdown */
     public void savePlayerImmediate(PlayerData data) {
         if (data == null) return;
 
@@ -456,7 +424,7 @@ public class DatabaseManager {
     }
 
     // ============================================================
-    //  KITS  (base64 serialized)
+    //  KITS  (فقط یه بار hasKit تعریف میشه — public)
     // ============================================================
     public boolean hasKit(UUID uuid) {
         try {
@@ -629,7 +597,6 @@ public class DatabaseManager {
     public List<PlayerData> getTopKillstreak(int limit)  { return queryTop("best_killstreak DESC", limit); }
 
     public List<PlayerData> getTopKDR(int limit) {
-        // KDR = kills / deaths (با deaths=0 میشه kills)
         List<PlayerData> list = new ArrayList<PlayerData>();
         try {
             synchronized (dbLock) {
@@ -694,7 +661,6 @@ public class DatabaseManager {
     }
 
     public int getPlayerRank(UUID uuid, String type) {
-        // rank بر اساس نوع
         String orderBy;
         if ("deaths".equals(type)) orderBy = "deaths DESC";
         else if ("killstreak".equals(type) || "streak".equals(type)) orderBy = "best_killstreak DESC";
@@ -753,7 +719,6 @@ public class DatabaseManager {
             plugin.getLogger().info("Saved " + count + " player records to SQLite");
         }
 
-        // backup دوره‌ای
         makeBackup();
     }
 
@@ -761,13 +726,12 @@ public class DatabaseManager {
         try {
             if (!dbFile.exists()) return;
 
-            // فقط هر 24 ساعت یه بار backup کامل
             File[] backups = backupFolder.listFiles();
             long now = System.currentTimeMillis();
             if (backups != null) {
                 for (File b : backups) {
                     if (now - b.lastModified() < 24L * 60L * 60L * 1000L) {
-                        return; // backup اخیر وجود داره
+                        return;
                     }
                 }
             }
@@ -776,7 +740,6 @@ public class DatabaseManager {
                     "buildffa_" + System.currentTimeMillis() + ".db");
             Files.copy(dbFile.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-            // فقط 5 backup آخر رو نگهدار
             File[] all = backupFolder.listFiles();
             if (all != null && all.length > 5) {
                 java.util.Arrays.sort(all, new java.util.Comparator<File>() {
@@ -799,7 +762,6 @@ public class DatabaseManager {
             this.autosaveTaskId = -1;
         }
 
-        // ذخیره نهایی همه
         for (PlayerData data : new ArrayList<PlayerData>(this.cache.values())) {
             this.lastSaveTime.remove(data.getUuid());
             savePlayerImmediate(data);
@@ -807,7 +769,6 @@ public class DatabaseManager {
 
         makeBackup();
 
-        // بستن اتصال
         synchronized (dbLock) {
             try {
                 if (connection != null && !connection.isClosed()) {
