@@ -32,7 +32,8 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     private FireballFix fireballFix;
     private YPearl yPearl;
     private KitSettingsManager kitSettings;
-    private HealthBarManager healthBarManager;   // ✅ NEW
+    private HealthBarManager healthBarManager;
+    private NametagManager nametagManager;   // ✅ NEW
 
     // ==================== COUNTDOWN ====================
     private static int secondsUntilRefresh = 600;
@@ -66,16 +67,19 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         // ==============================================================
 
         // ==================== INIT ORDER MATTERS ====================
-        // 1) Database FIRST (because KitEditor + ScoreboardManager + Expansion need it)
+        // 1) Database FIRST
         this.databaseManager = new DatabaseManager(this);
 
-        // 2) Kit settings (server default kit from kit-setting.yml)
+        // 2) Kit settings
         this.kitSettings = new KitSettingsManager(this);
 
-        // 3) HealthBar (needs config)
+        // 3) HealthBar
         this.healthBarManager = new HealthBarManager(this);
 
-        // 4) Everything else
+        // 4) Nametag (needs config)
+        this.nametagManager = new NametagManager(this);
+
+        // 5) Everything else
         this.blocks = new Blocks(this);
         this.kitEditor = new KitEditor(this, this.databaseManager);
         this.equip = new Equip(this);
@@ -109,6 +113,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this.scoreboardManager, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.voice, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.healthBarManager, (Plugin) this);
+        getServer().getPluginManager().registerEvents(this.nametagManager, (Plugin) this);
         getServer().getPluginManager().registerEvents(this, (Plugin) this);
         // =============================================================
 
@@ -158,6 +163,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getLogger().info("  Backup folder: " + this.databaseManager.getBackupFolder().getPath());
         getLogger().info("  Kit settings: " + this.kitSettings.getFile().getPath());
         getLogger().info("  HealthBar: " + (this.getConfig().getBoolean("healthbar.enabled", true) ? "ENABLED" : "DISABLED"));
+        getLogger().info("  Nametag HP: " + (this.getConfig().getBoolean("nametag.enabled", true) ? "ENABLED" : "DISABLED"));
         getLogger().info("=================================================");
 
         // ==================== Item cleanup ====================
@@ -318,6 +324,17 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "healthbar.empty-color", "&7");
         setIfMissing(cfg, "healthbar.heart-char", "❤");
         // ===================================================
+
+        // ==================== Nametag ====================
+        setIfMissing(cfg, "nametag.enabled", Boolean.valueOf(true));
+        setIfMissing(cfg, "nametag.update-interval", Integer.valueOf(10));
+        setIfMissing(cfg, "nametag.mode", "NUMERIC");
+        setIfMissing(cfg, "nametag.format", "&c❤ %current%");
+        setIfMissing(cfg, "nametag.use-suffix", Boolean.valueOf(true));
+        setIfMissing(cfg, "nametag.filled-color", "&c");
+        setIfMissing(cfg, "nametag.empty-color", "&7");
+        setIfMissing(cfg, "nametag.heart-char", "❤");
+        // ==================================================
 
         setIfMissing(cfg, "permissions.ypvp", "buildffa.ypvp");
         setIfMissing(cfg, "permissions.ypvp-bypass", "buildffa.ypvp.bypass");
@@ -487,7 +504,10 @@ public final class BuildFFA extends JavaPlugin implements Listener {
             this.scoreboardManager.shutdown();
         }
         if (this.healthBarManager != null) {
-            this.healthBarManager.shutdown();   // ✅ NEW
+            this.healthBarManager.shutdown();
+        }
+        if (this.nametagManager != null) {
+            this.nametagManager.shutdown();
         }
         BuildModeManager.clearAll();
         CombatManager.clearAll();
@@ -531,8 +551,12 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         return this.kitSettings;
     }
 
-    // ✅ NEW
     public HealthBarManager getHealthBarManager() {
         return this.healthBarManager;
+    }
+
+   
+    public NametagManager getNametagManager() {
+        return this.nametagManager;
     }
 }

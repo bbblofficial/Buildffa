@@ -1037,7 +1037,7 @@ public class BuildFFACommand implements CommandExecutor {
             this.scoreboardManager.reloadConfig();
         }
 
-        // ✅ Reload kit-setting.yml + healthbar
+        // ✅ Reload kit-setting.yml + healthbar + nametag
         try {
             BuildFFA bffa = (BuildFFA) this.plugin;
             if (bffa.getKitSettings() != null) {
@@ -1045,6 +1045,9 @@ public class BuildFFACommand implements CommandExecutor {
             }
             if (bffa.getHealthBarManager() != null) {
                 bffa.getHealthBarManager().reloadConfig();
+            }
+            if (bffa.getNametagManager() != null) {
+                bffa.getNametagManager().reloadConfig();
             }
         } catch (Throwable t) {
             this.plugin.getLogger().warning("Failed to reload config: " + t.getMessage());
