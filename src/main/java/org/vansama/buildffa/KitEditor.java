@@ -27,6 +27,7 @@ public class KitEditor implements Listener {
 
   private final JavaPlugin plugin;
   private final KitDatabase kitDatabase;
+  private final DatabaseManager database;
 
   private final Map<UUID, Inventory> openEditors = new HashMap<UUID, Inventory>();
   private final Map<UUID, Boolean> editingKit = new HashMap<UUID, Boolean>();
@@ -40,14 +41,19 @@ public class KitEditor implements Listener {
   private static final int SLOT_INFO = 35;
   private static final int SLOT_SPACER = 31;
 
-  public KitEditor(JavaPlugin plugin) {
+  public KitEditor(JavaPlugin plugin, DatabaseManager database) {
     this.plugin = plugin;
-    this.kitDatabase = new KitDatabase(plugin);
+    this.database = database;
+    this.kitDatabase = new KitDatabase(plugin, database);
     Bukkit.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
   }
 
   public KitDatabase getKitDatabase() {
     return this.kitDatabase;
+  }
+
+  public DatabaseManager getDatabase() {
+    return this.database;
   }
 
   public void openKitEditorGUI(final Player player) {
@@ -59,13 +65,13 @@ public class KitEditor implements Listener {
     ItemStack helmet, chestplate, leggings, boots;
 
     if (kitDatabase.hasKit(uuid)) {
-      List<?> contentsList = kitDatabase.getContents(uuid);
+      List<ItemStack> contentsList = kitDatabase.getContents(uuid);
       kitContents = new ItemStack[36];
       if (contentsList != null) {
         for (int i = 0; i < contentsList.size() && i < 36; i++) {
-          Object obj = contentsList.get(i);
-          if (obj instanceof ItemStack) {
-            kitContents[i] = (ItemStack) obj;
+          ItemStack item = contentsList.get(i);
+          if (item != null) {
+            kitContents[i] = item;
           }
         }
       }
@@ -196,8 +202,13 @@ public class KitEditor implements Listener {
     player.sendMessage(colorize("&aYour kit has been saved!"));
     player.playSound(player.getLocation(), Sound.LEVEL_UP, 1.0F, 1.0F);
 
-    Equip equip = new Equip(this.plugin);
-    equip.giveDiamondArmor(player);
+    // restore kit immediately
+    try {
+      BuildFFA bffa = (BuildFFA) this.plugin;
+      if (bffa.getEquip() != null) {
+        bffa.getEquip().giveDiamondArmor(player);
+      }
+    } catch (Throwable ignored) {}
   }
 
   public void cancelKit(Player player) {
@@ -221,8 +232,12 @@ public class KitEditor implements Listener {
     player.closeInventory();
 
     if (player.isOnline()) {
-      Equip equip = new Equip(this.plugin);
-      equip.giveDiamondArmor(player);
+      try {
+        BuildFFA bffa = (BuildFFA) this.plugin;
+        if (bffa.getEquip() != null) {
+          bffa.getEquip().giveDiamondArmor(player);
+        }
+      } catch (Throwable ignored) {}
     }
 
     player.sendMessage(colorize("&aYour kit has been reset to the default kit."));

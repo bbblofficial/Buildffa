@@ -135,6 +135,22 @@ public class BuildFFACommand implements CommandExecutor {
             return handleReload(sender);
         }
 
+        if (sub.equals("dbinfo")) {
+            if (!sender.hasPermission(getPerm("reload", "buildffa.reload"))) {
+                sendNoPerm(sender);
+                return true;
+            }
+            return handleDbInfo(sender);
+        }
+
+        if (sub.equals("dbbackup")) {
+            if (!sender.hasPermission(getPerm("reload", "buildffa.reload"))) {
+                sendNoPerm(sender);
+                return true;
+            }
+            return handleDbBackup(sender);
+        }
+
         // ============================================================
         //  PLAYER COMMANDS
         // ============================================================
@@ -148,7 +164,6 @@ public class BuildFFACommand implements CommandExecutor {
         }
 
         if (sub.equals("scoreboard") || sub.equals("sb")) {
-            // "sb reload" needs the reload permission
             if (args.length >= 2 && args[1].equalsIgnoreCase("reload")) {
                 if (!sender.hasPermission(getPerm("reload", "buildffa.reload"))) {
                     sendNoPerm(sender);
@@ -156,7 +171,6 @@ public class BuildFFACommand implements CommandExecutor {
                 }
                 return handleScoreboard(sender, args);
             }
-            // Regular toggle needs scoreboard-toggle permission
             if (!sender.hasPermission(getPerm("scoreboard-toggle", "buildffa.scoreboard.toggle"))) {
                 sendNoPerm(sender);
                 return true;
@@ -165,7 +179,6 @@ public class BuildFFACommand implements CommandExecutor {
         }
 
         if (sub.equals("stats")) {
-            // "stats add" and "stats reset" need resetstats permission
             if (args.length >= 2) {
                 String sub2 = args[1].toLowerCase();
                 if (sub2.equals("add") || sub2.equals("reset")) {
@@ -196,8 +209,44 @@ public class BuildFFACommand implements CommandExecutor {
     }
 
     // ==========================================
+    // DB INFO
+    // ==========================================
+    private boolean handleDbInfo(CommandSender sender) {
+        if (this.database == null) {
+            sender.sendMessage(colorize("&cDatabase manager not available."));
+            return true;
+        }
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+        sender.sendMessage(colorize("&6&lDatabase Info (SQLite)"));
+        sender.sendMessage(colorize("&7File: &e" + this.database.getDbFile().getName()));
+        sender.sendMessage(colorize("&7Path: &e" + this.database.getDbFile().getAbsolutePath()));
+        long size = this.database.getDbFile().exists() ? this.database.getDbFile().length() : 0L;
+        sender.sendMessage(colorize("&7Size: &e" + (size / 1024) + " KB"));
+        sender.sendMessage(colorize("&7Cached players: &e" + this.database.getCacheSize()));
+        sender.sendMessage(colorize("&7Backup folder: &e" + this.database.getBackupFolder().getPath()));
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+        return true;
+    }
+
+    // ==========================================
+    // DB BACKUP
+    // ==========================================
+    private boolean handleDbBackup(CommandSender sender) {
+        if (this.database == null) {
+            sender.sendMessage(colorize("&cDatabase manager not available."));
+            return true;
+        }
+        try {
+            this.database.makeBackup();
+            sender.sendMessage(colorize("&aBackup created in &e" + this.database.getBackupFolder().getName()));
+        } catch (Throwable t) {
+            sender.sendMessage(colorize("&cBackup failed: &e" + t.getMessage()));
+        }
+        return true;
+    }
+
+    // ==========================================
     // Fireball Speed Command
-    // /buildffa fb-speed <-10 to +10>
     // ==========================================
     private boolean handleFireballSpeed(CommandSender sender, String[] args) {
         if (args.length < 2) {
@@ -240,12 +289,10 @@ public class BuildFFACommand implements CommandExecutor {
     }
 
     // ==========================================
-    // Stats Command (with add / reset subcommands)
+    // Stats Command
     // ==========================================
     private boolean handleStats(CommandSender sender, String[] args) {
-        // ==========================================
-        //  /buildffa stats add <kill|kdr|ks|death> <player> <amount>
-        // ==========================================
+        // /buildffa stats add <kill|kdr|ks|death> <player> <amount>
         if (args.length >= 2 && args[1].equalsIgnoreCase("add")) {
             if (args.length < 5) {
                 sender.sendMessage(colorize("&cUsage: /buildffa stats add <kill|kdr|ks|death> <player> <amount>"));
@@ -307,9 +354,7 @@ public class BuildFFACommand implements CommandExecutor {
             return true;
         }
 
-        // ==========================================
-        //  /buildffa stats reset <kill|ks|death> <player>
-        // ==========================================
+        // /buildffa stats reset <kill|ks|death> <player>
         if (args.length >= 2 && args[1].equalsIgnoreCase("reset")) {
             if (args.length < 4) {
                 sender.sendMessage(colorize("&cUsage: /buildffa stats reset <kill|ks|death> <player>"));
@@ -390,7 +435,6 @@ public class BuildFFACommand implements CommandExecutor {
 
     // ==========================================
     // Force Killstreak Reward
-    // /buildffa forceksreward <ks>
     // ==========================================
     private boolean handleForceKsReward(CommandSender sender, String[] args) {
         if (!(sender instanceof Player)) {
@@ -1030,7 +1074,7 @@ public class BuildFFACommand implements CommandExecutor {
         sender.sendMessage(colorize("&8&m----------------------------------"));
         sender.sendMessage(colorize("&6&lBuildFFA &7- &fCreated by &bMuvixo"));
         sender.sendMessage(colorize("&7Plugin author: &fVanSaMa"));
-        sender.sendMessage(colorize("&7Version: &f4.0 (1.8.8)"));
+        sender.sendMessage(colorize("&7Version: &f4.0 (1.8.8) - SQLite Edition"));
         sender.sendMessage(colorize("&7Made by &fPixelValley"));
         sender.sendMessage(colorize("&8&m----------------------------------"));
         return true;
@@ -1057,10 +1101,7 @@ public class BuildFFACommand implements CommandExecutor {
         sender.sendMessage(colorize("&6&lBuildFFA &7- &fCommands"));
         sender.sendMessage(colorize("&8&m----------------------------------"));
 
-        // ============================================================
-        //  PLAYER COMMANDS
-        // ============================================================
-
+        // PLAYER
         if (sender.hasPermission(getPerm("kiteditor", "buildffa.kiteditor"))) {
             sender.sendMessage(colorize("&e/buildffa kiteditor &7- Open the Kit Editor GUI"));
             sender.sendMessage(colorize("&e/buildffa kiteditor reset &7- Reset your kit"));
@@ -1074,10 +1115,7 @@ public class BuildFFACommand implements CommandExecutor {
         sender.sendMessage(colorize("&e/buildffa top [kills|deaths|kdr|streak] [limit] &7- Show top players"));
         sender.sendMessage(colorize("&e/buildffa creator &7- Show plugin credits"));
 
-        // ============================================================
-        //  ADMIN COMMANDS
-        // ============================================================
-
+        // ADMIN
         boolean isAdmin = sender.hasPermission(getPerm("setvoid", "buildffa.setvoid"))
                 || sender.hasPermission(getPerm("sethighlimit", "buildffa.sethighlimit"))
                 || sender.hasPermission(getPerm("setspawn", "buildffa.setspawn"))
@@ -1138,6 +1176,8 @@ public class BuildFFACommand implements CommandExecutor {
             if (sender.hasPermission(getPerm("reload", "buildffa.reload"))) {
                 sender.sendMessage(colorize("&e/buildffa reload &7- Reload configuration"));
                 sender.sendMessage(colorize("&e/buildffa sb reload &7- Reload scoreboard.yml"));
+                sender.sendMessage(colorize("&e/buildffa dbinfo &7- Show database info"));
+                sender.sendMessage(colorize("&e/buildffa dbbackup &7- Force a database backup"));
             }
         }
 

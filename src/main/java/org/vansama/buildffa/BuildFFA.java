@@ -62,15 +62,20 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         int combatTimeout = this.getConfig().getInt("combat.timeout-seconds", 15);
         CombatManager.setCombatTimeoutSeconds(combatTimeout);
 
+        // ==================== INIT ORDER MATTERS ====================
+        // 1) Database FIRST (because KitEditor needs it)
         this.databaseManager = new DatabaseManager(this);
+
+        // 2) Everything else
         this.blocks = new Blocks(this);
-        this.kitEditor = new KitEditor(this);
+        this.kitEditor = new KitEditor(this, this.databaseManager);
         this.equip = new Equip(this);
         this.killListener = new KillListener(this);
         this.scoreboardManager = new ScoreboardManager(this, this.killListener, this.databaseManager);
         this.voice = new Voice(this);
         this.fireballFix = new FireballFix(this);
         this.yPearl = new YPearl(this);
+        // =============================================================
 
         // ==================== REGISTER LISTENERS ====================
         getServer().getPluginManager().registerEvents(this.blocks, (Plugin) this);
@@ -138,10 +143,11 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getLogger().info("  BuildFFA v4.0 - Enabled");
         getLogger().info("  Plugin made by PixelValley");
         getLogger().info("  Author: muvixo");
-        getLogger().info("  Database folder: " + this.databaseManager.getDbFolder().getPath());
-        getLogger().info("  Kits folder: " + this.kitEditor.getKitDatabase().getKitsFolder().getPath());
+        getLogger().info("  Database: SQLite -> " + this.databaseManager.getDbFile().getPath());
+        getLogger().info("  Backup folder: " + this.databaseManager.getBackupFolder().getPath());
         getLogger().info("=================================================");
 
+        // ==================== Item cleanup ====================
         Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) this, new Runnable() {
             @Override
             public void run() {
@@ -155,6 +161,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
             }
         }, 0L, 60L);
 
+        // ==================== Auto kit restore ====================
         Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) this, new Runnable() {
             @Override
             public void run() {
@@ -175,20 +182,10 @@ public final class BuildFFA extends JavaPlugin implements Listener {
             getLogger().info("Created main plugin folder");
         }
 
-        File dbFolder = new File(getDataFolder(), "db");
-        if (!dbFolder.exists()) {
-            boolean created = dbFolder.mkdirs();
-            if (created) {
-                getLogger().info("Created db folder at: " + dbFolder.getPath());
-            }
-        }
-
-        File kitsFolder = new File(getDataFolder(), "kits");
-        if (!kitsFolder.exists()) {
-            boolean created = kitsFolder.mkdirs();
-            if (created) {
-                getLogger().info("Created kits folder at: " + kitsFolder.getPath());
-            }
+        File backupFolder = new File(getDataFolder(), "db_backup");
+        if (!backupFolder.exists()) {
+            backupFolder.mkdirs();
+            getLogger().info("Created db_backup folder at: " + backupFolder.getPath());
         }
     }
 
@@ -274,8 +271,10 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "ypearl.message", "&cYou cannot throw pearls here!");
         // ===============================================
 
+        // ==================== DATABASE (SQLite) ====================
         setIfMissing(cfg, "database.autosave", Boolean.valueOf(true));
         setIfMissing(cfg, "database.autosave-interval", Long.valueOf(300L));
+        // ==========================================================
 
         setIfMissing(cfg, "kill", "&a%killer% &7killed &c%loser%");
         setIfMissing(cfg, "Title-Suffix", " &7Kill");
@@ -329,6 +328,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         // ==================== Killstreak Rewards ====================
         setIfMissing(cfg, "killstreak-rewards.enabled", Boolean.valueOf(true));
         setIfMissing(cfg, "killstreak-rewards.repeat-from-12", Boolean.valueOf(true));
+        setIfMissing(cfg, "killstreak-rewards.stacking", Boolean.valueOf(false));
 
         setIfMissing(cfg, "killstreak-rewards.rewards.4",  "gapple:1 fb:1 speed:1");
         setIfMissing(cfg, "killstreak-rewards.rewards.5",  "gapple:2 speed:2 jump:1");
@@ -444,7 +444,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         if (this.databaseManager != null) {
-            this.databaseManager.saveAll();
+            this.databaseManager.shutdown();  // ← ذخیره نهایی + backup + بستن اتصال
         }
         if (this.blocks != null) {
             this.blocks.onDisable();

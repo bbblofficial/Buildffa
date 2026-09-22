@@ -1,39 +1,27 @@
 package org.vansama.buildffa;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
+/**
+ * Wrapper قدیمی که الان از DatabaseManager (SQLite) استفاده میکنه.
+ * برای سازگاری با کدهای قدیمی که از KitDatabase استفاده میکنن.
+ */
 public class KitDatabase {
 
     private final JavaPlugin plugin;
-    private final File kitsFolder;
+    private final DatabaseManager database;
 
-    public KitDatabase(JavaPlugin plugin) {
+    public KitDatabase(JavaPlugin plugin, DatabaseManager database) {
         this.plugin = plugin;
-        this.kitsFolder = new File(plugin.getDataFolder(), "kits");
-        if (!this.kitsFolder.exists()) {
-            this.kitsFolder.mkdirs();
-        }
-    }
-
-    private File getKitFile(UUID uuid) {
-        return new File(this.kitsFolder, uuid.toString() + ".yml");
+        this.database = database;
     }
 
     public boolean hasKit(UUID uuid) {
-        return getKitFile(uuid).exists();
-    }
-
-    public FileConfiguration loadKit(UUID uuid) {
-        File file = getKitFile(uuid);
-        if (!file.exists()) return null;
-        return YamlConfiguration.loadConfiguration(file);
+        return database.hasKit(uuid);
     }
 
     public void saveKit(UUID uuid,
@@ -42,56 +30,24 @@ public class KitDatabase {
                         ItemStack leggings,
                         ItemStack boots,
                         List<ItemStack> contents) {
-
-        File file = getKitFile(uuid);
-        FileConfiguration cfg = new YamlConfiguration();
-
-        cfg.set("helmet", helmet);
-        cfg.set("chestplate", chestplate);
-        cfg.set("leggings", leggings);
-        cfg.set("boots", boots);
-        cfg.set("contents", contents);
-
-        try {
-            cfg.save(file);
-        } catch (IOException e) {
-            this.plugin.getLogger().warning("Could not save kit for " + uuid + ": " + e.getMessage());
-        }
+        database.saveKit(uuid, helmet, chestplate, leggings, boots, contents);
     }
 
     public void deleteKit(UUID uuid) {
-        File file = getKitFile(uuid);
-        if (file.exists()) {
-            file.delete();
-        }
+        database.deleteKit(uuid);
     }
 
-    public ItemStack getHelmet(UUID uuid) {
-        FileConfiguration cfg = loadKit(uuid);
-        return cfg == null ? null : cfg.getItemStack("helmet");
+    public ItemStack getHelmet(UUID uuid)     { return database.getKitHelmet(uuid); }
+    public ItemStack getChestplate(UUID uuid) { return database.getKitChestplate(uuid); }
+    public ItemStack getLeggings(UUID uuid)   { return database.getKitLeggings(uuid); }
+    public ItemStack getBoots(UUID uuid)      { return database.getKitBoots(uuid); }
+
+    public List<ItemStack> getContents(UUID uuid) {
+        return database.getKitContents(uuid);
     }
 
-    public ItemStack getChestplate(UUID uuid) {
-        FileConfiguration cfg = loadKit(uuid);
-        return cfg == null ? null : cfg.getItemStack("chestplate");
-    }
-
-    public ItemStack getLeggings(UUID uuid) {
-        FileConfiguration cfg = loadKit(uuid);
-        return cfg == null ? null : cfg.getItemStack("leggings");
-    }
-
-    public ItemStack getBoots(UUID uuid) {
-        FileConfiguration cfg = loadKit(uuid);
-        return cfg == null ? null : cfg.getItemStack("boots");
-    }
-
-    public List<?> getContents(UUID uuid) {
-        FileConfiguration cfg = loadKit(uuid);
-        return cfg == null ? null : cfg.getList("contents");
-    }
-
+    // برای سازگاری با کد قدیمی که getKitsFolder میخواست
     public File getKitsFolder() {
-        return this.kitsFolder;
+        return this.plugin.getDataFolder();
     }
 }

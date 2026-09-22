@@ -3,7 +3,7 @@
 #  Created by Muvixo
 #  Plugin author: VanSaMa
 #  Made by PixelValley
-#  Version: 4.0 (1.8.8 Compatible)
+#  Version: 4.0 (1.8.8 Compatible) - SQLite Edition
 # ==========================================================
 #
 #  This file is AUTO-MERGED on plugin update.
@@ -118,13 +118,19 @@ ypearl:
   message: '&cYou cannot throw pearls here!'
 
 # ----------------------------------------------------------
-#  Database (JSON storage in /db folder)
-#  Stores kills, deaths, killstreak, kdr per player
+#  Database (SQLite)
+#  All data is stored in a single file: buildffa.db
+#  Contains: players stats + kits (base64 serialized)
+#
+#  Old files (db/*.json, kits/*.yml) are AUTO-MIGRATED
+#  on first startup and then renamed to *_legacy_*
 # ----------------------------------------------------------
 database:
   # Automatically save all player data periodically
   autosave: true
+
   # Save interval in SECONDS (300 = 5 minutes)
+  # Minimum allowed value: 30 seconds
   autosave-interval: 300
 
 # ----------------------------------------------------------
