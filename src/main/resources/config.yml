@@ -351,15 +351,11 @@ healthbar:
 #      '&7[&c❤&7]'   → [❤] 20
 # ----------------------------------------------------------
 nametag:
-  # Enable/disable
   enabled: true
-
-  # Update interval in ticks (20 = 1 second)
-  # 5 = smooth, 10 = balanced (recommended), 20 = every second
   update-interval: 10
-
-  # Display name shown next to the HP number
-  display-name: '&c❤'
+  display-name: ''   # خالی = فقط عدد
+  # یا
+  # display-name: '&c❤'
 
 # ----------------------------------------------------------
 #  Permissions
