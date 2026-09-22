@@ -2,6 +2,7 @@ package org.vansama.buildffa;
 
 import java.util.List;
 import java.util.UUID;
+import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -11,6 +12,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -24,7 +26,6 @@ public class Equip implements Listener {
 
   // ============================================================
   //  JOIN — equip kit 5 ticks after join
-  //  (delay so KitRestore/SpawnManager don't fight it)
   // ============================================================
   @EventHandler
   public void onPlayerJoin(PlayerJoinEvent event) {
@@ -61,19 +62,31 @@ public class Equip implements Listener {
   public void giveDiamondArmor(Player player) {
     if (player == null || !player.isOnline()) return;
 
-    // Try to load custom kit from SQLite
+    // 1) Player's personal kit (from SQLite)
     if (tryApplyCustomKit(player)) {
       return;
     }
 
-    // Default kit
+    // 2) Server default kit (from kit-setting.json)
+    if (tryApplyServerDefaultKit(player)) {
+      return;
+    }
+
+    // 3) Hardcoded fallback (leather red armor + stone sword)
+    applyHardcodedDefault(player);
+  }
+
+  // ============================================================
+  //  HARDCODED DEFAULT — Leather RED armor
+  // ============================================================
+  private void applyHardcodedDefault(Player player) {
     player.getInventory().clear();
     player.getInventory().setArmorContents(null);
 
-    player.getInventory().setHelmet(unbreakable(new ItemStack(Material.IRON_HELMET)));
-    player.getInventory().setChestplate(unbreakable(new ItemStack(Material.IRON_CHESTPLATE)));
-    player.getInventory().setLeggings(unbreakable(new ItemStack(Material.DIAMOND_LEGGINGS)));
-    player.getInventory().setBoots(unbreakable(new ItemStack(Material.DIAMOND_BOOTS)));
+    player.getInventory().setHelmet(redLeather(Material.LEATHER_HELMET));
+    player.getInventory().setChestplate(redLeather(Material.LEATHER_CHESTPLATE));
+    player.getInventory().setLeggings(redLeather(Material.LEATHER_LEGGINGS));
+    player.getInventory().setBoots(redLeather(Material.LEATHER_BOOTS));
 
     ItemStack sword = new ItemStack(Material.STONE_SWORD);
     sword.addUnsafeEnchantment(Enchantment.DAMAGE_ALL, 2);
@@ -96,8 +109,45 @@ public class Equip implements Listener {
   }
 
   // ============================================================
-  //  LOAD CUSTOM KIT FROM SQLite
-  //  Returns true if a custom kit existed and was applied.
+  //  LOAD SERVER DEFAULT KIT FROM kit-setting.json
+  // ============================================================
+  private boolean tryApplyServerDefaultKit(Player player) {
+    try {
+      BuildFFA bffa = (BuildFFA) this.plugin;
+      KitSettingsManager settings = bffa.getKitSettings();
+      if (settings == null) return false;
+
+      List<ItemStack> contents = settings.getDefaultKitContents();
+      if (contents == null || contents.isEmpty()) return false;
+
+      player.getInventory().clear();
+      player.getInventory().setArmorContents(null);
+
+      // First 4 = armor (helmet, chest, legs, boots)
+      if (contents.size() >= 1 && contents.get(0) != null) player.getInventory().setHelmet(contents.get(0));
+      if (contents.size() >= 2 && contents.get(1) != null) player.getInventory().setChestplate(contents.get(1));
+      if (contents.size() >= 3 && contents.get(2) != null) player.getInventory().setLeggings(contents.get(2));
+      if (contents.size() >= 4 && contents.get(3) != null) player.getInventory().setBoots(contents.get(3));
+
+      // Rest = inventory items (slots 0-35)
+      for (int i = 4; i < contents.size() && i < 40; i++) {
+        ItemStack item = contents.get(i);
+        if (item != null && item.getType() != Material.AIR) {
+          player.getInventory().setItem(i - 4, item);
+        }
+      }
+
+      player.updateInventory();
+      return true;
+
+    } catch (Throwable t) {
+      this.plugin.getLogger().warning("Server default kit load failed: " + t.getMessage());
+      return false;
+    }
+  }
+
+  // ============================================================
+  //  LOAD CUSTOM KIT FROM SQLite (per-player)
   // ============================================================
   private boolean tryApplyCustomKit(Player player) {
     try {
@@ -141,12 +191,24 @@ public class Equip implements Listener {
   }
 
   // ============================================================
-  //  UNBREAKABLE helper
+  //  HELPERS
   // ============================================================
   public static ItemStack unbreakable(ItemStack item) {
     if (item == null) return null;
     ItemMeta meta = item.getItemMeta();
     if (meta == null) return item;
+    meta.spigot().setUnbreakable(true);
+    item.setItemMeta(meta);
+    return item;
+  }
+
+  /** Creates a RED leather armor piece. */
+  public static ItemStack redLeather(Material type) {
+    ItemStack item = new ItemStack(type);
+    ItemMeta meta = item.getItemMeta();
+    if (meta instanceof LeatherArmorMeta) {
+      ((LeatherArmorMeta) meta).setColor(Color.RED);
+    }
     meta.spigot().setUnbreakable(true);
     item.setItemMeta(meta);
     return item;

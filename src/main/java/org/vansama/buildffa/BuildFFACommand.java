@@ -1085,9 +1085,21 @@ public class BuildFFACommand implements CommandExecutor {
     // ==========================================
     private boolean handleReload(CommandSender sender) {
         this.plugin.reloadConfig();
+
         if (this.scoreboardManager != null) {
             this.scoreboardManager.reloadConfig();
         }
+
+        // ✅ Reload kit-setting.yml
+        try {
+            BuildFFA bffa = (BuildFFA) this.plugin;
+            if (bffa.getKitSettings() != null) {
+                bffa.getKitSettings().reload();
+            }
+        } catch (Throwable t) {
+            this.plugin.getLogger().warning("Failed to reload kit-setting.yml: " + t.getMessage());
+        }
+
         reloadListeners();
         sender.sendMessage(colorize("&aBuildFFA configuration reloaded."));
         return true;

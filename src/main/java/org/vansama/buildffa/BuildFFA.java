@@ -31,6 +31,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     private Voice voice;
     private FireballFix fireballFix;
     private YPearl yPearl;
+    private KitSettingsManager kitSettings;   // ✅ NEW
 
     // ==================== COUNTDOWN ====================
     private static int secondsUntilRefresh = 600;
@@ -67,7 +68,10 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         // 1) Database FIRST (because KitEditor + ScoreboardManager + Expansion need it)
         this.databaseManager = new DatabaseManager(this);
 
-        // 2) Everything else
+        // 2) Kit settings (server default kit from kit-setting.yml)
+        this.kitSettings = new KitSettingsManager(this);
+
+        // 3) Everything else
         this.blocks = new Blocks(this);
         this.kitEditor = new KitEditor(this, this.databaseManager);
         this.equip = new Equip(this);
@@ -147,6 +151,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getLogger().info("  Author: muvixo");
         getLogger().info("  Database: SQLite -> " + this.databaseManager.getDbFile().getPath());
         getLogger().info("  Backup folder: " + this.databaseManager.getBackupFolder().getPath());
+        getLogger().info("  Kit settings: " + this.kitSettings.getFile().getPath());
         getLogger().info("=================================================");
 
         // ==================== Item cleanup ====================
@@ -448,7 +453,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         if (this.databaseManager != null) {
-            this.databaseManager.shutdown();  // ذخیره نهایی + backup + بستن اتصال
+            this.databaseManager.shutdown();
         }
         if (this.blocks != null) {
             this.blocks.onDisable();
@@ -492,5 +497,9 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
     public YPearl getYPearl() {
         return this.yPearl;
+    }
+
+    public KitSettingsManager getKitSettings() {
+        return this.kitSettings;
     }
 }

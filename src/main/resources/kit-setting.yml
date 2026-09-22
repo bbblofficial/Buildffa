@@ -1,0 +1,169 @@
+# ==========================================================
+#  BuildFFA - Server Default Kit Settings
+#  File: kit-setting.yml
+#
+#  This file defines the DEFAULT kit that every player gets
+#  when they join / respawn / clear their inventory.
+#
+#  Player-specific kits (saved in SQLite via /buildffa kiteditor)
+#  OVERRIDE this default kit.
+#
+#  ENCHANTMENT NAMES (1.8.8):
+#    DAMAGE_ALL          Sharpness
+#    DAMAGE_UNDEAD       Smite
+#    DAMAGE_ARTHROPODS   Bane of Arthropods
+#    KNOCKBACK           Knockback
+#    FIRE_ASPECT         Fire Aspect
+#    LOOT_BONUS_MOBS     Looting
+#    DIG_SPEED           Efficiency
+#    SILK_TOUCH          Silk Touch
+#    DURABILITY          Unbreaking
+#    LOOT_BONUS_BLOCKS   Fortune
+#    ARROW_DAMAGE        Power
+#    ARROW_KNOCKBACK     Punch
+#    ARROW_FIRE          Flame
+#    ARROW_INFINITE      Infinity
+#    PROTECTION_ENVIRONMENTAL  Protection
+#    PROTECTION_EXPLOSIONS     Blast Protection
+#    PROTECTION_FALL           Feather Falling
+#    PROTECTION_FIRE           Fire Protection
+#    PROTECTION_PROJECTILE     Projectile Protection
+#    OXYGEN              Respiration
+#    WATER_WORKER        Aqua Affinity
+#    THORNS              Thorns
+#    DEPTH_STRIDER       Depth Strider
+#
+#  COLOR options (leather armor only):
+#    RED, BLUE, GREEN, YELLOW, AQUA, BLACK, WHITE, PURPLE, ORANGE,
+#    FUCHSIA, GRAY, SILVER, LIME, MAROON, NAVY, OLIVE, TEAL
+#    OR "r,g,b"   example:  "255,0,0"
+#    OR "#RRGGBB" example:  "#FF0000"
+# ==========================================================
+
+# ----------------------------------------------------------
+#  ARMOR - leather armor colored RED
+# ----------------------------------------------------------
+armor:
+  helmet:
+    type: LEATHER_HELMET
+    color: RED
+    unbreakable: true
+    name: ''
+    lore: []
+    enchantments: []
+
+  chestplate:
+    type: LEATHER_CHESTPLATE
+    color: RED
+    unbreakable: true
+    name: ''
+    lore: []
+    enchantments: []
+
+  leggings:
+    type: LEATHER_LEGGINGS
+    color: RED
+    unbreakable: true
+    name: ''
+    lore: []
+    enchantments: []
+
+  boots:
+    type: LEATHER_BOOTS
+    color: RED
+    unbreakable: true
+    name: ''
+    lore: []
+    enchantments: []
+
+# ----------------------------------------------------------
+#  ITEMS - inventory slots 0 to 35
+#  'slot' is the inventory slot number (0 = first hotbar)
+#  Add as many items as you want.
+#  'name' is optional (leave empty '' for no name)
+#  'lore' is optional
+#  'enchantments' is a list of 'ENCHANT:LEVEL'
+# ----------------------------------------------------------
+items:
+
+  sword:
+    slot: 0
+    type: STONE_SWORD
+    amount: 1
+    unbreakable: true
+    name: ''
+    lore: []
+    enchantments:
+      - 'DAMAGE_ALL:2'
+
+  wool:
+    slot: 1
+    type: WOOL
+    data: 9
+    amount: 64
+    unbreakable: false
+    name: ''
+    lore: []
+    enchantments: []
+
+  shears:
+    slot: 2
+    type: SHEARS
+    amount: 1
+    unbreakable: true
+    name: ''
+    lore: []
+    enchantments: []
+
+  pickaxe:
+    slot: 3
+    type: IRON_PICKAXE
+    amount: 1
+    unbreakable: true
+    name: ''
+    lore: []
+    enchantments:
+      - 'DIG_SPEED:2'
+
+  axe:
+    slot: 4
+    type: IRON_AXE
+    amount: 1
+    unbreakable: true
+    name: ''
+    lore: []
+    enchantments:
+      - 'DIG_SPEED:1'
+
+# ----------------------------------------------------------
+#  EXAMPLES - uncomment to add more items
+# ----------------------------------------------------------
+#
+#  gapple:
+#    slot: 5
+#    type: GOLDEN_APPLE
+#    amount: 8
+#    unbreakable: false
+#    name: '&6Golden Apple'
+#    lore:
+#      - '&7Restores health'
+#    enchantments: []
+#
+#  fireball:
+#    slot: 6
+#    type: FIREBALL
+#    amount: 8
+#    unbreakable: false
+#    name: '&cFireball'
+#    lore:
+#      - '&7Right-click to shoot'
+#    enchantments: []
+#
+#  ender_pearl:
+#    slot: 7
+#    type: ENDER_PEARL
+#    amount: 4
+#    unbreakable: false
+#    name: '&5Ender Pearl'
+#    lore: []
+#    enchantments: []
