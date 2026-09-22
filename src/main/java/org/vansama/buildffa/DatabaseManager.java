@@ -1,5 +1,7 @@
 package org.vansama.buildffa;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,20 +13,19 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.util.Base64;
 
 public class DatabaseManager {
 
@@ -57,18 +58,20 @@ public class DatabaseManager {
             this.backupFolder.mkdirs();
         }
 
-        // لود درایور SQLite
+        // ============================================================
+        //  لود درایور SQLite — بدون relocation
+        // ============================================================
         try {
             Class.forName("org.sqlite.JDBC");
+            plugin.getLogger().info("SQLite JDBC driver loaded successfully.");
         } catch (ClassNotFoundException e) {
-            try {
-                Class.forName("org.vansama.buildffa.libs.sqlite.JDBC");
-            } catch (ClassNotFoundException e2) {
-                plugin.getLogger().severe("SQLite JDBC driver not found!");
-                throw new RuntimeException("SQLite driver missing", e2);
-            }
+            plugin.getLogger().severe("SQLite JDBC driver not found! Plugin cannot work.");
+            throw new RuntimeException("SQLite driver missing", e);
         }
 
+        // ============================================================
+        //  اتصال به دیتابیس
+        // ============================================================
         try {
             openConnection();
             createTables();
@@ -78,6 +81,9 @@ public class DatabaseManager {
             e.printStackTrace();
         }
 
+        // ============================================================
+        //  خوندن کانفیگ
+        // ============================================================
         try {
             FileConfiguration config = plugin.getConfig();
             this.autosaveEnabled = config.getBoolean("database.autosave", true);
@@ -122,6 +128,7 @@ public class DatabaseManager {
             Connection c = getConnection();
             Statement st = c.createStatement();
 
+            // جدول پلیرها
             st.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS players (" +
                 "  uuid TEXT PRIMARY KEY," +
@@ -134,6 +141,7 @@ public class DatabaseManager {
                 ")"
             );
 
+            // جدول کیتها (base64 serialized ItemStack)
             st.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS kits (" +
                 "  uuid TEXT PRIMARY KEY," +
@@ -146,6 +154,7 @@ public class DatabaseManager {
                 ")"
             );
 
+            // ایندکسها برای leaderboard
             st.executeUpdate("CREATE INDEX IF NOT EXISTS idx_kills ON players(kills DESC)");
             st.executeUpdate("CREATE INDEX IF NOT EXISTS idx_deaths ON players(deaths DESC)");
             st.executeUpdate("CREATE INDEX IF NOT EXISTS idx_best_ks ON players(best_killstreak DESC)");
@@ -155,7 +164,7 @@ public class DatabaseManager {
     }
 
     // ============================================================
-    //  MIGRATION
+    //  MIGRATION از db/*.json و kits/*.yml قدیمی
     // ============================================================
     private void migrateLegacyFiles() {
         try {
@@ -165,6 +174,7 @@ public class DatabaseManager {
             int migratedPlayers = 0;
             int migratedKits = 0;
 
+            // ---- پلیرها ----
             if (oldDbFolder.exists() && oldDbFolder.isDirectory()) {
                 File[] files = oldDbFolder.listFiles();
                 if (files != null) {
@@ -183,8 +193,7 @@ public class DatabaseManager {
                         if (playerExists(uuid)) continue;
 
                         try {
-                            org.bukkit.configuration.file.FileConfiguration cfg =
-                                org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(f);
+                            FileConfiguration cfg = YamlConfiguration.loadConfiguration(f);
 
                             PlayerData data = new PlayerData(
                                 uuid,
@@ -211,6 +220,7 @@ public class DatabaseManager {
                 }
             }
 
+            // ---- کیتها ----
             if (oldKitsFolder.exists() && oldKitsFolder.isDirectory()) {
                 File[] files = oldKitsFolder.listFiles();
                 if (files != null) {
@@ -229,8 +239,7 @@ public class DatabaseManager {
                         if (hasKit(uuid)) continue;
 
                         try {
-                            org.bukkit.configuration.file.FileConfiguration cfg =
-                                org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(f);
+                            FileConfiguration cfg = YamlConfiguration.loadConfiguration(f);
 
                             ItemStack helmet = cfg.getItemStack("helmet");
                             ItemStack chestplate = cfg.getItemStack("chestplate");
@@ -271,7 +280,7 @@ public class DatabaseManager {
     }
 
     // ============================================================
-    //  PLAYER — private helpers
+    //  PLAYER — private helper
     // ============================================================
     private boolean playerExists(UUID uuid) {
         try {
@@ -424,7 +433,7 @@ public class DatabaseManager {
     }
 
     // ============================================================
-    //  KITS  (فقط یه بار hasKit تعریف میشه — public)
+    //  KITS — public hasKit
     // ============================================================
     public boolean hasKit(UUID uuid) {
         try {
@@ -523,7 +532,7 @@ public class DatabaseManager {
     }
 
     // ============================================================
-    //  SERIALIZATION
+    //  SERIALIZATION (Base64 + BukkitObjectStream)
     // ============================================================
     private String serializeItem(ItemStack item) {
         if (item == null) return null;
@@ -731,7 +740,7 @@ public class DatabaseManager {
             if (backups != null) {
                 for (File b : backups) {
                     if (now - b.lastModified() < 24L * 60L * 60L * 1000L) {
-                        return;
+                        return; // backup اخیر وجود داره
                     }
                 }
             }
@@ -740,6 +749,7 @@ public class DatabaseManager {
                     "buildffa_" + System.currentTimeMillis() + ".db");
             Files.copy(dbFile.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
+            // فقط 5 backup آخر رو نگهدار
             File[] all = backupFolder.listFiles();
             if (all != null && all.length > 5) {
                 java.util.Arrays.sort(all, new java.util.Comparator<File>() {
@@ -762,6 +772,7 @@ public class DatabaseManager {
             this.autosaveTaskId = -1;
         }
 
+        // ذخیره نهایی همه پلیرهای cache
         for (PlayerData data : new ArrayList<PlayerData>(this.cache.values())) {
             this.lastSaveTime.remove(data.getUuid());
             savePlayerImmediate(data);
