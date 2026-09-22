@@ -49,7 +49,6 @@ public class ScoreboardManager implements Listener {
         this.killListener = killListener;
         this.database = database;
 
-        // ✅ Check PlaceholderAPI once
         this.placeholderApiAvailable = (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null);
 
         loadScoreboardConfig();
@@ -221,36 +220,104 @@ public class ScoreboardManager implements Listener {
         return this.scoreboardConfig.getStringList("lines");
     }
 
+    // ============================================================
+    //  ✅ SPLIT LINE — safer version
+    //  Splits a formatted line into prefix (max 16 visible) and
+    //  suffix (max 16 visible), preserving color codes correctly.
+    // ============================================================
     private String[] splitLine(String line) {
         if (line == null) return new String[]{"", ""};
         if (line.isEmpty()) return new String[]{"", ""};
 
+        // Fast path — no need to split
         if (line.length() <= 16) {
             return new String[]{line, ""};
         }
 
-        int splitAt = 16;
-        if (line.charAt(splitAt - 1) == ChatColor.COLOR_CHAR) {
+        // Find split point that keeps ≤16 VISIBLE characters in prefix
+        int visibleChars = 0;
+        int splitAt = -1;
+        boolean inColorCode = false;
+
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+
+            if (c == ChatColor.COLOR_CHAR) {
+                inColorCode = true;
+                continue;
+            }
+            if (inColorCode) {
+                inColorCode = false;
+                continue;
+            }
+
+            visibleChars++;
+
+            if (visibleChars == 16) {
+                splitAt = i + 1;
+                break;
+            }
+        }
+
+        // Could not find a split point
+        if (splitAt <= 0 || splitAt >= line.length()) {
+            return new String[]{line, ""};
+        }
+
+        // Make sure we don't cut in the middle of a color code
+        if (splitAt < line.length() && line.charAt(splitAt - 1) == ChatColor.COLOR_CHAR) {
+            splitAt--;
+        }
+        if (splitAt > 0 && splitAt < line.length()
+                && line.charAt(splitAt - 1) == ChatColor.COLOR_CHAR) {
             splitAt--;
         }
 
         String prefix = line.substring(0, splitAt);
         String suffix = line.substring(splitAt);
 
-        String lastColors = ChatColor.getLastColors(prefix);
-        if (lastColors != null && !lastColors.isEmpty()) {
-            suffix = lastColors + suffix;
-        }
+        // Truncate suffix to 16 visible chars
+        suffix = truncateVisible(suffix, 16);
 
-        if (suffix.length() > 16) {
-            int end = 16;
-            if (suffix.length() > 0 && suffix.charAt(end - 1) == ChatColor.COLOR_CHAR) {
-                end--;
+        // Carry over color codes from prefix to suffix
+        String lastColors = ChatColor.getLastColors(prefix);
+        if (lastColors != null && !lastColors.isEmpty() && !suffix.startsWith(lastColors)) {
+            // Only prepend if the suffix doesn't already start with a color code
+            if (suffix.length() < 2 || suffix.charAt(0) != ChatColor.COLOR_CHAR) {
+                suffix = lastColors + suffix;
             }
-            suffix = suffix.substring(0, end);
         }
 
         return new String[]{prefix, suffix};
+    }
+
+    // Truncate a string while keeping color codes, and stopping at maxVisible chars
+    private String truncateVisible(String input, int maxVisible) {
+        if (input == null) return "";
+        StringBuilder sb = new StringBuilder();
+        int visible = 0;
+        boolean inCode = false;
+
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+
+            if (c == ChatColor.COLOR_CHAR) {
+                inCode = true;
+                sb.append(c);
+                continue;
+            }
+            if (inCode) {
+                sb.append(c);
+                inCode = false;
+                continue;
+            }
+            if (visible >= maxVisible) break;
+
+            sb.append(c);
+            visible++;
+        }
+
+        return sb.toString();
     }
 
     private String getUniqueEntry(int index) {
@@ -261,7 +328,7 @@ public class ScoreboardManager implements Listener {
     }
 
     // ============================================================
-    //  ✅ APPLY PLACEHOLDERS (internal + PlaceholderAPI)
+    //  APPLY PLACEHOLDERS (internal + PlaceholderAPI)
     // ============================================================
     private String applyPlaceholders(Player player, String line) {
         if (line == null) return "";
@@ -286,7 +353,7 @@ public class ScoreboardManager implements Listener {
         String out = line;
 
         // ============================================================
-        //  INTERNAL placeholders (handled by ScoreboardManager itself)
+        //  INTERNAL placeholders
         // ============================================================
         out = out.replace("%player%", player.getName());
         out = out.replace("%kills%", String.valueOf(kills));
@@ -305,13 +372,13 @@ public class ScoreboardManager implements Listener {
         out = out.replace("%void%", String.valueOf((int) voidKill));
 
         // ============================================================
-        //  ✅ PlaceholderAPI placeholders (%buildffa_*%, %vault_*%, etc.)
+        //  ✅ PlaceholderAPI placeholders
         // ============================================================
         if (this.placeholderApiAvailable && out.contains("%")) {
             try {
                 out = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, out);
             } catch (Throwable t) {
-                // silent ignore — if PAPI fails, just leave the raw placeholder
+                // silent ignore
             }
         }
 

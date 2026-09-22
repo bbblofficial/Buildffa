@@ -336,43 +336,30 @@ healthbar:
   heart-char: '❤'
 
 # ----------------------------------------------------------
-#  Nametag HP Display (above player's head)
-#  Shows live HP above each player's head, like BedWars.
+#  Nametag HP Display (below player's name)
+#  Shows live HP below each player's name, like BedWars.
 #
-#  How it works:
-#    Each viewer sees the target player's name with HP
-#    appended via scoreboard team prefix/suffix.
+#  Uses DisplaySlot.BELOW_NAME (scoreboard objective).
+#  Does NOT interfere with the main sidebar scoreboard.
 #
 #  MODES:
-#    NUMERIC  ->  PlayerName ❤ 18
-#    HEARTS   ->  PlayerName ❤❤❤❤❤❤❤❤❤♡
-#    PERCENT  ->  PlayerName ❤ 92%
-#
-#  PLACEHOLDERS (for NUMERIC):
-#    %current%  ->  current HP
-#    %max%      ->  max HP
-#    %player%   ->  player name
-#
-#  use-suffix:
-#    true  ->  Name ❤ 18  (HP after name)
-#    false ->  ❤ 18 Name  (HP before name)
+#    NUMERIC  ->  ❤ 20
+#    HEARTS   ->  ❤❤❤❤❤❤❤❤❤♡
+#    PERCENT  ->  ❤ 92%
 # ----------------------------------------------------------
 nametag:
   # Enable/disable
   enabled: true
 
   # Update interval in ticks (20 = 1 second)
-  # 5 = smooth (CPU heavy), 10 = balanced, 20 = every second
+  # 5 = smooth, 10 = balanced (recommended), 20 = every second
   update-interval: 10
 
   # Mode: NUMERIC | HEARTS | PERCENT
   mode: NUMERIC
 
-  # Format for NUMERIC mode
+  # Format for NUMERIC and PERCENT modes
   format: '&c❤ %current%'
-
-  # HP after name (true) or before name (false)
-  use-suffix: true
 
   # Colors for HEARTS mode
   filled-color: '&c'
