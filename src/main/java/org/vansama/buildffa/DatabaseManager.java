@@ -60,20 +60,14 @@ public class DatabaseManager {
             this.backupFolder.mkdirs();
         }
 
-        // ============================================================
-        //  Load SQLite JDBC driver
-        // ============================================================
         try {
             Class.forName("org.sqlite.JDBC");
             plugin.getLogger().info("SQLite JDBC driver loaded successfully.");
         } catch (ClassNotFoundException e) {
-            plugin.getLogger().severe("SQLite JDBC driver not found! Plugin cannot work.");
+            plugin.getLogger().severe("SQLite JDBC driver not found!");
             throw new RuntimeException("SQLite driver missing", e);
         }
 
-        // ============================================================
-        //  Connect to database
-        // ============================================================
         try {
             openConnection();
             createTables();
@@ -83,9 +77,6 @@ public class DatabaseManager {
             e.printStackTrace();
         }
 
-        // ============================================================
-        //  Read config
-        // ============================================================
         try {
             FileConfiguration config = plugin.getConfig();
             this.autosaveEnabled = config.getBoolean("database.autosave", true);
@@ -104,9 +95,6 @@ public class DatabaseManager {
         plugin.getLogger().info("SQLite DB ready: " + this.dbFile.getPath());
     }
 
-    // ============================================================
-    //  CONNECTION
-    // ============================================================
     private void openConnection() throws SQLException {
         synchronized (dbLock) {
             if (connection != null && !connection.isClosed()) return;
@@ -122,9 +110,6 @@ public class DatabaseManager {
         return connection;
     }
 
-    // ============================================================
-    //  TABLES
-    // ============================================================
     private void createTables() throws SQLException {
         synchronized (dbLock) {
             Connection c = getConnection();
@@ -162,9 +147,6 @@ public class DatabaseManager {
         }
     }
 
-    // ============================================================
-    //  MIGRATION from db/*.json and kits/*.yml
-    // ============================================================
     private void migrateLegacyFiles() {
         try {
             File oldDbFolder = new File(plugin.getDataFolder(), "db");
@@ -192,7 +174,6 @@ public class DatabaseManager {
 
                         try {
                             FileConfiguration cfg = YamlConfiguration.loadConfiguration(f);
-
                             PlayerData data = new PlayerData(
                                 uuid,
                                 cfg.getString("name", "unknown"),
@@ -202,7 +183,6 @@ public class DatabaseManager {
                                 cfg.getInt("best-killstreak", 0),
                                 cfg.getLong("last-seen", System.currentTimeMillis())
                             );
-
                             savePlayerImmediate(data);
                             migratedPlayers++;
                         } catch (Throwable t) {
@@ -237,7 +217,6 @@ public class DatabaseManager {
 
                         try {
                             FileConfiguration cfg = YamlConfiguration.loadConfiguration(f);
-
                             ItemStack helmet = cfg.getItemStack("helmet");
                             ItemStack chestplate = cfg.getItemStack("chestplate");
                             ItemStack leggings = cfg.getItemStack("leggings");
@@ -276,9 +255,6 @@ public class DatabaseManager {
         }
     }
 
-    // ============================================================
-    //  PLAYER — private helper
-    // ============================================================
     private boolean playerExists(UUID uuid) {
         try {
             synchronized (dbLock) {
@@ -354,7 +330,6 @@ public class DatabaseManager {
         savePlayer(data);
     }
 
-    /** Debounced save — use for frequent updates. */
     public void savePlayer(PlayerData data) {
         if (data == null) return;
 
@@ -368,22 +343,16 @@ public class DatabaseManager {
         savePlayerImmediate(data);
     }
 
-    /** Immediate save — bypasses debounce. Use for /stats commands. */
     public void savePlayerImmediate(PlayerData data) {
         if (data == null) return;
 
         try {
             synchronized (dbLock) {
+                // ✅ INSERT OR REPLACE works on ALL SQLite versions
                 PreparedStatement ps = getConnection().prepareStatement(
-                    "INSERT INTO players (uuid, name, kills, deaths, killstreak, best_killstreak, last_seen) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?) " +
-                    "ON CONFLICT(uuid) DO UPDATE SET " +
-                    "  name = excluded.name," +
-                    "  kills = excluded.kills," +
-                    "  deaths = excluded.deaths," +
-                    "  killstreak = excluded.killstreak," +
-                    "  best_killstreak = excluded.best_killstreak," +
-                    "  last_seen = excluded.last_seen"
+                    "INSERT OR REPLACE INTO players " +
+                    "(uuid, name, kills, deaths, killstreak, best_killstreak, last_seen) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)"
                 );
                 ps.setString(1, data.getUuid().toString());
                 ps.setString(2, data.getName());
@@ -431,9 +400,6 @@ public class DatabaseManager {
         }
     }
 
-    // ============================================================
-    //  KITS
-    // ============================================================
     public boolean hasKit(UUID uuid) {
         try {
             synchronized (dbLock) {
@@ -463,16 +429,11 @@ public class DatabaseManager {
             String sContents = serializeItemList(contents);
 
             synchronized (dbLock) {
+                // ✅ INSERT OR REPLACE — compatible with all SQLite versions
                 PreparedStatement ps = getConnection().prepareStatement(
-                    "INSERT INTO kits (uuid, helmet, chestplate, leggings, boots, contents, updated_at) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?) " +
-                    "ON CONFLICT(uuid) DO UPDATE SET " +
-                    "  helmet = excluded.helmet," +
-                    "  chestplate = excluded.chestplate," +
-                    "  leggings = excluded.leggings," +
-                    "  boots = excluded.boots," +
-                    "  contents = excluded.contents," +
-                    "  updated_at = excluded.updated_at"
+                    "INSERT OR REPLACE INTO kits " +
+                    "(uuid, helmet, chestplate, leggings, boots, contents, updated_at) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)"
                 );
                 ps.setString(1, uuid.toString());
                 ps.setString(2, sHelmet);
@@ -530,9 +491,6 @@ public class DatabaseManager {
         }
     }
 
-    // ============================================================
-    //  SERIALIZATION
-    // ============================================================
     private String serializeItem(ItemStack item) {
         if (item == null) return null;
         try {
@@ -604,11 +562,6 @@ public class DatabaseManager {
     public List<PlayerData> getTopDeaths(int limit)     { return queryTop("deaths", limit); }
     public List<PlayerData> getTopKillstreak(int limit) { return queryTop("best_killstreak", limit); }
 
-    /**
-     * Loads top N players from SQLite, then OVERWRITES them with fresh
-     * cache values (since cache may hold newer data not yet persisted).
-     * Finally sorts and truncates to limit.
-     */
     private List<PlayerData> queryTop(String orderField, int limit) {
         String orderBy;
         if (orderField.equals("deaths")) orderBy = "deaths DESC";
@@ -617,7 +570,6 @@ public class DatabaseManager {
 
         List<PlayerData> list = new ArrayList<PlayerData>();
 
-        // 1) Query DB
         try {
             synchronized (dbLock) {
                 PreparedStatement ps = getConnection().prepareStatement(
@@ -635,14 +587,13 @@ public class DatabaseManager {
             plugin.getLogger().warning("queryTop failed: " + e.getMessage());
         }
 
-        // 2) Overwrite DB entries with fresh cache values
+        // Overwrite with fresh cache values
         Map<UUID, PlayerData> dbIndex = new java.util.HashMap<UUID, PlayerData>();
         for (PlayerData d : list) {
             dbIndex.put(d.getUuid(), d);
         }
         for (PlayerData cached : this.cache.values()) {
             if (dbIndex.containsKey(cached.getUuid())) {
-                // replace DB entry with cache entry (fresh data)
                 for (int i = 0; i < list.size(); i++) {
                     if (list.get(i).getUuid().equals(cached.getUuid())) {
                         list.set(i, cached);
@@ -650,12 +601,10 @@ public class DatabaseManager {
                     }
                 }
             } else {
-                // cache has player not yet in DB result set
                 list.add(cached);
             }
         }
 
-        // 3) Sort
         final String field = orderField;
         Collections.sort(list, new Comparator<PlayerData>() {
             @Override
@@ -666,7 +615,6 @@ public class DatabaseManager {
             }
         });
 
-        // 4) Truncate
         if (list.size() > limit) {
             list = new ArrayList<PlayerData>(list.subList(0, limit));
         }
@@ -677,13 +625,11 @@ public class DatabaseManager {
     public List<PlayerData> getTopKDR(int limit) {
         List<PlayerData> list = new ArrayList<PlayerData>();
 
-        // 1) Query DB
         try {
             synchronized (dbLock) {
                 PreparedStatement ps = getConnection().prepareStatement(
                     "SELECT uuid, name, kills, deaths, killstreak, best_killstreak, last_seen " +
-                    "FROM players " +
-                    "ORDER BY (CAST(kills AS REAL) / CASE WHEN deaths = 0 THEN 1 ELSE deaths END) DESC, kills DESC"
+                    "FROM players"
                 );
                 ResultSet rs = ps.executeQuery();
                 while (rs.next()) {
@@ -696,7 +642,6 @@ public class DatabaseManager {
             plugin.getLogger().warning("getTopKDR failed: " + e.getMessage());
         }
 
-        // 2) Overwrite with cache
         Map<UUID, PlayerData> dbIndex = new java.util.HashMap<UUID, PlayerData>();
         for (PlayerData d : list) {
             dbIndex.put(d.getUuid(), d);
@@ -714,7 +659,6 @@ public class DatabaseManager {
             }
         }
 
-        // 3) Sort by KDR
         Collections.sort(list, new Comparator<PlayerData>() {
             @Override
             public int compare(PlayerData a, PlayerData b) {
@@ -722,7 +666,6 @@ public class DatabaseManager {
             }
         });
 
-        // 4) Truncate
         if (list.size() > limit) {
             list = new ArrayList<PlayerData>(list.subList(0, limit));
         }
@@ -779,9 +722,6 @@ public class DatabaseManager {
         return -1;
     }
 
-    // ============================================================
-    //  AUTOSAVE / BACKUP / SHUTDOWN
-    // ============================================================
     private void startAutosave() {
         long ticks = this.autosaveInterval * 20L;
         this.autosaveTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(this.plugin, new Runnable() {
@@ -806,7 +746,6 @@ public class DatabaseManager {
         if (count > 0) {
             plugin.getLogger().info("Saved " + count + " player records to SQLite");
         }
-
         makeBackup();
     }
 
@@ -867,19 +806,8 @@ public class DatabaseManager {
         }
     }
 
-    public File getDbFolder() {
-        return this.dbFile.getParentFile();
-    }
-
-    public File getDbFile() {
-        return this.dbFile;
-    }
-
-    public File getBackupFolder() {
-        return this.backupFolder;
-    }
-
-    public int getCacheSize() {
-        return this.cache.size();
-    }
+    public File getDbFolder() { return this.dbFile.getParentFile(); }
+    public File getDbFile() { return this.dbFile; }
+    public File getBackupFolder() { return this.backupFolder; }
+    public int getCacheSize() { return this.cache.size(); }
 }

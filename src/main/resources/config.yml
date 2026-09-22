@@ -336,16 +336,19 @@ healthbar:
   heart-char: '❤'
 
 # ----------------------------------------------------------
-#  Nametag HP Display (below player's name)
-#  Shows live HP below each player's name, like BedWars.
+#  Nametag HP Display (BELOW player's name)
 #
-#  Uses DisplaySlot.BELOW_NAME (scoreboard objective).
-#  Does NOT interfere with the main sidebar scoreboard.
+#  Shows live HP below each player's name (like BedWars).
 #
-#  MODES:
-#    NUMERIC  ->  ❤ 20
-#    HEARTS   ->  ❤❤❤❤❤❤❤❤❤♡
-#    PERCENT  ->  ❤ 92%
+#  ✅ Uses pure Bukkit API (DisplaySlot.BELOW_NAME)
+#  ✅ No prefix/suffix → no "22 > 16" disconnect
+#  ✅ Safe on 1.8.8
+#
+#  display-name: the text shown next to the HP number
+#    Examples:
+#      '&c❤'         → ❤ 20
+#      '&cHP'        → HP 20
+#      '&7[&c❤&7]'   → [❤] 20
 # ----------------------------------------------------------
 nametag:
   # Enable/disable
@@ -355,16 +358,8 @@ nametag:
   # 5 = smooth, 10 = balanced (recommended), 20 = every second
   update-interval: 10
 
-  # Mode: NUMERIC | HEARTS | PERCENT
-  mode: NUMERIC
-
-  # Format for NUMERIC and PERCENT modes
-  format: '&c❤ %current%'
-
-  # Colors for HEARTS mode
-  filled-color: '&c'
-  empty-color: '&7'
-  heart-char: '❤'
+  # Display name shown next to the HP number
+  display-name: '&c❤'
 
 # ----------------------------------------------------------
 #  Permissions

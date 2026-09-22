@@ -1,11 +1,10 @@
 package org.vansama.buildffa;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -13,80 +12,32 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scoreboard.DisplaySlot;
+import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Scoreboard;
 
 /**
- * Displays HP below each player's name using DisplaySlot.BELOW_NAME.
- * This method does NOT interfere with the main sidebar scoreboard.
+ * Displays live HP below each player's name using a Scoreboard Objective
+ * with DisplaySlot.BELOW_NAME.
+ *
+ * ✅ Uses pure Bukkit API — no NMS, no PacketPlayOutScoreboardTeam
+ * ✅ Uses a SEPARATE scoreboard per viewer for BELOW_NAME only
+ * ✅ Does NOT touch team prefix/suffix → no "22 > 16" disconnect
+ * ✅ Works reliably on 1.8.8 (Carbon, Paper, Spigot)
  */
 public class NametagManager implements Listener {
 
     private final JavaPlugin plugin;
 
-    // NMS handles
-    private String nmsVersion;
-    private Class<?> craftPlayerClass;
-    private Class<?> scoreboardClass;
-    private Class<?> scoreboardObjectiveClass;
-    private Class<?> scoreboardScoreClass;
-    private Class<?> packetObjectiveClass;
-    private Class<?> packetDisplayObjectiveClass;
-    private Class<?> packetScoreClass;
-    private Class<?> enumHealthDisplayClass;
-    private Class<?> enumScoreboardActionClass;
-    private Class<?> iScoreboardCriteriaClass;
-
-    private Constructor<?> packetObjectiveConstructor;
-    private Constructor<?> packetDisplayConstructor;
-    private Constructor<?> packetScoreConstructor;
-
-    private boolean nmsReady = false;
+    // viewer UUID -> their personal scoreboard (used ONLY for nametag HP)
+    private final Map<UUID, Scoreboard> viewerBoards = new HashMap<UUID, Scoreboard>();
 
     private int taskId = -1;
 
     public NametagManager(JavaPlugin plugin) {
         this.plugin = plugin;
-        setupNMS();
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         startTask();
-    }
-
-    // ============================================================
-    //  NMS SETUP
-    // ============================================================
-    private void setupNMS() {
-        try {
-            String packageName = Bukkit.getServer().getClass().getPackage().getName();
-            this.nmsVersion = packageName.substring(packageName.lastIndexOf('.') + 1);
-
-            // CraftBukkit classes
-            this.craftPlayerClass = Class.forName("org.bukkit.craftbukkit." + nmsVersion + ".entity.CraftPlayer");
-            this.scoreboardClass = Class.forName("net.minecraft.server." + nmsVersion + ".Scoreboard");
-            this.scoreboardObjectiveClass = Class.forName("net.minecraft.server." + nmsVersion + ".ScoreboardObjective");
-            this.scoreboardScoreClass = Class.forName("net.minecraft.server." + nmsVersion + ".ScoreboardScore");
-
-            // Packet classes
-            this.packetObjectiveClass = Class.forName("net.minecraft.server." + nmsVersion + ".PacketPlayOutScoreboardObjective");
-            this.packetDisplayObjectiveClass = Class.forName("net.minecraft.server." + nmsVersion + ".PacketPlayOutScoreboardDisplayObjective");
-            this.packetScoreClass = Class.forName("net.minecraft.server." + nmsVersion + ".PacketPlayOutScoreboardScore");
-
-            // Enum classes
-            this.enumHealthDisplayClass = Class.forName("net.minecraft.server." + nmsVersion + ".IScoreboardCriteria$EnumScoreboardHealthDisplay");
-            this.enumScoreboardActionClass = Class.forName("net.minecraft.server." + nmsVersion + ".ScoreboardScore$EnumScoreboardAction");
-            this.iScoreboardCriteriaClass = Class.forName("net.minecraft.server." + nmsVersion + ".IScoreboardCriteria");
-
-            // Constructors
-            this.packetObjectiveConstructor = packetObjectiveClass.getConstructor(
-                    scoreboardObjectiveClass, int.class);
-            this.packetDisplayConstructor = packetDisplayObjectiveClass.getConstructor(
-                    int.class, scoreboardObjectiveClass);
-            this.packetScoreConstructor = packetScoreClass.getConstructor(
-                    String.class, scoreboardObjectiveClass, int.class, enumScoreboardActionClass);
-
-            this.nmsReady = true;
-        } catch (Throwable t) {
-            this.nmsReady = false;
-            plugin.getLogger().warning("Nametag NMS setup failed: " + t.getMessage());
-        }
     }
 
     // ============================================================
@@ -104,8 +55,6 @@ public class NametagManager implements Listener {
             @Override
             public void run() {
                 if (!plugin.getConfig().getBoolean("nametag.enabled", true)) return;
-                if (!nmsReady) return;
-
                 for (Player viewer : Bukkit.getOnlinePlayers()) {
                     updateViewer(viewer);
                 }
@@ -114,91 +63,57 @@ public class NametagManager implements Listener {
     }
 
     // ============================================================
-    //  UPDATE ONE VIEWER (see HP of all OTHER online players)
+    //  UPDATE ONE VIEWER
+    //  Creates (if needed) a personal scoreboard for this viewer
+    //  and updates the BELOW_NAME objective with each player's HP.
     // ============================================================
     private void updateViewer(Player viewer) {
         try {
-            // Create a fresh scoreboard with the health objective
-            Object scoreboard = scoreboardClass.newInstance();
-            Object objective = createObjective(scoreboard, "bffa_health", "health", "\u00A7c\u2764");
+            // Get or create viewer's personal scoreboard
+            Scoreboard board = this.viewerBoards.get(viewer.getUniqueId());
+            if (board == null) {
+                board = Bukkit.getScoreboardManager().getNewScoreboard();
+                this.viewerBoards.put(viewer.getUniqueId(), board);
+                viewer.setScoreboard(board);
+            }
 
-            // Display objective below name (slot 2)
-            Object displayPacket = packetDisplayConstructor.newInstance(2, objective);
-            sendPacket(viewer, displayPacket);
+            // Get or create the health objective
+            Objective objective = board.getObjective("bffa_hp");
+            if (objective == null) {
+                objective = board.registerNewObjective("bffa_hp", "health");
+                objective.setDisplaySlot(DisplaySlot.BELOW_NAME);
+                objective.setDisplayName(colorize(getDisplayName()));
+            } else {
+                objective.setDisplayName(colorize(getDisplayName()));
+            }
 
-            // Update scores for all online players
+            // Update the score for every online player (including self)
             for (Player target : Bukkit.getOnlinePlayers()) {
-                if (target.getUniqueId().equals(viewer.getUniqueId())) continue;
+                if (target.isDead()) continue;
 
                 int health = (int) Math.ceil(target.getHealth());
-                Object score = packetScoreConstructor.newInstance(
-                        target.getName(), objective, health, getActionEnum("CHANGE"));
-                sendPacket(viewer, score);
+                if (health < 0) health = 0;
+
+                // Set score (this replaces existing if present)
+                objective.getScore(target.getName()).setScore(health);
             }
+
         } catch (Throwable t) {
-            // silent
+            // silent fail — don't spam logs
         }
     }
 
     // ============================================================
-    //  CREATE OBJECTIVE
+    //  DISPLAY NAME FOR THE HEART ICON
     // ============================================================
-    private Object createObjective(Object scoreboard, String name, String criteria, String displayName) {
-        try {
-            Object healthDisplay = getHealthDisplayEnum("INTEGER");
-            Constructor<?> objectiveConstructor = scoreboardObjectiveClass.getConstructor(
-                    scoreboardClass, String.class, iScoreboardCriteriaClass);
-
-            // For health criteria, we need to use a special criteria object.
-            // In 1.8.8, IScoreboardCriteria.b is the "health" criteria.
-            Object healthCriteria = iScoreboardCriteriaClass.getField("b").get(null);
-            Object obj = objectiveConstructor.newInstance(scoreboard, name, healthCriteria);
-
-            // Set display name
-            scoreboardObjectiveClass.getMethod("setDisplayName", String.class).invoke(obj, displayName);
-
-            return obj;
-        } catch (Throwable t) {
-            return null;
-        }
-    }
-
-    private Object getHealthDisplayEnum(String name) {
-        try {
-            for (Object constant : enumHealthDisplayClass.getEnumConstants()) {
-                if (constant.toString().equalsIgnoreCase(name)) return constant;
-            }
-        } catch (Throwable ignored) {}
-        return null;
-    }
-
-    private Object getActionEnum(String name) {
-        try {
-            for (Object constant : enumScoreboardActionClass.getEnumConstants()) {
-                if (constant.toString().equalsIgnoreCase(name)) return constant;
-            }
-        } catch (Throwable ignored) {}
-        return null;
+    private String getDisplayName() {
+        String name = plugin.getConfig().getString("nametag.display-name", "&c❤");
+        if (name == null || name.isEmpty()) name = "&c❤";
+        return name;
     }
 
     // ============================================================
-    //  SEND PACKET
-    // ============================================================
-    private void sendPacket(Player player, Object packet) {
-        try {
-            Object craftPlayer = craftPlayerClass.cast(player);
-            Object entityPlayer = craftPlayerClass.getMethod("getHandle").invoke(craftPlayer);
-            Object playerConnection = entityPlayer.getClass().getField("playerConnection").get(entityPlayer);
-
-            Class<?> packetClass = Class.forName("net.minecraft.server." + nmsVersion + ".Packet");
-            java.lang.reflect.Method sendPacketMethod = playerConnection.getClass()
-                    .getMethod("sendPacket", packetClass);
-            sendPacketMethod.invoke(playerConnection, packet);
-        } catch (Throwable ignored) {}
-    }
-
-    // ============================================================
-    //  JOIN / QUIT
+    //  JOIN — rebuild everyone's scoreboards
     // ============================================================
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
@@ -209,8 +124,8 @@ public class NametagManager implements Listener {
             public void run() {
                 if (!joined.isOnline()) return;
                 if (!plugin.getConfig().getBoolean("nametag.enabled", true)) return;
-                if (!nmsReady) return;
 
+                // Every viewer needs to pick up the new player's score
                 for (Player viewer : Bukkit.getOnlinePlayers()) {
                     updateViewer(viewer);
                 }
@@ -218,25 +133,54 @@ public class NametagManager implements Listener {
         }, 10L);
     }
 
+    // ============================================================
+    //  QUIT — clean up
+    // ============================================================
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
-        // nothing to clean up
+        this.viewerBoards.remove(event.getPlayer().getUniqueId());
     }
 
     // ============================================================
-    //  RELOAD / SHUTDOWN
+    //  RELOAD — rebuild from scratch
     // ============================================================
     public void reloadConfig() {
+        // Remove all personal boards first
+        for (Player viewer : Bukkit.getOnlinePlayers()) {
+            try {
+                viewer.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
+            } catch (Throwable ignored) {}
+        }
+        this.viewerBoards.clear();
+
+        // Restart with new interval
         startTask();
+
+        // Rebuild for everyone online
         for (Player viewer : Bukkit.getOnlinePlayers()) {
             updateViewer(viewer);
         }
     }
 
+    // ============================================================
+    //  SHUTDOWN — clean up before disable
+    // ============================================================
     public void shutdown() {
         if (this.taskId != -1) {
             Bukkit.getScheduler().cancelTask(this.taskId);
             this.taskId = -1;
         }
+
+        for (Player viewer : Bukkit.getOnlinePlayers()) {
+            try {
+                viewer.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
+            } catch (Throwable ignored) {}
+        }
+        this.viewerBoards.clear();
+    }
+
+    private String colorize(String msg) {
+        if (msg == null) return "";
+        return ChatColor.translateAlternateColorCodes('&', msg);
     }
 }
