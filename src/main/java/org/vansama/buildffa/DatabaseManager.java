@@ -348,7 +348,7 @@ public class DatabaseManager {
 
         try {
             synchronized (dbLock) {
-                // ✅ INSERT OR REPLACE works on ALL SQLite versions
+                // ✅ INSERT OR REPLACE — compatible with ALL SQLite versions
                 PreparedStatement ps = getConnection().prepareStatement(
                     "INSERT OR REPLACE INTO players " +
                     "(uuid, name, kills, deaths, killstreak, best_killstreak, last_seen) " +
@@ -429,7 +429,7 @@ public class DatabaseManager {
             String sContents = serializeItemList(contents);
 
             synchronized (dbLock) {
-                // ✅ INSERT OR REPLACE — compatible with all SQLite versions
+                // ✅ INSERT OR REPLACE
                 PreparedStatement ps = getConnection().prepareStatement(
                     "INSERT OR REPLACE INTO kits " +
                     "(uuid, helmet, chestplate, leggings, boots, contents, updated_at) " +
@@ -555,9 +555,6 @@ public class DatabaseManager {
         return list;
     }
 
-    // ============================================================
-    //  LEADERBOARDS — cache-aware
-    // ============================================================
     public List<PlayerData> getTopKills(int limit)      { return queryTop("kills", limit); }
     public List<PlayerData> getTopDeaths(int limit)     { return queryTop("deaths", limit); }
     public List<PlayerData> getTopKillstreak(int limit) { return queryTop("best_killstreak", limit); }
@@ -587,7 +584,6 @@ public class DatabaseManager {
             plugin.getLogger().warning("queryTop failed: " + e.getMessage());
         }
 
-        // Overwrite with fresh cache values
         Map<UUID, PlayerData> dbIndex = new java.util.HashMap<UUID, PlayerData>();
         for (PlayerData d : list) {
             dbIndex.put(d.getUuid(), d);

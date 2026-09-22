@@ -23,13 +23,11 @@ import org.bukkit.scoreboard.Scoreboard;
  * ✅ Uses pure Bukkit API — no NMS, no PacketPlayOutScoreboardTeam
  * ✅ Uses a SEPARATE scoreboard per viewer for BELOW_NAME only
  * ✅ Does NOT touch team prefix/suffix → no "22 > 16" disconnect
- * ✅ Works reliably on 1.8.8 (Carbon, Paper, Spigot)
  */
 public class NametagManager implements Listener {
 
     private final JavaPlugin plugin;
 
-    // viewer UUID -> their personal scoreboard (used ONLY for nametag HP)
     private final Map<UUID, Scoreboard> viewerBoards = new HashMap<UUID, Scoreboard>();
 
     private int taskId = -1;
@@ -40,9 +38,6 @@ public class NametagManager implements Listener {
         startTask();
     }
 
-    // ============================================================
-    //  UPDATE TASK
-    // ============================================================
     private void startTask() {
         if (this.taskId != -1) {
             Bukkit.getScheduler().cancelTask(this.taskId);
@@ -62,14 +57,8 @@ public class NametagManager implements Listener {
         }, interval, interval);
     }
 
-    // ============================================================
-    //  UPDATE ONE VIEWER
-    //  Creates (if needed) a personal scoreboard for this viewer
-    //  and updates the BELOW_NAME objective with each player's HP.
-    // ============================================================
     private void updateViewer(Player viewer) {
         try {
-            // Get or create viewer's personal scoreboard
             Scoreboard board = this.viewerBoards.get(viewer.getUniqueId());
             if (board == null) {
                 board = Bukkit.getScoreboardManager().getNewScoreboard();
@@ -77,7 +66,6 @@ public class NametagManager implements Listener {
                 viewer.setScoreboard(board);
             }
 
-            // Get or create the health objective
             Objective objective = board.getObjective("bffa_hp");
             if (objective == null) {
                 objective = board.registerNewObjective("bffa_hp", "health");
@@ -87,34 +75,26 @@ public class NametagManager implements Listener {
                 objective.setDisplayName(colorize(getDisplayName()));
             }
 
-            // Update the score for every online player (including self)
             for (Player target : Bukkit.getOnlinePlayers()) {
                 if (target.isDead()) continue;
 
                 int health = (int) Math.ceil(target.getHealth());
                 if (health < 0) health = 0;
 
-                // Set score (this replaces existing if present)
                 objective.getScore(target.getName()).setScore(health);
             }
 
         } catch (Throwable t) {
-            // silent fail — don't spam logs
+            // silent
         }
     }
 
-    // ============================================================
-    //  DISPLAY NAME FOR THE HEART ICON
-    // ============================================================
     private String getDisplayName() {
         String name = plugin.getConfig().getString("nametag.display-name", "&c❤");
         if (name == null || name.isEmpty()) name = "&c❤";
         return name;
     }
 
-    // ============================================================
-    //  JOIN — rebuild everyone's scoreboards
-    // ============================================================
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
         final Player joined = event.getPlayer();
@@ -125,7 +105,6 @@ public class NametagManager implements Listener {
                 if (!joined.isOnline()) return;
                 if (!plugin.getConfig().getBoolean("nametag.enabled", true)) return;
 
-                // Every viewer needs to pick up the new player's score
                 for (Player viewer : Bukkit.getOnlinePlayers()) {
                     updateViewer(viewer);
                 }
@@ -133,19 +112,12 @@ public class NametagManager implements Listener {
         }, 10L);
     }
 
-    // ============================================================
-    //  QUIT — clean up
-    // ============================================================
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
         this.viewerBoards.remove(event.getPlayer().getUniqueId());
     }
 
-    // ============================================================
-    //  RELOAD — rebuild from scratch
-    // ============================================================
     public void reloadConfig() {
-        // Remove all personal boards first
         for (Player viewer : Bukkit.getOnlinePlayers()) {
             try {
                 viewer.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
@@ -153,18 +125,13 @@ public class NametagManager implements Listener {
         }
         this.viewerBoards.clear();
 
-        // Restart with new interval
         startTask();
 
-        // Rebuild for everyone online
         for (Player viewer : Bukkit.getOnlinePlayers()) {
             updateViewer(viewer);
         }
     }
 
-    // ============================================================
-    //  SHUTDOWN — clean up before disable
-    // ============================================================
     public void shutdown() {
         if (this.taskId != -1) {
             Bukkit.getScheduler().cancelTask(this.taskId);
