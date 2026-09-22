@@ -41,9 +41,13 @@
 # ==========================================================
 
 # ----------------------------------------------------------
-#  ARMOR - leather armor colored RED
+#  ARMOR
+#  Helmet + Chestplate = Leather RED
+#  Leggings + Boots    = Diamond (مثل قبل)
 # ----------------------------------------------------------
 armor:
+
+  # ⭐ چرم قرمز
   helmet:
     type: LEATHER_HELMET
     color: RED
@@ -52,6 +56,7 @@ armor:
     lore: []
     enchantments: []
 
+  # ⭐ چرم قرمز
   chestplate:
     type: LEATHER_CHESTPLATE
     color: RED
@@ -60,17 +65,17 @@ armor:
     lore: []
     enchantments: []
 
+  # مثل قبل — الماس
   leggings:
-    type: LEATHER_LEGGINGS
-    color: RED
+    type: DIAMOND_LEGGINGS
     unbreakable: true
     name: ''
     lore: []
     enchantments: []
 
+  # مثل قبل — الماس
   boots:
-    type: LEATHER_BOOTS
-    color: RED
+    type: DIAMOND_BOOTS
     unbreakable: true
     name: ''
     lore: []
@@ -79,10 +84,6 @@ armor:
 # ----------------------------------------------------------
 #  ITEMS - inventory slots 0 to 35
 #  'slot' is the inventory slot number (0 = first hotbar)
-#  Add as many items as you want.
-#  'name' is optional (leave empty '' for no name)
-#  'lore' is optional
-#  'enchantments' is a list of 'ENCHANT:LEVEL'
 # ----------------------------------------------------------
 items:
 

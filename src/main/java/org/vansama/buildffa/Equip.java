@@ -57,37 +57,43 @@ public class Equip implements Listener {
   }
 
   // ============================================================
-  //  GIVE KIT — tries custom kit from SQLite first, else default
+  //  GIVE KIT
+  //  1) Player personal kit (from SQLite)
+  //  2) Server default kit (from kit-setting.yml)
+  //  3) Hardcoded default
   // ============================================================
   public void giveDiamondArmor(Player player) {
     if (player == null || !player.isOnline()) return;
 
-    // 1) Player's personal kit (from SQLite)
     if (tryApplyCustomKit(player)) {
       return;
     }
 
-    // 2) Server default kit (from kit-setting.json)
     if (tryApplyServerDefaultKit(player)) {
       return;
     }
 
-    // 3) Hardcoded fallback (leather red armor + stone sword)
     applyHardcodedDefault(player);
   }
 
   // ============================================================
-  //  HARDCODED DEFAULT — Leather RED armor
+  //  HARDCODED DEFAULT
+  //  ⭐ Helmet + Chestplate = Leather RED
+  //  ⭐ Leggings + Boots    = Diamond (مثل قبل)
   // ============================================================
   private void applyHardcodedDefault(Player player) {
     player.getInventory().clear();
     player.getInventory().setArmorContents(null);
 
+    // ✅ چرم قرمز
     player.getInventory().setHelmet(redLeather(Material.LEATHER_HELMET));
     player.getInventory().setChestplate(redLeather(Material.LEATHER_CHESTPLATE));
-    player.getInventory().setLeggings(redLeather(Material.LEATHER_LEGGINGS));
-    player.getInventory().setBoots(redLeather(Material.LEATHER_BOOTS));
 
+    // ✅ الماس (مثل قبل)
+    player.getInventory().setLeggings(unbreakable(new ItemStack(Material.DIAMOND_LEGGINGS)));
+    player.getInventory().setBoots(unbreakable(new ItemStack(Material.DIAMOND_BOOTS)));
+
+    // آیتم‌ها مثل قبل
     ItemStack sword = new ItemStack(Material.STONE_SWORD);
     sword.addUnsafeEnchantment(Enchantment.DAMAGE_ALL, 2);
     player.getInventory().setItem(0, unbreakable(sword));
@@ -109,7 +115,7 @@ public class Equip implements Listener {
   }
 
   // ============================================================
-  //  LOAD SERVER DEFAULT KIT FROM kit-setting.json
+  //  SERVER DEFAULT KIT FROM kit-setting.yml
   // ============================================================
   private boolean tryApplyServerDefaultKit(Player player) {
     try {
@@ -123,13 +129,13 @@ public class Equip implements Listener {
       player.getInventory().clear();
       player.getInventory().setArmorContents(null);
 
-      // First 4 = armor (helmet, chest, legs, boots)
+      // 0=helmet, 1=chestplate, 2=leggings, 3=boots
       if (contents.size() >= 1 && contents.get(0) != null) player.getInventory().setHelmet(contents.get(0));
       if (contents.size() >= 2 && contents.get(1) != null) player.getInventory().setChestplate(contents.get(1));
       if (contents.size() >= 3 && contents.get(2) != null) player.getInventory().setLeggings(contents.get(2));
       if (contents.size() >= 4 && contents.get(3) != null) player.getInventory().setBoots(contents.get(3));
 
-      // Rest = inventory items (slots 0-35)
+      // بقیه آیتم‌ها از slot 4 به بعد
       for (int i = 4; i < contents.size() && i < 40; i++) {
         ItemStack item = contents.get(i);
         if (item != null && item.getType() != Material.AIR) {
@@ -147,7 +153,7 @@ public class Equip implements Listener {
   }
 
   // ============================================================
-  //  LOAD CUSTOM KIT FROM SQLite (per-player)
+  //  PLAYER PERSONAL KIT (SQLite)
   // ============================================================
   private boolean tryApplyCustomKit(Player player) {
     try {
