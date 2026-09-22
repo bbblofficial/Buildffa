@@ -128,43 +128,6 @@ database:
   autosave-interval: 300
 
 # ----------------------------------------------------------
-#  Connection Check (Anti-Lag / High Ping Kick)
-#  Kicks players whose ping stays above threshold for too long
-# ----------------------------------------------------------
-connection-check:
-  # Enable or disable the entire system
-  enabled: true
-
-  # Ping threshold in milliseconds
-  # Players above this for grace-seconds will be kicked
-  ping-threshold: 150
-
-  # How often to check ping (in ticks, 20 ticks = 1 sec)
-  check-interval: 20
-
-  # Grace period before kicking (in seconds)
-  # Player must stay above threshold for this long to be kicked
-  grace-seconds: 30
-
-  # Cooldown between countdown warnings (in seconds)
-  warn-cooldown: 5
-
-  # Kick message shown to the player (private)
-  # %ping% = player's ping, %max% = threshold
-  kick-message: |-
-    &cUnstable connection
-    &fYour ping is too high: &e%ping%ms&7/&e%max%ms
-
-  # Broadcast message shown to everyone when a player is kicked
-  # %player% = player name, %ping% = player's ping, %max% = threshold
-  broadcast-message: '&c%player% &7was kicked for &eUnstable Connection &7(&c%ping%ms&7)'
-
-  # Bypass permission (default false — OP players are NOT auto-bypassed)
-  # To bypass a player, use: /buildffa cc bypass <player>
-  # Or grant this permission manually with LuckPerms
-  bypass-permission: buildffa.connection.bypass
-
-# ----------------------------------------------------------
 #  Killstreak Rewards
 #  When a player reaches a certain killstreak, they receive
 #  a reward bundle instead of just a single Golden Apple.
@@ -236,21 +199,6 @@ feather-jump:
 #  Fireball
 #  Right-click a Fire Charge to shoot a real fireball.
 #  Works in Survival mode (vanilla only works in Creative).
-#
-#  Rebuilt (v4.0.2) to fly the way Hypixel BedWars / Minemen Club
-#  fireballs do: a perfectly straight line (no offset/kink at spawn),
-#  fast, and by default they knock players around but do NOT break
-#  blocks (see break-blocks below). This uses the same direct-NMS
-#  technique the public "BedWars1058 Fireball Fix" addon is built on
-#  (never calling setVelocity() on the fireball - only ever writing
-#  its real acceleration field once, consistently, at launch).
-#
-#  SPEED LEVEL (set with /buildffa fb-speed <value>):
-#    -10.0 → fireball is stopped      (multiplier 0.00x)
-#     -5.0 → very slow                (multiplier 0.50x)
-#      0.0 → tuned BedWars-style base (multiplier 1.00x)
-#     +5.0 → fast / BedWars feel      (multiplier 1.50x)
-#    +10.0 → extreme                  (multiplier 2.00x)
 # ----------------------------------------------------------
 fireball:
   # Let fireballs break blocks like true vanilla ghast fireballs.
@@ -264,7 +212,6 @@ fireball:
 
   # Speed slider value (-10 to +10)
   # Default 1.5 → multiplier 1.15x (tiny boost over vanilla)
-  # With the new physics engine, this provides a fast, straight shot.
   speed-level: 1.5
 
   # Explosion size (blocks)
@@ -328,7 +275,6 @@ permissions:
   scoreboard-toggle: buildffa.scoreboard.toggle
   highlimit-bypass: buildffa.highlimit.bypass
   resetstats: buildffa.resetstats
-  connectioncheck: buildffa.connection
 
 messages:
   no-permission: '&cYou do not have permission to do this.'

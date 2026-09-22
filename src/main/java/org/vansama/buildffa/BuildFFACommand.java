@@ -127,14 +127,6 @@ public class BuildFFACommand implements CommandExecutor {
             return handleForceKsReward(sender, args);
         }
 
-        if (sub.equals("connectioncheck") || sub.equals("cc")) {
-            if (!sender.hasPermission(getPerm("connectioncheck", "buildffa.connection"))) {
-                sendNoPerm(sender);
-                return true;
-            }
-            return handleConnection(sender, args);
-        }
-
         if (sub.equals("reload")) {
             if (!sender.hasPermission(getPerm("reload", "buildffa.reload"))) {
                 sendNoPerm(sender);
@@ -245,185 +237,6 @@ public class BuildFFACommand implements CommandExecutor {
         sender.sendMessage(colorize("&aFireball speed set to &e" + String.format("%.2f", value)
                 + " &a(multiplier: &e" + String.format("%.2f", mult) + "x&a)."));
         return true;
-    }
-
-    // ==========================================
-    // Connection Check Command
-    // ==========================================
-    private boolean handleConnection(CommandSender sender, String[] args) {
-        Connection conn = getConnectionListener();
-        if (conn == null) {
-            sender.sendMessage(colorize("&cError: Connection listener not found. Try /buildffa reload"));
-            return true;
-        }
-
-        if (args.length < 2) {
-            sender.sendMessage(colorize("&8&m----------------------------------"));
-            sender.sendMessage(colorize("&6&lConnection Check Status"));
-            sender.sendMessage(colorize("&7Enabled: " + (conn.isEnabled() ? "&aYES" : "&cNO")));
-            sender.sendMessage(colorize("&7Ping Threshold: &e" + conn.getPingThreshold() + "ms"));
-            sender.sendMessage(colorize("&7Usage: &e/buildffa cc on|off|toggle"));
-            sender.sendMessage(colorize("&7Usage: &e/buildffa cc bypass <player>"));
-            sender.sendMessage(colorize("&7Usage: &e/buildffa cc unbypass <player>"));
-            sender.sendMessage(colorize("&7Usage: &e/buildffa cc forceaddping <player> <ping>"));
-            sender.sendMessage(colorize("&7Usage: &e/buildffa cc ping <player> default"));
-            sender.sendMessage(colorize("&8&m----------------------------------"));
-            return true;
-        }
-
-        String arg = args[1].toLowerCase();
-
-        if (arg.equals("on")) {
-            conn.setEnabled(true);
-            sender.sendMessage(colorize("&aConnection check &lENABLED&a."));
-            return true;
-        }
-
-        if (arg.equals("off")) {
-            conn.setEnabled(false);
-            sender.sendMessage(colorize("&cConnection check &lDISABLED&c."));
-            return true;
-        }
-
-        if (arg.equals("toggle")) {
-            boolean state = !conn.isEnabled();
-            conn.setEnabled(state);
-            sender.sendMessage(colorize(state
-                    ? "&aConnection check &lENABLED&a."
-                    : "&cConnection check &lDISABLED&c."));
-            return true;
-        }
-
-        if (arg.equals("bypass")) {
-            if (args.length < 3) {
-                sender.sendMessage(colorize("&cUsage: /buildffa cc bypass <player>"));
-                return true;
-            }
-            Player target = Bukkit.getPlayer(args[2]);
-            if (target == null) {
-                sender.sendMessage(colorize("&cPlayer not found: &e" + args[2]));
-                return true;
-            }
-            conn.addBypass(target.getUniqueId());
-            sender.sendMessage(colorize("&a" + target.getName() + " is now bypassing connection check."));
-            return true;
-        }
-
-        if (arg.equals("unbypass")) {
-            if (args.length < 3) {
-                sender.sendMessage(colorize("&cUsage: /buildffa cc unbypass <player>"));
-                return true;
-            }
-            Player target = Bukkit.getPlayer(args[2]);
-            if (target == null) {
-                sender.sendMessage(colorize("&cPlayer not found: &e" + args[2]));
-                return true;
-            }
-            conn.removeBypass(target.getUniqueId());
-            sender.sendMessage(colorize("&a" + target.getName() + " is no longer bypassing."));
-            return true;
-        }
-
-        // ==========================================
-        //  /buildffa cc forceaddping <player> <ping>
-        // ==========================================
-        if (arg.equals("forceaddping")) {
-            if (args.length < 4) {
-                sender.sendMessage(colorize("&cUsage: /buildffa cc forceaddping <player> <ping>"));
-                return true;
-            }
-
-            Player target = Bukkit.getPlayer(args[2]);
-            if (target == null) {
-                sender.sendMessage(colorize("&cPlayer not found: &e" + args[2]));
-                return true;
-            }
-
-            int pingAmount;
-            try {
-                pingAmount = Integer.parseInt(args[3]);
-            } catch (NumberFormatException e) {
-                sender.sendMessage(colorize("&cInvalid ping amount: &e" + args[3]));
-                return true;
-            }
-
-            if (pingAmount < 0) {
-                sender.sendMessage(colorize("&cPing amount cannot be negative."));
-                return true;
-            }
-
-            int realPing = getRealPing(target);
-            if (pingAmount <= realPing) {
-                sender.sendMessage(colorize("&cThe forced ping must be higher than the player's current ping."));
-                sender.sendMessage(colorize("&7" + target.getName() + "'s current ping: &e" + realPing + "ms"));
-                return true;
-            }
-
-            if (pingAmount < conn.getPingThreshold()) {
-                sender.sendMessage(colorize("&cThe forced ping must be at least the threshold (&e" + conn.getPingThreshold() + "ms&c)."));
-                return true;
-            }
-
-            conn.setForcedPing(target.getUniqueId(), pingAmount);
-            sender.sendMessage(colorize("&aForced ping for &e" + target.getName() + " &aset to &e" + pingAmount + "ms&a."));
-            sender.sendMessage(colorize("&7Real ping: &e" + realPing + "ms &7| Threshold: &e" + conn.getPingThreshold() + "ms"));
-            return true;
-        }
-
-        // ==========================================
-        //  /buildffa cc ping <player> default
-        // ==========================================
-        if (arg.equals("ping")) {
-            if (args.length < 4) {
-                sender.sendMessage(colorize("&cUsage: /buildffa cc ping <player> default"));
-                return true;
-            }
-
-            Player target = Bukkit.getPlayer(args[2]);
-            if (target == null) {
-                sender.sendMessage(colorize("&cPlayer not found: &e" + args[2]));
-                return true;
-            }
-
-            String mode = args[3].toLowerCase();
-            if (!mode.equals("default")) {
-                sender.sendMessage(colorize("&cUsage: /buildffa cc ping <player> default"));
-                return true;
-            }
-
-            if (!conn.hasForcedPing(target.getUniqueId())) {
-                sender.sendMessage(colorize("&e" + target.getName() + " &7does not have a forced ping."));
-                return true;
-            }
-
-            conn.clearForcedPing(target.getUniqueId());
-            conn.removeBypass(target.getUniqueId());
-            sender.sendMessage(colorize("&aForced ping removed for &e" + target.getName() + "&a. Using real ping now."));
-            return true;
-        }
-
-        sender.sendMessage(colorize("&cUnknown argument. Use /buildffa cc"));
-        return true;
-    }
-
-    private int getRealPing(Player player) {
-        try {
-            Object craftPlayer = player.getClass().getMethod("getHandle").invoke(player);
-            return ((Integer) craftPlayer.getClass().getField("ping").get(craftPlayer)).intValue();
-        } catch (Exception e) {
-            return 0;
-        }
-    }
-
-    private Connection getConnectionListener() {
-        ArrayList<RegisteredListener> listeners = HandlerList.getRegisteredListeners(this.plugin);
-        for (RegisteredListener rl : listeners) {
-            Listener l = rl.getListener();
-            if (l instanceof Connection) {
-                return (Connection) l;
-            }
-        }
-        return null;
     }
 
     // ==========================================
@@ -578,8 +391,6 @@ public class BuildFFACommand implements CommandExecutor {
     // ==========================================
     // Force Killstreak Reward
     // /buildffa forceksreward <ks>
-    // Gives the reward bundle for that killstreak level
-    // to the command sender (must be a player).
     // ==========================================
     private boolean handleForceKsReward(CommandSender sender, String[] args) {
         if (!(sender instanceof Player)) {
@@ -608,13 +419,11 @@ public class BuildFFACommand implements CommandExecutor {
 
         Player player = (Player) sender;
 
-        // Check if the reward is enabled
         if (!this.plugin.getConfig().getBoolean("killstreak-rewards.enabled", true)) {
             sender.sendMessage(colorize("&cKillstreak rewards are disabled in config.yml."));
             return true;
         }
 
-        // Resolve the level (supports repeat-from-12 wrap)
         boolean repeatFrom12 = this.plugin.getConfig().getBoolean("killstreak-rewards.repeat-from-12", true);
         int level = resolveRewardLevel(ks, repeatFrom12);
 
@@ -631,7 +440,6 @@ public class BuildFFACommand implements CommandExecutor {
             return true;
         }
 
-        // Give the reward
         boolean gaveAny = giveRewardBundle(player, rewardString);
 
         if (!gaveAny) {
@@ -647,17 +455,11 @@ public class BuildFFACommand implements CommandExecutor {
         return true;
     }
 
-    // ==========================================
-    // Resolve which reward level to use
-    // (handles repeat-from-12 wrapping)
-    // ==========================================
     private int resolveRewardLevel(int streak, boolean repeatFrom12) {
-        // Exact match first
         if (this.plugin.getConfig().contains("killstreak-rewards.rewards." + streak)) {
             return streak;
         }
 
-        // Wrap around 12 if enabled
         if (repeatFrom12 && streak > 12) {
             int wrapped = ((streak - 1) % 12) + 1;
             if (this.plugin.getConfig().contains("killstreak-rewards.rewards." + wrapped)) {
@@ -665,7 +467,6 @@ public class BuildFFACommand implements CommandExecutor {
             }
         }
 
-        // Fall back to the highest configured level <= streak
         for (int i = streak - 1; i >= 1; i--) {
             if (this.plugin.getConfig().contains("killstreak-rewards.rewards." + i)) {
                 return i;
@@ -675,10 +476,6 @@ public class BuildFFACommand implements CommandExecutor {
         return -1;
     }
 
-    // ==========================================
-    // Give a reward bundle (string like "gapple:1 fb:1 speed:2")
-    // Returns true if at least one item was given.
-    // ==========================================
     private boolean giveRewardBundle(Player player, String rewardString) {
         String[] parts = rewardString.split(" ");
         boolean gaveAny = false;
@@ -708,9 +505,6 @@ public class BuildFFACommand implements CommandExecutor {
         return gaveAny;
     }
 
-    // ==========================================
-    // Build a reward item from its config name
-    // ==========================================
     private org.bukkit.inventory.ItemStack buildRewardItem(String name, int amount) {
         if (name.equals("gapple") || name.equals("golden_apple") || name.equals("gap")) {
             return new org.bukkit.inventory.ItemStack(org.bukkit.Material.GOLDEN_APPLE, amount);
@@ -733,25 +527,20 @@ public class BuildFFACommand implements CommandExecutor {
         return null;
     }
 
-    /**
-     * Build ONE potion. kind: 1 = Speed, 2 = Jump
-     * amount is used as the level (not the count) to match
-     * the existing Kill.java behavior.
-     */
     private org.bukkit.inventory.ItemStack makeRewardPotion(int kind, int level) {
         org.bukkit.inventory.ItemStack potion = new org.bukkit.inventory.ItemStack(
                 org.bukkit.Material.POTION, 1);
 
         short data;
         if (kind == 1) {
-            if (level <= 1) data = 8194;      // Speed I
-            else data = 8226;                 // Speed II
+            if (level <= 1) data = 8194;
+            else data = 8226;
         } else {
-            if (level <= 1) data = 8203;      // Jump I
-            else if (level == 2) data = 8235; // Jump II
-            else if (level == 3) data = 8267; // Jump III
-            else if (level == 4) data = 8299; // Jump IV
-            else data = 8331;                 // Jump V
+            if (level <= 1) data = 8203;
+            else if (level == 2) data = 8235;
+            else if (level == 3) data = 8267;
+            else if (level == 4) data = 8299;
+            else data = 8331;
         }
 
         potion.setDurability(data);
@@ -1230,7 +1019,6 @@ public class BuildFFACommand implements CommandExecutor {
             if (l instanceof High) ((High) l).reloadConfig();
             if (l instanceof YPvP) ((YPvP) l).reloadConfig();
             if (l instanceof YPearl) ((YPearl) l).reloadConfig();
-            if (l instanceof Connection) ((Connection) l).reloadConfig();
             if (l instanceof Blocks) ((Blocks) l).reloadConfig();
         }
     }
@@ -1282,7 +1070,6 @@ public class BuildFFACommand implements CommandExecutor {
             sender.sendMessage(colorize("&e/buildffa sb &7- Toggle scoreboard visibility"));
         }
 
-        // Stats (view) — available to everyone
         sender.sendMessage(colorize("&e/buildffa stats [player] &7- Show player stats"));
         sender.sendMessage(colorize("&e/buildffa top [kills|deaths|kdr|streak] [limit] &7- Show top players"));
         sender.sendMessage(colorize("&e/buildffa creator &7- Show plugin credits"));
@@ -1299,7 +1086,6 @@ public class BuildFFACommand implements CommandExecutor {
                 || sender.hasPermission(getPerm("ypearl", "buildffa.ypearl"))
                 || sender.hasPermission(getPerm("fireball-speed", "buildffa.fireball.speed"))
                 || sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))
-                || sender.hasPermission(getPerm("connectioncheck", "buildffa.connection"))
                 || sender.hasPermission(getPerm("reload", "buildffa.reload"));
 
         if (isAdmin) {
@@ -1347,15 +1133,6 @@ public class BuildFFACommand implements CommandExecutor {
                 sender.sendMessage(colorize("&e/buildffa stats reset <kill|ks|death> <player> &7- Reset a stat"));
                 sender.sendMessage(colorize("&e/buildffa resetstats <player> &7- Reset all player stats"));
                 sender.sendMessage(colorize("&e/buildffa forceksreward <ks> &7- Give yourself the reward for that killstreak"));
-            }
-
-            if (sender.hasPermission(getPerm("connectioncheck", "buildffa.connection"))) {
-                sender.sendMessage(colorize("&e/buildffa cc &7- Connection check status"));
-                sender.sendMessage(colorize("&e/buildffa cc on|off|toggle &7- Toggle connection check"));
-                sender.sendMessage(colorize("&e/buildffa cc bypass <player> &7- Bypass a player"));
-                sender.sendMessage(colorize("&e/buildffa cc unbypass <player> &7- Remove bypass from a player"));
-                sender.sendMessage(colorize("&e/buildffa cc forceaddping <player> <ping> &7- Force a ping value"));
-                sender.sendMessage(colorize("&e/buildffa cc ping <player> default &7- Remove forced ping"));
             }
 
             if (sender.hasPermission(getPerm("reload", "buildffa.reload"))) {

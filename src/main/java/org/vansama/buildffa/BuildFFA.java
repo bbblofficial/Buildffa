@@ -29,7 +29,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     private ScoreboardManager scoreboardManager;
     private DatabaseManager databaseManager;
     private Voice voice;
-    private Connection connection;
     private FireballFix fireballFix;
     private YPearl yPearl;
 
@@ -70,7 +69,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         this.killListener = new KillListener(this);
         this.scoreboardManager = new ScoreboardManager(this, this.killListener, this.databaseManager);
         this.voice = new Voice(this);
-        this.connection = new Connection(this);
         this.fireballFix = new FireballFix(this);
         this.yPearl = new YPearl(this);
 
@@ -96,7 +94,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this.yPearl, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.scoreboardManager, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.voice, (Plugin) this);
-        getServer().getPluginManager().registerEvents(this.connection, (Plugin) this);
         getServer().getPluginManager().registerEvents(this, (Plugin) this);
         // =============================================================
 
@@ -280,15 +277,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "database.autosave", Boolean.valueOf(true));
         setIfMissing(cfg, "database.autosave-interval", Long.valueOf(300L));
 
-        setIfMissing(cfg, "connection-check.enabled", Boolean.valueOf(true));
-        setIfMissing(cfg, "connection-check.ping-threshold", Integer.valueOf(150));
-        setIfMissing(cfg, "connection-check.check-interval", Integer.valueOf(20));
-        setIfMissing(cfg, "connection-check.grace-seconds", Integer.valueOf(30));
-        setIfMissing(cfg, "connection-check.warn-cooldown", Integer.valueOf(5));
-        setIfMissing(cfg, "connection-check.kick-message", "&cUnstable connection\n&fYour ping is too high: &e%ping%ms&7/&e%max%ms");
-        setIfMissing(cfg, "connection-check.broadcast-message", "&c%player% &7was kicked for &eUnstable Connection &7(&c%ping%ms&7)");
-        setIfMissing(cfg, "connection-check.bypass-permission", "buildffa.connection.bypass");
-
         setIfMissing(cfg, "kill", "&a%killer% &7killed &c%loser%");
         setIfMissing(cfg, "Title-Suffix", " &7Kill");
         setIfMissing(cfg, "SubTitle-kill", "&e+1 Kill");
@@ -312,7 +300,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "permissions.scoreboard-toggle", "buildffa.scoreboard.toggle");
         setIfMissing(cfg, "permissions.highlimit-bypass", "buildffa.highlimit.bypass");
         setIfMissing(cfg, "permissions.resetstats", "buildffa.resetstats");
-        setIfMissing(cfg, "permissions.connectioncheck", "buildffa.connection");
 
         setIfMissing(cfg, "messages.no-permission", "&cYou do not have permission to do this.");
 
@@ -365,8 +352,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         // ======================================================
 
         // ==================== Fireball ====================
-        // Speed is controlled with /buildffa fb-speed <value>
-        // Range: -10 (stopped) to +10 (double speed)
         setIfMissing(cfg, "fireball.message", "");
         setIfMissing(cfg, "fireball.speed-level", Double.valueOf(1.5D));
         setIfMissing(cfg, "fireball.yield", Double.valueOf(1.0D));
@@ -494,10 +479,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
     public Voice getVoice() {
         return this.voice;
-    }
-
-    public Connection getConnection() {
-        return this.connection;
     }
 
     public FireballFix getFireballFix() {

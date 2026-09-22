@@ -10,7 +10,7 @@ softdepend: [PlaceholderAPI]
 commands:
   buildffa:
     description: Main BuildFFA command
-    usage: /buildffa <help|kiteditor|setvoid|sethighlimit|setspawn|buildmode|ypvp|ypearl|fb-speed|sb|stats|top|resetstats|forceksreward|cc|creator|reload>
+    usage: /buildffa <help|kiteditor|setvoid|sethighlimit|setspawn|buildmode|ypvp|ypearl|fb-speed|sb|stats|top|resetstats|forceksreward|creator|reload>
     aliases:
       - bffa
 
@@ -33,8 +33,6 @@ permissions:
       buildffa.buildmode: true
       buildffa.scoreboard.toggle: true
       buildffa.resetstats: true
-      buildffa.connection: true
-      buildffa.connection.bypass: true
 
   buildffa.kiteditor:
     description: Allows using the Kit Editor
@@ -91,11 +89,3 @@ permissions:
   buildffa.resetstats:
     description: Allows resetting player stats and forcing killstreak rewards
     default: op
-
-  buildffa.connection:
-    description: Allows managing connection check
-    default: op
-
-  buildffa.connection.bypass:
-    description: Bypass the connection check kick (grant manually or use /buildffa cc bypass)
-    default: false
