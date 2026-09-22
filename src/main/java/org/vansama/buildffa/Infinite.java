@@ -23,12 +23,25 @@ public class Infinite implements Listener {
     }
 
     // ============================================================
-    // Infinite hunger bar
+    //  INFINITE FOOD BAR (anti-hunger)
+    //
+    //  Config:  infinite.food: true
+    //
+    //  رفتار:
+    //  - food و saturation همیشه 20 میمونه
+    //  - پلیر اصلاً گشنه نمیشه
+    //  - ❌ ولی HP رو پر نمیکنه (نه از این event)
     // ============================================================
     @EventHandler
     public void onFoodLevelChange(FoodLevelChangeEvent event) {
         if (!(event.getEntity() instanceof Player)) return;
+
+        if (!this.plugin.getConfig().getBoolean("infinite.food", true)) return;
+
         Player player = (Player) event.getEntity();
+        if (player.getGameMode() == GameMode.CREATIVE) return;
+
+        // Cancel any decrease, keep food full
         if (event.getFoodLevel() < 20) {
             event.setCancelled(true);
             player.setFoodLevel(20);
@@ -38,33 +51,47 @@ public class Infinite implements Listener {
     }
 
     // ============================================================
-    // Golden apple heals to full — but is CONSUMED normally
+    //  ON CONSUME — food gets eaten, hunger reset, ❌ NO HEAL
+    //
+    //  Config:  infinite.food: true
+    //
+    //  رفتار:
+    //  - food و saturation بعد از خوردن 20 میشن
+    //  - ❌ HP پر نمیشه — پلیر باید خودش gapple بخوره یا بمیره
     // ============================================================
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onItemConsume(PlayerItemConsumeEvent event) {
+        if (!this.plugin.getConfig().getBoolean("infinite.food", true)) return;
+
         Player player = event.getPlayer();
+        if (player.getGameMode() == GameMode.CREATIVE) return;
+
         ItemStack item = event.getItem();
         Material type = item.getType();
 
-        if (type == Material.GOLDEN_APPLE
-                || type == Material.GOLDEN_CARROT
-                || type == Material.COOKED_BEEF
-                || type == Material.BREAD) {
-            player.setHealth(player.getMaxHealth());
-            player.setFoodLevel(20);
-            player.setSaturation(20.0F);
-            player.setExhaustion(0.0F);
+        // ✅ فقط food رو refill کن، HP رو دست نزن
+        if (type.isEdible()) {
+            // schedule 1 tick later so vanilla effects apply first
+            this.plugin.getServer().getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
+                @Override
+                public void run() {
+                    if (player.isOnline()) {
+                        player.setFoodLevel(20);
+                        player.setSaturation(20.0F);
+                        player.setExhaustion(0.0F);
+                    }
+                }
+            }, 1L);
         }
     }
 
     // ============================================================
-    // Infinite blocks — placed blocks are refilled EVERY TIME
-    // The stack amount is restored IMMEDIATELY on the next tick.
-    // Works even when spamming (repeating task checks every tick
-    // for a short window).
+    //  INFINITE BLOCKS
     // ============================================================
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockPlace(final BlockPlaceEvent event) {
+        if (!this.plugin.getConfig().getBoolean("infinite.blocks", true)) return;
+
         final Player player = event.getPlayer();
 
         if (player.getGameMode() == GameMode.CREATIVE) return;
@@ -77,8 +104,7 @@ public class Infinite implements Listener {
         final short data = itemInHand.getDurability();
         final int amountBeforePlace = itemInHand.getAmount();
 
-        // Restore the amount on the very next tick — but do it
-        // multiple times over a few ticks to survive spam-placing.
+        // Restore the amount over the next few ticks
         for (int delay = 1; delay <= 3; delay++) {
             this.plugin.getServer().getScheduler().scheduleSyncDelayedTask(
                 this.plugin,
@@ -93,10 +119,6 @@ public class Infinite implements Listener {
         }
     }
 
-    /**
-     * Finds the player's held item (or any matching stack in their
-     * inventory) and restores its amount to `amountBeforePlace`.
-     */
     private void restoreAmount(Player player, Material type, short data, int amountBeforePlace) {
         if (player == null || !player.isOnline()) return;
 
@@ -112,7 +134,7 @@ public class Infinite implements Listener {
             }
         }
 
-        // 2) Check the whole inventory (in case the player swapped slots)
+        // 2) Check the whole inventory
         ItemStack[] contents = player.getInventory().getContents();
         boolean changed = false;
         for (int i = 0; i < contents.length; i++) {

@@ -41,7 +41,7 @@ public class BuildFFAExpansion extends PlaceholderExpansion {
     }
 
     // ============================================================
-    //  ✅ Main entry with try/catch
+    //  Main entry with try/catch
     // ============================================================
     @Override
     public String onRequest(OfflinePlayer player, String identifier) {
@@ -60,7 +60,7 @@ public class BuildFFAExpansion extends PlaceholderExpansion {
         String id = identifier.toLowerCase();
 
         // ============================================================
-        //  Live countdown
+        //  Live countdown: %buildffa_next_update%
         // ============================================================
         if (id.equals("next_update") || id.equals("countdown")) {
             int secs = BuildFFA.getSecondsUntilRefresh();
@@ -70,7 +70,7 @@ public class BuildFFAExpansion extends PlaceholderExpansion {
         }
 
         // ============================================================
-        //  Player stats
+        //  Player stats (fresh from cache)
         // ============================================================
         if (player != null && player.isOnline()) {
             PlayerData data = database.getPlayer(player.getUniqueId());
@@ -87,15 +87,22 @@ public class BuildFFAExpansion extends PlaceholderExpansion {
 
         // ============================================================
         //  Top placeholders:  top_<mode>_<type>_<rank>
-        //  Example:  top_name_killstreak_1
-        //            top_value_kills_1
+        //  Examples:
+        //    top_name_killstreak_1  → name of #1 by best killstreak
+        //    top_value_killstreak_1 → best killstreak of #1
+        //    top_name_kills_1       → name of #1 by kills
+        //    top_value_kills_1      → kills of #1
+        //    top_name_kdr_1         → name of #1 by KDR
+        //    top_value_kdr_1        → KDR of #1
+        //    top_name_deaths_1      → name of #1 by deaths
+        //    top_value_deaths_1     → deaths of #1
         // ============================================================
         if (id.startsWith("top_") && !id.startsWith("top_rank_")) {
             String[] parts = id.split("_");
             if (parts.length < 4) return "";
 
             String mode = parts[1];       // name | value
-            String type = parts[2];       // kills | deaths | kdr | killstreak
+            String type = parts[2];       // kills | deaths | kdr | killstreak | streak
             int rank;
             try {
                 rank = Integer.parseInt(parts[3]);
@@ -107,6 +114,7 @@ public class BuildFFAExpansion extends PlaceholderExpansion {
 
             if (type.equals("streak")) type = "killstreak";
 
+            // ✅ cache-aware top fetch
             List<PlayerData> top;
             if (type.equals("deaths")) {
                 top = database.getTopDeaths(rank);
@@ -118,16 +126,17 @@ public class BuildFFAExpansion extends PlaceholderExpansion {
                 top = database.getTopKills(rank);
             }
 
+            // No data yet
             if (top.size() < rank) {
-                if (mode.equals("name")) return "---";
-                return "0";
+                if (mode.equals("name")) return "None";
+                return "-";
             }
 
             PlayerData entry = top.get(rank - 1);
 
             if (mode.equals("name")) {
                 String name = entry.getName();
-                if (name == null || name.isEmpty()) return "---";
+                if (name == null || name.isEmpty()) return "None";
                 return name;
             } else {
                 if (type.equals("kdr")) return String.format("%.2f", entry.getKDR());
@@ -139,8 +148,11 @@ public class BuildFFAExpansion extends PlaceholderExpansion {
 
         // ============================================================
         //  Own rank:  top_rank_<type>
-        //  Example:  top_rank_kills
-        //            top_rank_kdr
+        //  Examples:
+        //    top_rank_kills
+        //    top_rank_kdr
+        //    top_rank_killstreak
+        //    top_rank_deaths
         // ============================================================
         if (id.startsWith("top_rank_")) {
             if (player == null) return "?";

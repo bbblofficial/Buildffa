@@ -34,7 +34,7 @@ public class Kill implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
         // NOTE: death message / drops / XP clearing is handled by KitRestore.
-        // This class only handles stats + kill messages + rewards.
+        // This class only handles stats + kill messages + rewards + heal.
 
         Player deathPlayer = event.getEntity();
         UUID victimId = deathPlayer.getUniqueId();
@@ -87,8 +87,14 @@ public class Kill implements Listener {
             newStreak = killerData.getKillstreak();
         }
 
-        // Killer gets full heal + reward
-        fullHeal(killer);
+        // ============================================================
+        //  ✅ BEDWARS-STYLE HEAL ON KILL
+        //  - فقط HP پر میشه
+        //  - food دست نمیخوره (anti-hunger جداست)
+        //  - fire/fall reset
+        // ============================================================
+        healOnKill(killer);
+
         giveKillstreakReward(killer, newStreak);
 
         // ---- Kill message ----
@@ -100,6 +106,59 @@ public class Kill implements Listener {
                     .replaceAll("%killcount%", String.valueOf(killCount));
             Bukkit.broadcastMessage(broadcastMessage);
         }
+    }
+
+    // ============================================================
+    //  ✅ BEDWARS HEAL ON KILL
+    //  Config: kill-heal.enabled, kill-heal.amount, kill-heal.absorption
+    //
+    //  - HP: به max یا به مقدار مشخص
+    //  - Absorption: به عنوان bonus (اختیاری)
+    //  - Food: دست نمیخوره
+    // ============================================================
+    private void healOnKill(Player killer) {
+        if (killer == null || !killer.isOnline()) return;
+
+        boolean healEnabled = this.plugin.getConfig().getBoolean("kill-heal.enabled", true);
+        if (!healEnabled) return;
+
+        boolean healFull = this.plugin.getConfig().getBoolean("kill-heal.full-heal", true);
+        double healAmount = this.plugin.getConfig().getDouble("kill-heal.amount", 6.0D);
+
+        // 1) HP
+        if (healFull) {
+            killer.setHealth(killer.getMaxHealth());
+        } else {
+            double newHealth = killer.getHealth() + healAmount;
+            if (newHealth > killer.getMaxHealth()) newHealth = killer.getMaxHealth();
+            killer.setHealth(newHealth);
+        }
+
+        // 2) Fire reset
+        killer.setFireTicks(0);
+
+        // 3) Fall distance reset
+        killer.setFallDistance(0.0F);
+
+        // 4) Absorption (اختیاری، برای BedWars feel)
+        boolean absorptionEnabled = this.plugin.getConfig().getBoolean("kill-heal.absorption.enabled", false);
+        if (absorptionEnabled) {
+            int absorptionLevel = this.plugin.getConfig().getInt("kill-heal.absorption.level", 1);
+            int absorptionSeconds = this.plugin.getConfig().getInt("kill-heal.absorption.duration", 5);
+
+            // Absorption level 0 = 2 hearts, level 1 = 4 hearts, level 2 = 6 hearts...
+            try {
+                killer.addPotionEffect(new PotionEffect(
+                    org.bukkit.potion.PotionEffectType.ABSORPTION,
+                    absorptionSeconds * 20,
+                    absorptionLevel,
+                    true,  // ambient
+                    false  // no particles
+                ));
+            } catch (Throwable ignored) {}
+        }
+
+        // 5) ❌ food/saturation دست نمیخوره
     }
 
     // ============================================================
@@ -232,19 +291,6 @@ public class Kill implements Listener {
 
         potion.setDurability(data);
         return potion;
-    }
-
-    private void fullHeal(Player player) {
-        player.setHealth(player.getMaxHealth());
-        player.setFoodLevel(20);
-        player.setSaturation(20.0F);
-        player.setExhaustion(0.0F);
-        player.setFireTicks(0);
-        player.setFallDistance(0.0F);
-
-        for (PotionEffect effect : player.getActivePotionEffects()) {
-            player.removePotionEffect(effect.getType());
-        }
     }
 
     private String colorize(String message) {

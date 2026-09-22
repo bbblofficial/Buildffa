@@ -55,8 +55,8 @@ combat:
 #  Void Behaviour
 # ----------------------------------------------------------
 void:
-  # If true  -> teleport to spawn + full heal, BUT death is
-  #            still registered in stats (kills/deaths/kdr).
+  # If true  -> teleport to spawn + full heal (HP only),
+  #            BUT death is still registered in stats.
   # If false -> kill the player normally (death also counted).
   teleport-instead-of-kill: true
 
@@ -228,7 +228,6 @@ fireball:
     enabled: false
     effects:
       - 'SPEED:60:1'
-      # - 'JUMP:60:1'
 
   # Knockback + damage settings
   knockback:
@@ -259,9 +258,82 @@ SubTitle-kill: ' &e+1 Kill'
 join-message: ' &e%player%  &7joined the game  &8( &e%online% &7/ &e100 &8)'
 quit-message: ' &e%player%  &7left the game  &8( &e%online% &7/ &e100 &8)'
 
+# ----------------------------------------------------------
+#  Infinite Food & Blocks
+#
+#  anti-hunger: player never gets hungry
+#  ⚠️ NOTE: With this enabled, food does NOT heal HP.
+#     Only Golden Apples / Potions can heal HP.
+# ----------------------------------------------------------
 infinite:
   food: true
   blocks: true
+
+# ----------------------------------------------------------
+#  Kill Heal (BedWars-style)
+#  When a player kills someone, they receive:
+#    - Full HP (or configurable amount)
+#    - Fire reset
+#    - Fall distance reset
+#    - Optional Absorption hearts
+#
+#  ⚠️ Food is NOT refilled here — that's handled by
+#     infinite.food above.
+# ----------------------------------------------------------
+kill-heal:
+  # Enable/disable the heal-on-kill
+  enabled: true
+
+  # If true, killer's HP is set to max
+  # If false, `amount` is added instead
+  full-heal: true
+
+  # Only used when full-heal: false
+  # Example: 6.0 = 3 hearts
+  amount: 6.0
+
+  # Absorption hearts (golden bonus hearts)
+  # Only works on 1.6+
+  absorption:
+    enabled: false
+    # 0 = 2 hearts, 1 = 4 hearts, 2 = 6 hearts, etc.
+    level: 1
+    # Duration in seconds
+    duration: 5
+
+# ----------------------------------------------------------
+#  Health Bar (ActionBar)
+#  Shows the player's HP above the hotbar, like BedWars.
+#
+#  MODES:
+#    NUMERIC  ->  ❤ 18.5/20  (default)
+#    HEARTS   ->  ❤❤❤❤❤❤❤❤❤♡ 18.5/20
+#    PERCENT  ->  ❤ 92% (18.5/20)
+#
+#  PLACEHOLDERS (for NUMERIC / PERCENT):
+#    %current%  ->  current HP
+#    %max%      ->  max HP
+#    %percent%  ->  HP percent (0-100)
+#    %player%   ->  player name
+# ----------------------------------------------------------
+healthbar:
+  # Enable/disable
+  enabled: true
+
+  # Update interval in ticks (20 = 1 second)
+  # 5 = smooth, 10 = medium, 20 = every second
+  update-interval: 5
+
+  # Mode: NUMERIC | HEARTS | PERCENT
+  mode: NUMERIC
+
+  # Format for NUMERIC and PERCENT modes
+  format: '&c❤ &f%current%&7/&f%max%'
+
+  # Colors for HEARTS mode
+  filled-color: '&c'
+  empty-color: '&7'
+  heart-char: '❤'
 
 # ----------------------------------------------------------
 #  Permissions

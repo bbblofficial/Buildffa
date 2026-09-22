@@ -31,7 +31,8 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     private Voice voice;
     private FireballFix fireballFix;
     private YPearl yPearl;
-    private KitSettingsManager kitSettings;   // ✅ NEW
+    private KitSettingsManager kitSettings;
+    private HealthBarManager healthBarManager;   // ✅ NEW
 
     // ==================== COUNTDOWN ====================
     private static int secondsUntilRefresh = 600;
@@ -71,7 +72,10 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         // 2) Kit settings (server default kit from kit-setting.yml)
         this.kitSettings = new KitSettingsManager(this);
 
-        // 3) Everything else
+        // 3) HealthBar (needs config)
+        this.healthBarManager = new HealthBarManager(this);
+
+        // 4) Everything else
         this.blocks = new Blocks(this);
         this.kitEditor = new KitEditor(this, this.databaseManager);
         this.equip = new Equip(this);
@@ -104,6 +108,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this.yPearl, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.scoreboardManager, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.voice, (Plugin) this);
+        getServer().getPluginManager().registerEvents(this.healthBarManager, (Plugin) this);
         getServer().getPluginManager().registerEvents(this, (Plugin) this);
         // =============================================================
 
@@ -152,6 +157,7 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getLogger().info("  Database: SQLite -> " + this.databaseManager.getDbFile().getPath());
         getLogger().info("  Backup folder: " + this.databaseManager.getBackupFolder().getPath());
         getLogger().info("  Kit settings: " + this.kitSettings.getFile().getPath());
+        getLogger().info("  HealthBar: " + (this.getConfig().getBoolean("healthbar.enabled", true) ? "ENABLED" : "DISABLED"));
         getLogger().info("=================================================");
 
         // ==================== Item cleanup ====================
@@ -293,6 +299,25 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
         setIfMissing(cfg, "infinite.food", Boolean.valueOf(true));
         setIfMissing(cfg, "infinite.blocks", Boolean.valueOf(true));
+
+        // ==================== Kill Heal (BedWars-style) ====================
+        setIfMissing(cfg, "kill-heal.enabled", Boolean.valueOf(true));
+        setIfMissing(cfg, "kill-heal.full-heal", Boolean.valueOf(true));
+        setIfMissing(cfg, "kill-heal.amount", Double.valueOf(6.0D));
+        setIfMissing(cfg, "kill-heal.absorption.enabled", Boolean.valueOf(false));
+        setIfMissing(cfg, "kill-heal.absorption.level", Integer.valueOf(1));
+        setIfMissing(cfg, "kill-heal.absorption.duration", Integer.valueOf(5));
+        // ==================================================================
+
+        // ==================== HealthBar ====================
+        setIfMissing(cfg, "healthbar.enabled", Boolean.valueOf(true));
+        setIfMissing(cfg, "healthbar.update-interval", Integer.valueOf(5));
+        setIfMissing(cfg, "healthbar.mode", "NUMERIC");
+        setIfMissing(cfg, "healthbar.format", "&c❤ &f%current%&7/&f%max%");
+        setIfMissing(cfg, "healthbar.filled-color", "&c");
+        setIfMissing(cfg, "healthbar.empty-color", "&7");
+        setIfMissing(cfg, "healthbar.heart-char", "❤");
+        // ===================================================
 
         setIfMissing(cfg, "permissions.ypvp", "buildffa.ypvp");
         setIfMissing(cfg, "permissions.ypvp-bypass", "buildffa.ypvp.bypass");
@@ -461,6 +486,9 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         if (this.scoreboardManager != null) {
             this.scoreboardManager.shutdown();
         }
+        if (this.healthBarManager != null) {
+            this.healthBarManager.shutdown();   // ✅ NEW
+        }
         BuildModeManager.clearAll();
         CombatManager.clearAll();
         getLogger().info("BuildFFA disabled.");
@@ -501,5 +529,10 @@ public final class BuildFFA extends JavaPlugin implements Listener {
 
     public KitSettingsManager getKitSettings() {
         return this.kitSettings;
+    }
+
+    // ✅ NEW
+    public HealthBarManager getHealthBarManager() {
+        return this.healthBarManager;
     }
 }

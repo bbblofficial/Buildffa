@@ -14,6 +14,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -59,7 +61,7 @@ public class DatabaseManager {
         }
 
         // ============================================================
-        //  لود درایور SQLite — بدون relocation
+        //  Load SQLite JDBC driver
         // ============================================================
         try {
             Class.forName("org.sqlite.JDBC");
@@ -70,7 +72,7 @@ public class DatabaseManager {
         }
 
         // ============================================================
-        //  اتصال به دیتابیس
+        //  Connect to database
         // ============================================================
         try {
             openConnection();
@@ -82,7 +84,7 @@ public class DatabaseManager {
         }
 
         // ============================================================
-        //  خوندن کانفیگ
+        //  Read config
         // ============================================================
         try {
             FileConfiguration config = plugin.getConfig();
@@ -128,7 +130,6 @@ public class DatabaseManager {
             Connection c = getConnection();
             Statement st = c.createStatement();
 
-            // جدول پلیرها
             st.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS players (" +
                 "  uuid TEXT PRIMARY KEY," +
@@ -141,7 +142,6 @@ public class DatabaseManager {
                 ")"
             );
 
-            // جدول کیتها (base64 serialized ItemStack)
             st.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS kits (" +
                 "  uuid TEXT PRIMARY KEY," +
@@ -154,7 +154,6 @@ public class DatabaseManager {
                 ")"
             );
 
-            // ایندکسها برای leaderboard
             st.executeUpdate("CREATE INDEX IF NOT EXISTS idx_kills ON players(kills DESC)");
             st.executeUpdate("CREATE INDEX IF NOT EXISTS idx_deaths ON players(deaths DESC)");
             st.executeUpdate("CREATE INDEX IF NOT EXISTS idx_best_ks ON players(best_killstreak DESC)");
@@ -164,7 +163,7 @@ public class DatabaseManager {
     }
 
     // ============================================================
-    //  MIGRATION از db/*.json و kits/*.yml قدیمی
+    //  MIGRATION from db/*.json and kits/*.yml
     // ============================================================
     private void migrateLegacyFiles() {
         try {
@@ -174,7 +173,6 @@ public class DatabaseManager {
             int migratedPlayers = 0;
             int migratedKits = 0;
 
-            // ---- پلیرها ----
             if (oldDbFolder.exists() && oldDbFolder.isDirectory()) {
                 File[] files = oldDbFolder.listFiles();
                 if (files != null) {
@@ -220,7 +218,6 @@ public class DatabaseManager {
                 }
             }
 
-            // ---- کیتها ----
             if (oldKitsFolder.exists() && oldKitsFolder.isDirectory()) {
                 File[] files = oldKitsFolder.listFiles();
                 if (files != null) {
@@ -357,6 +354,7 @@ public class DatabaseManager {
         savePlayer(data);
     }
 
+    /** Debounced save — use for frequent updates. */
     public void savePlayer(PlayerData data) {
         if (data == null) return;
 
@@ -370,6 +368,7 @@ public class DatabaseManager {
         savePlayerImmediate(data);
     }
 
+    /** Immediate save — bypasses debounce. Use for /stats commands. */
     public void savePlayerImmediate(PlayerData data) {
         if (data == null) return;
 
@@ -433,7 +432,7 @@ public class DatabaseManager {
     }
 
     // ============================================================
-    //  KITS — public hasKit
+    //  KITS
     // ============================================================
     public boolean hasKit(UUID uuid) {
         try {
@@ -532,7 +531,7 @@ public class DatabaseManager {
     }
 
     // ============================================================
-    //  SERIALIZATION (Base64 + BukkitObjectStream)
+    //  SERIALIZATION
     // ============================================================
     private String serializeItem(ItemStack item) {
         if (item == null) return null;
@@ -599,45 +598,32 @@ public class DatabaseManager {
     }
 
     // ============================================================
-    //  LEADERBOARDS
+    //  LEADERBOARDS — cache-aware
     // ============================================================
-    public List<PlayerData> getTopKills(int limit)       { return queryTop("kills DESC", limit); }
-    public List<PlayerData> getTopDeaths(int limit)      { return queryTop("deaths DESC", limit); }
-    public List<PlayerData> getTopKillstreak(int limit)  { return queryTop("best_killstreak DESC", limit); }
+    public List<PlayerData> getTopKills(int limit)      { return queryTop("kills", limit); }
+    public List<PlayerData> getTopDeaths(int limit)     { return queryTop("deaths", limit); }
+    public List<PlayerData> getTopKillstreak(int limit) { return queryTop("best_killstreak", limit); }
 
-    public List<PlayerData> getTopKDR(int limit) {
+    /**
+     * Loads top N players from SQLite, then OVERWRITES them with fresh
+     * cache values (since cache may hold newer data not yet persisted).
+     * Finally sorts and truncates to limit.
+     */
+    private List<PlayerData> queryTop(String orderField, int limit) {
+        String orderBy;
+        if (orderField.equals("deaths")) orderBy = "deaths DESC";
+        else if (orderField.equals("best_killstreak")) orderBy = "best_killstreak DESC";
+        else orderBy = "kills DESC";
+
         List<PlayerData> list = new ArrayList<PlayerData>();
+
+        // 1) Query DB
         try {
             synchronized (dbLock) {
                 PreparedStatement ps = getConnection().prepareStatement(
                     "SELECT uuid, name, kills, deaths, killstreak, best_killstreak, last_seen " +
-                    "FROM players " +
-                    "ORDER BY (CAST(kills AS REAL) / CASE WHEN deaths = 0 THEN 1 ELSE deaths END) DESC, kills DESC " +
-                    "LIMIT ?"
+                    "FROM players ORDER BY " + orderBy
                 );
-                ps.setInt(1, limit);
-                ResultSet rs = ps.executeQuery();
-                while (rs.next()) {
-                    list.add(fromResultSet(rs));
-                }
-                rs.close();
-                ps.close();
-            }
-        } catch (SQLException e) {
-            plugin.getLogger().warning("getTopKDR failed: " + e.getMessage());
-        }
-        return list;
-    }
-
-    private List<PlayerData> queryTop(String orderBy, int limit) {
-        List<PlayerData> list = new ArrayList<PlayerData>();
-        try {
-            synchronized (dbLock) {
-                PreparedStatement ps = getConnection().prepareStatement(
-                    "SELECT uuid, name, kills, deaths, killstreak, best_killstreak, last_seen " +
-                    "FROM players ORDER BY " + orderBy + " LIMIT ?"
-                );
-                ps.setInt(1, limit);
                 ResultSet rs = ps.executeQuery();
                 while (rs.next()) {
                     list.add(fromResultSet(rs));
@@ -648,6 +634,99 @@ public class DatabaseManager {
         } catch (SQLException e) {
             plugin.getLogger().warning("queryTop failed: " + e.getMessage());
         }
+
+        // 2) Overwrite DB entries with fresh cache values
+        Map<UUID, PlayerData> dbIndex = new java.util.HashMap<UUID, PlayerData>();
+        for (PlayerData d : list) {
+            dbIndex.put(d.getUuid(), d);
+        }
+        for (PlayerData cached : this.cache.values()) {
+            if (dbIndex.containsKey(cached.getUuid())) {
+                // replace DB entry with cache entry (fresh data)
+                for (int i = 0; i < list.size(); i++) {
+                    if (list.get(i).getUuid().equals(cached.getUuid())) {
+                        list.set(i, cached);
+                        break;
+                    }
+                }
+            } else {
+                // cache has player not yet in DB result set
+                list.add(cached);
+            }
+        }
+
+        // 3) Sort
+        final String field = orderField;
+        Collections.sort(list, new Comparator<PlayerData>() {
+            @Override
+            public int compare(PlayerData a, PlayerData b) {
+                if (field.equals("deaths")) return Integer.compare(b.getDeaths(), a.getDeaths());
+                if (field.equals("best_killstreak")) return Integer.compare(b.getBestKillstreak(), a.getBestKillstreak());
+                return Integer.compare(b.getKills(), a.getKills());
+            }
+        });
+
+        // 4) Truncate
+        if (list.size() > limit) {
+            list = new ArrayList<PlayerData>(list.subList(0, limit));
+        }
+
+        return list;
+    }
+
+    public List<PlayerData> getTopKDR(int limit) {
+        List<PlayerData> list = new ArrayList<PlayerData>();
+
+        // 1) Query DB
+        try {
+            synchronized (dbLock) {
+                PreparedStatement ps = getConnection().prepareStatement(
+                    "SELECT uuid, name, kills, deaths, killstreak, best_killstreak, last_seen " +
+                    "FROM players " +
+                    "ORDER BY (CAST(kills AS REAL) / CASE WHEN deaths = 0 THEN 1 ELSE deaths END) DESC, kills DESC"
+                );
+                ResultSet rs = ps.executeQuery();
+                while (rs.next()) {
+                    list.add(fromResultSet(rs));
+                }
+                rs.close();
+                ps.close();
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().warning("getTopKDR failed: " + e.getMessage());
+        }
+
+        // 2) Overwrite with cache
+        Map<UUID, PlayerData> dbIndex = new java.util.HashMap<UUID, PlayerData>();
+        for (PlayerData d : list) {
+            dbIndex.put(d.getUuid(), d);
+        }
+        for (PlayerData cached : this.cache.values()) {
+            if (dbIndex.containsKey(cached.getUuid())) {
+                for (int i = 0; i < list.size(); i++) {
+                    if (list.get(i).getUuid().equals(cached.getUuid())) {
+                        list.set(i, cached);
+                        break;
+                    }
+                }
+            } else {
+                list.add(cached);
+            }
+        }
+
+        // 3) Sort by KDR
+        Collections.sort(list, new Comparator<PlayerData>() {
+            @Override
+            public int compare(PlayerData a, PlayerData b) {
+                return Double.compare(b.getKDR(), a.getKDR());
+            }
+        });
+
+        // 4) Truncate
+        if (list.size() > limit) {
+            list = new ArrayList<PlayerData>(list.subList(0, limit));
+        }
+
         return list;
     }
 
@@ -740,7 +819,7 @@ public class DatabaseManager {
             if (backups != null) {
                 for (File b : backups) {
                     if (now - b.lastModified() < 24L * 60L * 60L * 1000L) {
-                        return; // backup اخیر وجود داره
+                        return;
                     }
                 }
             }
@@ -749,7 +828,6 @@ public class DatabaseManager {
                     "buildffa_" + System.currentTimeMillis() + ".db");
             Files.copy(dbFile.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-            // فقط 5 backup آخر رو نگهدار
             File[] all = backupFolder.listFiles();
             if (all != null && all.length > 5) {
                 java.util.Arrays.sort(all, new java.util.Comparator<File>() {
@@ -772,7 +850,6 @@ public class DatabaseManager {
             this.autosaveTaskId = -1;
         }
 
-        // ذخیره نهایی همه پلیرهای cache
         for (PlayerData data : new ArrayList<PlayerData>(this.cache.values())) {
             this.lastSaveTime.remove(data.getUuid());
             savePlayerImmediate(data);

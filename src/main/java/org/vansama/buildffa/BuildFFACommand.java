@@ -39,9 +39,6 @@ public class BuildFFACommand implements CommandExecutor {
         sender.sendMessage(colorize(msg));
     }
 
-    // ============================================================
-    //  onCommand — permission-aware dispatcher
-    // ============================================================
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
@@ -51,130 +48,79 @@ public class BuildFFACommand implements CommandExecutor {
 
         String sub = args[0].toLowerCase();
 
-        // ============================================================
-        //  ADMIN COMMANDS (permission required)
-        // ============================================================
-
+        // ==================== ADMIN ====================
         if (sub.equals("setvoid")) {
-            if (!sender.hasPermission(getPerm("setvoid", "buildffa.setvoid"))) {
-                sendNoPerm(sender);
-                return true;
-            }
+            if (!sender.hasPermission(getPerm("setvoid", "buildffa.setvoid"))) { sendNoPerm(sender); return true; }
             return handleSetVoid(sender, args);
         }
 
         if (sub.equals("sethighlimit")) {
-            if (!sender.hasPermission(getPerm("sethighlimit", "buildffa.sethighlimit"))) {
-                sendNoPerm(sender);
-                return true;
-            }
+            if (!sender.hasPermission(getPerm("sethighlimit", "buildffa.sethighlimit"))) { sendNoPerm(sender); return true; }
             return handleSetHighLimit(sender, args);
         }
 
         if (sub.equals("setspawn")) {
-            if (!sender.hasPermission(getPerm("setspawn", "buildffa.setspawn"))) {
-                sendNoPerm(sender);
-                return true;
-            }
+            if (!sender.hasPermission(getPerm("setspawn", "buildffa.setspawn"))) { sendNoPerm(sender); return true; }
             return handleSetSpawn(sender);
         }
 
         if (sub.equals("buildmode")) {
-            if (!sender.hasPermission(getPerm("buildmode", "buildffa.buildmode"))) {
-                sendNoPerm(sender);
-                return true;
-            }
+            if (!sender.hasPermission(getPerm("buildmode", "buildffa.buildmode"))) { sendNoPerm(sender); return true; }
             return handleBuildMode(sender, args);
         }
 
         if (sub.equals("ypvp")) {
-            if (!sender.hasPermission(getPerm("ypvp", "buildffa.ypvp"))) {
-                sendNoPerm(sender);
-                return true;
-            }
+            if (!sender.hasPermission(getPerm("ypvp", "buildffa.ypvp"))) { sendNoPerm(sender); return true; }
             return handleYPvP(sender, args);
         }
 
         if (sub.equals("ypearl")) {
-            if (!sender.hasPermission(getPerm("ypearl", "buildffa.ypearl"))) {
-                sendNoPerm(sender);
-                return true;
-            }
+            if (!sender.hasPermission(getPerm("ypearl", "buildffa.ypearl"))) { sendNoPerm(sender); return true; }
             return handleYPearl(sender, args);
         }
 
         if (sub.equals("fb-speed") || sub.equals("fbspeed") || sub.equals("fireball-speed")) {
-            if (!sender.hasPermission(getPerm("fireball-speed", "buildffa.fireball.speed"))) {
-                sendNoPerm(sender);
-                return true;
-            }
+            if (!sender.hasPermission(getPerm("fireball-speed", "buildffa.fireball.speed"))) { sendNoPerm(sender); return true; }
             return handleFireballSpeed(sender, args);
         }
 
         if (sub.equals("resetstats")) {
-            if (!sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))) {
-                sendNoPerm(sender);
-                return true;
-            }
+            if (!sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))) { sendNoPerm(sender); return true; }
             return handleResetStats(sender, args);
         }
 
         if (sub.equals("forceksreward")) {
-            if (!sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))) {
-                sendNoPerm(sender);
-                return true;
-            }
+            if (!sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))) { sendNoPerm(sender); return true; }
             return handleForceKsReward(sender, args);
         }
 
         if (sub.equals("reload")) {
-            if (!sender.hasPermission(getPerm("reload", "buildffa.reload"))) {
-                sendNoPerm(sender);
-                return true;
-            }
+            if (!sender.hasPermission(getPerm("reload", "buildffa.reload"))) { sendNoPerm(sender); return true; }
             return handleReload(sender);
         }
 
         if (sub.equals("dbinfo")) {
-            if (!sender.hasPermission(getPerm("reload", "buildffa.reload"))) {
-                sendNoPerm(sender);
-                return true;
-            }
+            if (!sender.hasPermission(getPerm("reload", "buildffa.reload"))) { sendNoPerm(sender); return true; }
             return handleDbInfo(sender);
         }
 
         if (sub.equals("dbbackup")) {
-            if (!sender.hasPermission(getPerm("reload", "buildffa.reload"))) {
-                sendNoPerm(sender);
-                return true;
-            }
+            if (!sender.hasPermission(getPerm("reload", "buildffa.reload"))) { sendNoPerm(sender); return true; }
             return handleDbBackup(sender);
         }
 
-        // ============================================================
-        //  PLAYER COMMANDS
-        // ============================================================
-
+        // ==================== PLAYER ====================
         if (sub.equals("kiteditor")) {
-            if (!sender.hasPermission(getPerm("kiteditor", "buildffa.kiteditor"))) {
-                sendNoPerm(sender);
-                return true;
-            }
+            if (!sender.hasPermission(getPerm("kiteditor", "buildffa.kiteditor"))) { sendNoPerm(sender); return true; }
             return handleKitEditor(sender, args);
         }
 
         if (sub.equals("scoreboard") || sub.equals("sb")) {
             if (args.length >= 2 && args[1].equalsIgnoreCase("reload")) {
-                if (!sender.hasPermission(getPerm("reload", "buildffa.reload"))) {
-                    sendNoPerm(sender);
-                    return true;
-                }
+                if (!sender.hasPermission(getPerm("reload", "buildffa.reload"))) { sendNoPerm(sender); return true; }
                 return handleScoreboard(sender, args);
             }
-            if (!sender.hasPermission(getPerm("scoreboard-toggle", "buildffa.scoreboard.toggle"))) {
-                sendNoPerm(sender);
-                return true;
-            }
+            if (!sender.hasPermission(getPerm("scoreboard-toggle", "buildffa.scoreboard.toggle"))) { sendNoPerm(sender); return true; }
             return handleScoreboard(sender, args);
         }
 
@@ -182,10 +128,7 @@ public class BuildFFACommand implements CommandExecutor {
             if (args.length >= 2) {
                 String sub2 = args[1].toLowerCase();
                 if (sub2.equals("add") || sub2.equals("reset")) {
-                    if (!sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))) {
-                        sendNoPerm(sender);
-                        return true;
-                    }
+                    if (!sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))) { sendNoPerm(sender); return true; }
                 }
             }
             return handleStats(sender, args);
@@ -246,13 +189,12 @@ public class BuildFFACommand implements CommandExecutor {
     }
 
     // ==========================================
-    // Fireball Speed Command
+    // Fireball Speed
     // ==========================================
     private boolean handleFireballSpeed(CommandSender sender, String[] args) {
         if (args.length < 2) {
             double current = this.plugin.getConfig().getDouble("fireball.speed-level", 1.5D);
             double mult = FireballFix.sliderToMultiplier(current);
-
             sender.sendMessage(colorize("&8&m----------------------------------"));
             sender.sendMessage(colorize("&6&lFireball Speed"));
             sender.sendMessage(colorize("&7Current value: &e" + String.format("%.2f", current)));
@@ -282,7 +224,6 @@ public class BuildFFACommand implements CommandExecutor {
         this.plugin.saveConfig();
 
         double mult = FireballFix.sliderToMultiplier(value);
-
         sender.sendMessage(colorize("&aFireball speed set to &e" + String.format("%.2f", value)
                 + " &a(multiplier: &e" + String.format("%.2f", mult) + "x&a)."));
         return true;
@@ -345,7 +286,9 @@ public class BuildFFACommand implements CommandExecutor {
                 return true;
             }
 
-            this.database.savePlayer(data);
+            // ✅ immediate save — bypass debounce
+            this.database.savePlayerImmediate(data);
+
             sender.sendMessage(colorize("&aAdded &e" + amount + " &ato &e" + target.getName() + "'s &e" + statName + "&a."));
             sender.sendMessage(colorize("&7Kills: &a" + data.getKills()
                     + " &7| Deaths: &c" + data.getDeaths()
@@ -394,7 +337,9 @@ public class BuildFFACommand implements CommandExecutor {
                 return true;
             }
 
-            this.database.savePlayer(data);
+            // ✅ immediate
+            this.database.savePlayerImmediate(data);
+
             sender.sendMessage(colorize("&aReset &e" + statName + " &afor &e" + target.getName() + "&a."));
             return true;
         }
@@ -658,7 +603,7 @@ public class BuildFFACommand implements CommandExecutor {
     }
 
     // ==========================================
-    // Reset Stats Command
+    // Reset Stats
     // ==========================================
     private boolean handleResetStats(CommandSender sender, String[] args) {
         if (args.length < 2) {
@@ -682,7 +627,9 @@ public class BuildFFACommand implements CommandExecutor {
         data.setDeaths(0);
         data.setKillstreak(0);
         data.setBestKillstreak(0);
-        this.database.savePlayer(data);
+
+        // ✅ immediate
+        this.database.savePlayerImmediate(data);
 
         sender.sendMessage(colorize("&aReset stats for &e" + target.getName()));
         target.sendMessage(colorize("&cYour stats have been reset by an admin."));
@@ -690,7 +637,7 @@ public class BuildFFACommand implements CommandExecutor {
     }
 
     // ==========================================
-    // Scoreboard Command
+    // Scoreboard
     // ==========================================
     private boolean handleScoreboard(CommandSender sender, String[] args) {
         if (!(sender instanceof Player)) {
@@ -724,7 +671,7 @@ public class BuildFFACommand implements CommandExecutor {
     }
 
     // ==========================================
-    // YPvP Command
+    // YPvP
     // ==========================================
     private boolean handleYPvP(CommandSender sender, String[] args) {
         YPvP ypvp = getYPvPListener();
@@ -797,7 +744,7 @@ public class BuildFFACommand implements CommandExecutor {
     }
 
     // ==========================================
-    // YPearl Command
+    // YPearl
     // ==========================================
     private boolean handleYPearl(CommandSender sender, String[] args) {
         YPearl ypearl = getYPearlListener();
@@ -1090,14 +1037,17 @@ public class BuildFFACommand implements CommandExecutor {
             this.scoreboardManager.reloadConfig();
         }
 
-        // ✅ Reload kit-setting.yml
+        // ✅ Reload kit-setting.yml + healthbar
         try {
             BuildFFA bffa = (BuildFFA) this.plugin;
             if (bffa.getKitSettings() != null) {
                 bffa.getKitSettings().reload();
             }
+            if (bffa.getHealthBarManager() != null) {
+                bffa.getHealthBarManager().reloadConfig();
+            }
         } catch (Throwable t) {
-            this.plugin.getLogger().warning("Failed to reload kit-setting.yml: " + t.getMessage());
+            this.plugin.getLogger().warning("Failed to reload config: " + t.getMessage());
         }
 
         reloadListeners();
@@ -1113,7 +1063,6 @@ public class BuildFFACommand implements CommandExecutor {
         sender.sendMessage(colorize("&6&lBuildFFA &7- &fCommands"));
         sender.sendMessage(colorize("&8&m----------------------------------"));
 
-        // PLAYER
         if (sender.hasPermission(getPerm("kiteditor", "buildffa.kiteditor"))) {
             sender.sendMessage(colorize("&e/buildffa kiteditor &7- Open the Kit Editor GUI"));
             sender.sendMessage(colorize("&e/buildffa kiteditor reset &7- Reset your kit"));
@@ -1127,7 +1076,6 @@ public class BuildFFACommand implements CommandExecutor {
         sender.sendMessage(colorize("&e/buildffa top [kills|deaths|kdr|streak] [limit] &7- Show top players"));
         sender.sendMessage(colorize("&e/buildffa creator &7- Show plugin credits"));
 
-        // ADMIN
         boolean isAdmin = sender.hasPermission(getPerm("setvoid", "buildffa.setvoid"))
                 || sender.hasPermission(getPerm("sethighlimit", "buildffa.sethighlimit"))
                 || sender.hasPermission(getPerm("setspawn", "buildffa.setspawn"))
