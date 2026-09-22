@@ -5,8 +5,10 @@ import java.util.Map;
 import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -34,6 +36,8 @@ public class Kill implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
         event.setDeathMessage(null);
+        event.getDrops().clear();
+        event.setDroppedExp(0);
 
         Player deathPlayer = event.getEntity();
         UUID victimId = deathPlayer.getUniqueId();
@@ -52,6 +56,7 @@ public class Kill implements Listener {
         }
         this.lastVictimDeathTimestamps.put(victimId, Long.valueOf(now));
 
+        // ---- Victim stats ----
         PlayerData victimData = this.databaseManager.getPlayer(victimId);
         if (victimData != null) {
             victimData.addDeath();
@@ -59,7 +64,10 @@ public class Kill implements Listener {
             this.databaseManager.savePlayer(victimData);
         }
 
-        if (deathPlayer.getKiller() == null) return;
+        if (deathPlayer.getKiller() == null) {
+            // No killer — still force teleport to spawn + heal on respawn
+            return;
+        }
 
         Player killer = deathPlayer.getKiller();
         UUID killerId = killer.getUniqueId();
@@ -73,6 +81,7 @@ public class Kill implements Listener {
 
         int killCount = this.killListener.getKillCount(killer);
 
+        // ---- Killer stats ----
         PlayerData killerData = this.databaseManager.getPlayer(killerId);
         int newStreak = 0;
         if (killerData != null) {
@@ -82,10 +91,11 @@ public class Kill implements Listener {
             newStreak = killerData.getKillstreak();
         }
 
+        // Killer gets full heal + reward
         fullHeal(killer);
-
         giveKillstreakReward(killer, newStreak);
 
+        // ---- Kill message ----
         String killMessage = this.plugin.getConfig().getString("kill");
         if (killMessage != null) {
             String broadcastMessage = colorize(killMessage)
@@ -209,23 +219,19 @@ public class Kill implements Listener {
         return null;
     }
 
-    /**
-     * Build ONE potion. The `level` argument defines the strength, not the count.
-     * kind: 1 = Speed, 2 = Jump Boost
-     */
     private ItemStack makePotion(int kind, int level) {
         ItemStack potion = new ItemStack(Material.POTION, 1);
 
         short data;
         if (kind == 1) {
-            if (level <= 1) data = 8194;      // Speed I
-            else data = 8226;                  // Speed II
+            if (level <= 1) data = 8194;
+            else data = 8226;
         } else {
-            if (level <= 1) data = 8203;      // Jump I
-            else if (level == 2) data = 8235; // Jump II
-            else if (level == 3) data = 8267; // Jump III
-            else if (level == 4) data = 8299; // Jump IV
-            else data = 8331;                  // Jump V
+            if (level <= 1) data = 8203;
+            else if (level == 2) data = 8235;
+            else if (level == 3) data = 8267;
+            else if (level == 4) data = 8299;
+            else data = 8331;
         }
 
         potion.setDurability(data);

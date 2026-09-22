@@ -23,7 +23,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 
 public class Void implements Listener {
 
@@ -38,7 +37,6 @@ public class Void implements Listener {
     private final Set<UUID> teleportingPlayers = new HashSet<UUID>();
     private final Set<UUID> dyingPlayers = new HashSet<UUID>();
 
-    // victim -> attacker (last hit)
     private final Map<UUID, UUID> lastDamager = new HashMap<UUID, UUID>();
     private final Map<UUID, Long> lastDamageTime = new HashMap<UUID, Long>();
 
@@ -133,6 +131,7 @@ public class Void implements Listener {
                 teleportToSpawn(player);
             } else {
                 this.dyingPlayers.add(player.getUniqueId());
+                voidDeaths.add(player.getUniqueId());
                 player.setHealth(0.0D);
             }
         }
@@ -143,16 +142,13 @@ public class Void implements Listener {
 
         Player killer = findKiller(player);
 
-        // ---- Stats ----
         saveStats(player, killer);
 
-        // ---- Full heal killer + reward ----
         if (killer != null) {
             fullHeal(killer);
             giveKillstreakReward(killer);
         }
 
-        // ---- Broadcast ----
         String finalMessage;
         if (killer != null) {
             finalMessage = this.voidKilledByMessage
@@ -171,9 +167,6 @@ public class Void implements Listener {
         this.lastDamageTime.remove(player.getUniqueId());
     }
 
-    /**
-     * Find the killer using lastDamager + fallback to direct player references.
-     */
     private Player findKiller(Player victim) {
         UUID damagerId = this.lastDamager.get(victim.getUniqueId());
         Long damageTime = this.lastDamageTime.get(victim.getUniqueId());
@@ -190,16 +183,12 @@ public class Void implements Listener {
         return null;
     }
 
-    /**
-     * Save victim death + attacker kill using direct DB cache.
-     */
     private void saveStats(Player victim, Player killer) {
         try {
             BuildFFA bffa = (BuildFFA) this.plugin;
             DatabaseManager db = bffa.getDatabaseManager();
             if (db == null) return;
 
-            // Victim: +1 death, reset killstreak
             PlayerData victimData = db.getPlayer(victim.getUniqueId());
             if (victimData == null) victimData = db.loadPlayer(victim.getUniqueId());
             if (victimData != null) {
@@ -208,7 +197,6 @@ public class Void implements Listener {
                 db.savePlayer(victimData);
             }
 
-            // Killer: +1 kill, +1 killstreak
             if (killer != null) {
                 PlayerData killerData = db.getPlayer(killer.getUniqueId());
                 if (killerData == null) killerData = db.loadPlayer(killer.getUniqueId());
@@ -224,9 +212,6 @@ public class Void implements Listener {
         }
     }
 
-    /**
-     * Give killstreak reward to the killer (same logic as Kill.java)
-     */
     private void giveKillstreakReward(Player killer) {
         if (killer == null) return;
 
@@ -352,6 +337,9 @@ public class Void implements Listener {
         }
     }
 
+    // ============================================================
+    //  Teleport to spawn + full reset
+    // ============================================================
     private void teleportToSpawn(final Player player) {
         final Location spawn = getSpawnLocation();
 
@@ -363,10 +351,12 @@ public class Void implements Listener {
                     return;
                 }
 
+                // Clear inventory + armor + cursor
                 player.getInventory().clear();
                 player.getInventory().setArmorContents(null);
                 player.setItemOnCursor(null);
 
+                // Full heal
                 player.setHealth(player.getMaxHealth());
                 player.setFoodLevel(20);
                 player.setSaturation(20.0F);
@@ -376,6 +366,7 @@ public class Void implements Listener {
                 player.setLevel(0);
                 player.setExp(0.0F);
 
+                // Restore kit
                 try {
                     BuildFFA bffa = (BuildFFA) plugin;
                     if (bffa.getEquip() != null) {
@@ -385,6 +376,7 @@ public class Void implements Listener {
                     plugin.getLogger().warning("Void kit restore failed: " + t.getMessage());
                 }
 
+                // Teleport
                 if (spawn != null) {
                     player.teleport(spawn);
                 } else {
@@ -433,11 +425,12 @@ public class Void implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
         event.setDeathMessage(null);
+        event.getDrops().clear();
+        event.setDroppedExp(0);
 
         Player player = event.getEntity();
         UUID victimId = player.getUniqueId();
 
-        // If this is a real death (not teleport), and we know the killer, credit
         if (player.getKiller() == null && this.dyingPlayers.remove(victimId)) {
             Player killer = findKiller(player);
             if (killer == null) killer = player.getKiller();

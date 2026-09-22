@@ -14,18 +14,14 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class SpawnManager implements Listener {
-  
+
   private final JavaPlugin plugin;
-  
+
   public SpawnManager(JavaPlugin plugin) {
     this.plugin = plugin;
     plugin.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
   }
-  
-  /**
-   * Get the saved spawn Location from config.
-   * Returns null if not set.
-   */
+
   public Location getSpawn() {
     FileConfiguration config = this.plugin.getConfig();
     if (!config.contains("spawn.world")) {
@@ -43,10 +39,7 @@ public class SpawnManager implements Listener {
     float pitch = (float) config.getDouble("spawn.pitch");
     return new Location(world, x, y, z, yaw, pitch);
   }
-  
-  /**
-   * Save a Location as the spawn point.
-   */
+
   public void setSpawn(Location loc) {
     FileConfiguration config = this.plugin.getConfig();
     config.set("spawn.world", loc.getWorld().getName());
@@ -57,27 +50,39 @@ public class SpawnManager implements Listener {
     config.set("spawn.pitch", Float.valueOf(loc.getPitch()));
     this.plugin.saveConfig();
   }
-  
-  /**
-   * On respawn (death, void): use the saved spawn.
-   */
-  @EventHandler
+
+  // ============================================================
+  //  RESPAWN — force spawn location  // ============================================================
+  @EventHandler(priority = EventPriority.HIGHEST)
   public void onPlayerRespawn(PlayerRespawnEvent event) {
     Location spawn = getSpawn();
     if (spawn != null) {
       event.setRespawnLocation(spawn);
     }
+
+    final Player player = event.getPlayer();
+    Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
+      @Override
+      public void run() {
+        if (!player.isOnline()) return;
+        player.setHealth(player.getMaxHealth());
+        player.setFoodLevel(20);
+        player.setSaturation(20.0F);
+        player.setExhaustion(0.0F);
+        player.setFireTicks(0);
+        player.setFallDistance(0.0F);
+      }
+    }, 1L);
   }
-  
-  /**
-   * On join (relog): teleport player to the saved spawn.
-   * Runs 1 tick later so the player is fully loaded.
-   */
+
+  // ============================================================
+  //  JOIN — teleport to spawn 1 tick later
+  // ============================================================
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerJoin(final PlayerJoinEvent event) {
     final Location spawn = getSpawn();
     if (spawn == null) return;
-    
+
     Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
       @Override
       public void run() {
