@@ -38,48 +38,61 @@
 #    FUCHSIA, GRAY, SILVER, LIME, MAROON, NAVY, OLIVE, TEAL
 #    OR "r,g,b"   example:  "255,0,0"
 #    OR "#RRGGBB" example:  "#FF0000"
+#
+#  ATTACK-DAMAGE:
+#    Optional. Overrides the vanilla attack damage of the item.
+#    Example: attack-damage: 7.5
+#
+#  POTION EFFECTS (for POTION items):
+#    effects:
+#      - 'JUMP:1:4'      # JUMP, duration in seconds, amplifier (0=I, 4=V)
+#      - 'SPEED:180:1'   # SPEED, 180s, amplifier 1 (Speed II)
 # ==========================================================
 
 # ----------------------------------------------------------
 #  ARMOR
-#  Helmet + Chestplate = Leather RED (unbreakable)
-#  Leggings + Boots    = Diamond    (unbreakable)
+#  Helmet + Chestplate = Leather RED (Protection II, Unbreakable)
+#  Leggings + Boots    = Diamond    (Protection II, Unbreakable)
 # ----------------------------------------------------------
 armor:
 
-  # ⭐ چرم قرمز — Helmet
+  # ⭐ چرم قرمز — Helmet + Protection II
   helmet:
     type: LEATHER_HELMET
     color: RED
     unbreakable: true
     name: ''
     lore: []
-    enchantments: []
+    enchantments:
+      - 'PROTECTION_ENVIRONMENTAL:2'
 
-  # ⭐ چرم قرمز — Chestplate
+  # ⭐ چرم قرمز — Chestplate + Protection II
   chestplate:
     type: LEATHER_CHESTPLATE
     color: RED
     unbreakable: true
     name: ''
     lore: []
-    enchantments: []
+    enchantments:
+      - 'PROTECTION_ENVIRONMENTAL:2'
 
-  # الماس — Leggings
+  # ⭐ الماس — Leggings + Protection II
   leggings:
     type: DIAMOND_LEGGINGS
     unbreakable: true
     name: ''
     lore: []
-    enchantments: []
+    enchantments:
+      - 'PROTECTION_ENVIRONMENTAL:2'
 
-  # الماس — Boots
+  # ⭐ الماس — Boots + Protection II
   boots:
     type: DIAMOND_BOOTS
     unbreakable: true
     name: ''
     lore: []
-    enchantments: []
+    enchantments:
+      - 'PROTECTION_ENVIRONMENTAL:2'
 
 # ----------------------------------------------------------
 #  ITEMS - inventory slots 0 to 35
@@ -87,16 +100,19 @@ armor:
 # ----------------------------------------------------------
 items:
 
+  # ⭐ STONE SWORD — Sharpness II, 7.5 Attack Damage
   sword:
     slot: 0
     type: STONE_SWORD
     amount: 1
     unbreakable: true
+    attack-damage: 7.5
     name: ''
     lore: []
     enchantments:
       - 'DAMAGE_ALL:2'
 
+  # ⭐ WOOL (cyan) — 64 blocks
   wool:
     slot: 1
     type: WOOL
@@ -107,6 +123,7 @@ items:
     lore: []
     enchantments: []
 
+  # ⭐ SHEARS — Unbreakable
   shears:
     slot: 2
     type: SHEARS
@@ -116,32 +133,49 @@ items:
     lore: []
     enchantments: []
 
-  pickaxe:
+  # ⭐ WOODEN AXE — Efficiency I, 3 Attack Damage (NOT unbreakable, like vanilla wood)
+  axe:
     slot: 3
-    type: IRON_PICKAXE
+    type: WOODEN_AXE
     amount: 1
-    unbreakable: true
+    unbreakable: false
+    attack-damage: 3.0
+    name: ''
+    lore: []
+    enchantments:
+      - 'DIG_SPEED:1'
+
+  # ⭐ WOODEN PICKAXE — Efficiency II, 2 Attack Damage
+  pickaxe:
+    slot: 4
+    type: WOODEN_PICKAXE
+    amount: 1
+    unbreakable: false
+    attack-damage: 2.0
     name: ''
     lore: []
     enchantments:
       - 'DIG_SPEED:2'
 
-  axe:
-    slot: 4
-    type: IRON_AXE
+  # ⭐ JUMP V POTION — 3 minutes (180s), amplifier 4 = Jump Boost V
+  jump-potion:
+    slot: 5
+    type: POTION
     amount: 1
-    unbreakable: true
-    name: ''
-    lore: []
-    enchantments:
-      - 'DIG_SPEED:1'
+    unbreakable: false
+    name: '&aPotion of Leaping V'
+    lore:
+      - '&7Drink to jump higher!'
+    enchantments: []
+    effects:
+      - 'JUMP:180:4'
 
 # ----------------------------------------------------------
 #  EXAMPLES - uncomment to add more items
 # ----------------------------------------------------------
 #
 #  gapple:
-#    slot: 5
+#    slot: 6
 #    type: GOLDEN_APPLE
 #    amount: 8
 #    unbreakable: false
@@ -151,7 +185,7 @@ items:
 #    enchantments: []
 #
 #  fireball:
-#    slot: 6
+#    slot: 7
 #    type: FIREBALL
 #    amount: 8
 #    unbreakable: false
@@ -161,10 +195,21 @@ items:
 #    enchantments: []
 #
 #  ender_pearl:
-#    slot: 7
+#    slot: 8
 #    type: ENDER_PEARL
 #    amount: 4
 #    unbreakable: false
 #    name: '&5Ender Pearl'
 #    lore: []
 #    enchantments: []
+#
+#  speed-potion:
+#    slot: 7
+#    type: POTION
+#    amount: 1
+#    unbreakable: false
+#    name: '&bPotion of Swiftness II'
+#    lore: []
+#    enchantments: []
+#    effects:
+#      - 'SPEED:180:1'
