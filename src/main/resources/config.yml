@@ -301,24 +301,19 @@ kill-heal:
     # Duration in seconds
     duration: 5
 
-# ----------------------------------------------------------
-#  Health Bar (ActionBar)
-#  Shows the player's HP above the hotbar, like BedWars.
+# ==========================================================
+#  ⚠️  OWN HealthBar — DISABLED
+# ==========================================================
+#  This used to show YOUR OWN HP above the hotbar
+#  (e.g. "❤ 20/20"). It is now fully disabled because
+#  the ENEMY health bar (below) handles all PvP health display.
 #
-#  MODES:
-#    NUMERIC  ->  ❤ 18.5/20  (default)
-#    HEARTS   ->  ❤❤❤❤❤❤❤❤❤♡ 18.5/20
-#    PERCENT  ->  ❤ 92% (18.5/20)
-#
-#  PLACEHOLDERS (for NUMERIC / PERCENT):
-#    %current%  ->  current HP
-#    %max%      ->  max HP
-#    %percent%  ->  HP percent (0-100)
-#    %player%   ->  player name
-# ----------------------------------------------------------
+#  → To re-enable your own HP bar, set enabled: true
+#    AND make sure HealthBarManager is instantiated in BuildFFA.java
+# ==========================================================
 healthbar:
-  # Enable/disable
-  enabled: true
+  # DISABLED by default — own HP bar no longer shown
+  enabled: false
 
   # Update interval in ticks (20 = 1 second)
   # 5 = smooth, 10 = medium, 20 = every second
@@ -328,12 +323,53 @@ healthbar:
   mode: NUMERIC
 
   # Format for NUMERIC and PERCENT modes
+  #   %current%  ->  current HP
+  #   %max%      ->  max HP
+  #   %percent%  ->  HP percent (0-100)
+  #   %player%   ->  player name
   format: '&c❤ &f%current%&7/&f%max%'
 
   # Colors for HEARTS mode
   filled-color: '&c'
   empty-color: '&7'
   heart-char: '❤'
+
+# ==========================================================
+#  ✅ NEW — Enemy HealthBar (ActionBar)
+# ==========================================================
+#  Shows the HP of the player you LAST HIT, above your hotbar.
+#  Perfect for PvP — you see enemy HP without cluttering the screen.
+#
+#  HOW IT WORKS:
+#    - You hit someone → their HP appears in your action bar
+#    - You hit again     → HP refreshes
+#    - You stop hitting → bar disappears after `timeout-seconds`
+#
+#  PLACEHOLDERS:
+#    %name%  ->  enemy player name
+#    %hp%    ->  enemy current HP
+#    %max%   ->  enemy max HP
+#
+#  FORMAT EXAMPLES:
+#    '&c[%name%] &8-- &f[%hp%&7/&f%max%&f]'   →  [Notch] -- [18/20]
+#    '&c%name% &8» &f%hp%&7/&f%max%'           →  Notch » 18/20
+#    '&e❤ &f%name% &7- &c%hp%&7/&c%max%'       →  ❤ Notch - 18/20
+#    '&8[&c%name%&8] &f%hp%&7/&f%max%'         →  [Notch] 18/20
+# ==========================================================
+enemy-healthbar:
+  # Enable/disable the enemy HP action bar
+  enabled: true
+
+  # Update interval in ticks (20 ticks = 1 second)
+  # 5 = smooth (recommended), 10 = medium
+  update-interval: 5
+
+  # After this many seconds without hitting anyone,
+  # the enemy HP bar disappears automatically.
+  timeout-seconds: 5
+
+  # Format string — see examples above
+  format: '&c[%name%] &8-- &f[%hp%&7/&f%max%&f]'
 
 # ----------------------------------------------------------
 #  Nametag HP Display (BELOW player's name)
@@ -349,6 +385,7 @@ healthbar:
 #      '&c❤'         → ❤ 20
 #      '&cHP'        → HP 20
 #      '&7[&c❤&7]'   → [❤] 20
+#      ''            → 20 (just the number)
 # ----------------------------------------------------------
 nametag:
   enabled: true

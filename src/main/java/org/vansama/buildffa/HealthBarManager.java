@@ -11,20 +11,19 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
- * Displays a live HP bar in the ActionBar (above the hotbar).
+ * ⚠️  DISABLED BY DEFAULT.
  *
- * Format examples:
- *   ❤ 18.5 / 20.0
- *   Health: 18.5/20.0
- *   ❤❤❤❤❤❤❤❤❤♡ (hearts)
+ * This class used to show the player's OWN HP in the ActionBar.
+ * It has been fully disabled because you now use {@link EnemyHealthBar}
+ * for all PvP-related health display.
  *
- * Config: healthbar.*
+ * To re-enable, uncomment the line in BuildFFA.onEnable() and set
+ * healthbar.enabled: true in config.yml.
  */
 public class HealthBarManager implements Listener {
 
     private final JavaPlugin plugin;
 
-    // NMS handles (cached once)
     private String nmsVersion;
     private Class<?> craftPlayerClass;
     private Class<?> chatComponentClass;
@@ -36,7 +35,6 @@ public class HealthBarManager implements Listener {
     private Method sendPacketMethod;
 
     private boolean nmsReady = false;
-
     private int taskId = -1;
 
     public HealthBarManager(JavaPlugin plugin) {
@@ -46,9 +44,6 @@ public class HealthBarManager implements Listener {
         startTask();
     }
 
-    // ============================================================
-    //  NMS setup (1.8.8)
-    // ============================================================
     private void setupNMS() {
         try {
             String packageName = Bukkit.getServer().getClass().getPackage().getName();
@@ -62,7 +57,7 @@ public class HealthBarManager implements Listener {
 
             this.packetChatConstructor = packetChatClass.getConstructor(iChatBaseClass, byte.class);
             this.getHandleMethod = craftPlayerClass.getMethod("getHandle");
-            this.sendPacketMethod = null; // set per player
+            this.sendPacketMethod = null;
 
             this.nmsReady = true;
         } catch (Throwable t) {
@@ -71,9 +66,6 @@ public class HealthBarManager implements Listener {
         }
     }
 
-    // ============================================================
-    //  UPDATE TASK — runs every N ticks
-    // ============================================================
     private void startTask() {
         if (this.taskId != -1) {
             Bukkit.getScheduler().cancelTask(this.taskId);
@@ -85,7 +77,7 @@ public class HealthBarManager implements Listener {
         this.taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, new Runnable() {
             @Override
             public void run() {
-                if (!plugin.getConfig().getBoolean("healthbar.enabled", true)) return;
+                if (!plugin.getConfig().getBoolean("healthbar.enabled", false)) return;
 
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     if (player.isDead()) continue;
@@ -95,30 +87,22 @@ public class HealthBarManager implements Listener {
         }, interval, interval);
     }
 
-    // ============================================================
-    //  SEND — build the string and dispatch
-    // ============================================================
     private void sendHealthBar(Player player) {
         String message = buildMessage(player);
         if (message == null || message.isEmpty()) return;
         sendActionBar(player, message);
     }
 
-    // ============================================================
-    //  BUILD — format the HP string
-    // ============================================================
     private String buildMessage(Player player) {
         double health = player.getHealth();
         double maxHealth = player.getMaxHealth();
 
-        // Clamp (safety)
         if (health < 0) health = 0;
         if (health > maxHealth) health = maxHealth;
 
         String mode = plugin.getConfig().getString("healthbar.mode", "NUMERIC");
         if (mode == null) mode = "NUMERIC";
 
-        // ============ NUMERIC ============
         if (mode.equalsIgnoreCase("NUMERIC")) {
             String format = plugin.getConfig().getString("healthbar.format", "&c❤ &f%current%&7/&f%max%");
             return colorize(format
@@ -127,7 +111,6 @@ public class HealthBarManager implements Listener {
                     .replace("%player%", player.getName()));
         }
 
-        // ============ HEARTS ============
         if (mode.equalsIgnoreCase("HEARTS")) {
             int totalHearts = (int) Math.ceil(maxHealth / 2.0);
             int filledHearts = (int) Math.ceil(health / 2.0);
@@ -139,18 +122,13 @@ public class HealthBarManager implements Listener {
             String heartChar = plugin.getConfig().getString("healthbar.heart-char", "❤");
 
             StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < filledHearts; i++) {
-                sb.append(filledColor).append(heartChar);
-            }
-            for (int i = 0; i < emptyHearts; i++) {
-                sb.append(emptyColor).append(heartChar);
-            }
+            for (int i = 0; i < filledHearts; i++) sb.append(filledColor).append(heartChar);
+            for (int i = 0; i < emptyHearts; i++) sb.append(emptyColor).append(heartChar);
             sb.append(" &f").append(formatNumber(health)).append("&7/&f").append(formatNumber(maxHealth));
 
             return colorize(sb.toString());
         }
 
-        // ============ PERCENT ============
         if (mode.equalsIgnoreCase("PERCENT")) {
             double percent = (health / maxHealth) * 100.0;
             String format = plugin.getConfig().getString("healthbar.format", "&c❤ &f%percent%% &7(&f%current%&7/&f%max%&7)");
@@ -160,29 +138,20 @@ public class HealthBarManager implements Listener {
                     .replace("%max%", formatNumber(maxHealth)));
         }
 
-        // Default fallback
         return colorize("&c❤ &f" + formatNumber(health) + "&7/&f" + formatNumber(maxHealth));
     }
 
     private String formatNumber(double d) {
-        if (d == Math.floor(d)) {
-            return String.valueOf((int) d);
-        }
+        if (d == Math.floor(d)) return String.valueOf((int) d);
         return String.format("%.1f", d);
     }
 
-    // ============================================================
-    //  SEND ACTIONBAR via NMS (1.8.8)
-    // ============================================================
     private void sendActionBar(Player player, String message) {
-        // Try Spigot API first
         try {
             Method sendActionBar = player.getClass().getMethod("sendActionBar", String.class);
             sendActionBar.invoke(player, message);
             return;
-        } catch (Throwable ignored) {
-            // fall through to NMS
-        }
+        } catch (Throwable ignored) {}
 
         if (!this.nmsReady) {
             player.sendMessage(message);
@@ -198,7 +167,6 @@ public class HealthBarManager implements Listener {
             Object chatComponent = chatComponentClass
                     .getConstructor(String.class).newInstance(message);
 
-            // byte 2 = action bar position
             Object packet = packetChatConstructor.newInstance(chatComponent, (byte) 2);
 
             if (this.sendPacketMethod == null) {
@@ -208,13 +176,10 @@ public class HealthBarManager implements Listener {
 
             sendPacketMethod.invoke(playerConnection, packet);
         } catch (Throwable t) {
-            // Silent fail — don't spam logs
+            // Silent fail
         }
     }
 
-    // ============================================================
-    //  RELOAD / SHUTDOWN
-    // ============================================================
     public void reloadConfig() {
         if (this.taskId != -1) {
             Bukkit.getScheduler().cancelTask(this.taskId);

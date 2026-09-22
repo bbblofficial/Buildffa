@@ -32,8 +32,13 @@ public final class BuildFFA extends JavaPlugin implements Listener {
     private FireballFix fireballFix;
     private YPearl yPearl;
     private KitSettingsManager kitSettings;
+    private NametagManager nametagManager;
+
+    // ✅ DEPRECATED — own-HP display (disabled, kept for reference only)
     private HealthBarManager healthBarManager;
-    private NametagManager nametagManager;   // ✅ NEW
+
+    // ✅ NEW — enemy HP display (shows HP of the player you hit)
+    private EnemyHealthBar enemyHealthBar;
 
     // ==================== COUNTDOWN ====================
     private static int secondsUntilRefresh = 600;
@@ -73,13 +78,19 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         // 2) Kit settings
         this.kitSettings = new KitSettingsManager(this);
 
-        // 3) HealthBar
-        this.healthBarManager = new HealthBarManager(this);
+        // 3) HealthBar (OWN HP) — ❌ DISABLED per user request
+        //    Set healthbar.enabled: false in config.yml to fully disable.
+        //    We simply DON'T instantiate it anymore.
+        this.healthBarManager = null;
 
-        // 4) Nametag (needs config)
+        // 4) Nametag (below-name HP)
         this.nametagManager = new NametagManager(this);
 
-        // 5) Everything else
+        // 5) ✅ NEW — Enemy HealthBar (shows HP of who you hit)
+        //    Self-registers listener + starts its own task.
+        this.enemyHealthBar = new EnemyHealthBar(this);
+
+        // 6) Everything else
         this.blocks = new Blocks(this);
         this.kitEditor = new KitEditor(this, this.databaseManager);
         this.equip = new Equip(this);
@@ -112,9 +123,13 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this.yPearl, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.scoreboardManager, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.voice, (Plugin) this);
-        getServer().getPluginManager().registerEvents(this.healthBarManager, (Plugin) this);
         getServer().getPluginManager().registerEvents(this.nametagManager, (Plugin) this);
         getServer().getPluginManager().registerEvents(this, (Plugin) this);
+
+        // ❌ HealthBarManager registration REMOVED (own HP display disabled)
+        // getServer().getPluginManager().registerEvents(this.healthBarManager, (Plugin) this);
+
+        // ✅ EnemyHealthBar self-registers in its constructor — no need to register here.
         // =============================================================
 
         getCommand("buildffa").setExecutor(new BuildFFACommand(this, this.kitEditor, this.scoreboardManager, this.databaseManager));
@@ -162,7 +177,8 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         getLogger().info("  Database: SQLite -> " + this.databaseManager.getDbFile().getPath());
         getLogger().info("  Backup folder: " + this.databaseManager.getBackupFolder().getPath());
         getLogger().info("  Kit settings: " + this.kitSettings.getFile().getPath());
-        getLogger().info("  HealthBar: " + (this.getConfig().getBoolean("healthbar.enabled", true) ? "ENABLED" : "DISABLED"));
+        getLogger().info("  Own HealthBar: DISABLED (removed per request)");
+        getLogger().info("  Enemy HealthBar: " + (this.getConfig().getBoolean("enemy-healthbar.enabled", true) ? "ENABLED" : "DISABLED"));
         getLogger().info("  Nametag HP: " + (this.getConfig().getBoolean("nametag.enabled", true) ? "ENABLED" : "DISABLED"));
         getLogger().info("=================================================");
 
@@ -284,18 +300,15 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "ypvp.y-level", Double.valueOf(150.0D));
         setIfMissing(cfg, "ypvp.block-projectiles", Boolean.valueOf(true));
         setIfMissing(cfg, "ypvp.message", "&cYou cannot PvP here!");
-        // ==============================================
 
         // ==================== YPearl ====================
         setIfMissing(cfg, "ypearl.enabled", Boolean.valueOf(true));
         setIfMissing(cfg, "ypearl.y-level", Double.valueOf(61.5D));
         setIfMissing(cfg, "ypearl.message", "&cYou cannot throw pearls here!");
-        // ===============================================
 
         // ==================== DATABASE (SQLite) ====================
         setIfMissing(cfg, "database.autosave", Boolean.valueOf(true));
         setIfMissing(cfg, "database.autosave-interval", Long.valueOf(300L));
-        // ==========================================================
 
         setIfMissing(cfg, "kill", "&a%killer% &7killed &c%loser%");
         setIfMissing(cfg, "Title-Suffix", " &7Kill");
@@ -313,17 +326,21 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "kill-heal.absorption.enabled", Boolean.valueOf(false));
         setIfMissing(cfg, "kill-heal.absorption.level", Integer.valueOf(1));
         setIfMissing(cfg, "kill-heal.absorption.duration", Integer.valueOf(5));
-        // ==================================================================
 
-        // ==================== HealthBar ====================
-        setIfMissing(cfg, "healthbar.enabled", Boolean.valueOf(true));
+        // ==================== HealthBar (OWN HP) — DISABLED ====================
+        setIfMissing(cfg, "healthbar.enabled", Boolean.valueOf(false));
         setIfMissing(cfg, "healthbar.update-interval", Integer.valueOf(5));
         setIfMissing(cfg, "healthbar.mode", "NUMERIC");
         setIfMissing(cfg, "healthbar.format", "&c❤ &f%current%&7/&f%max%");
         setIfMissing(cfg, "healthbar.filled-color", "&c");
         setIfMissing(cfg, "healthbar.empty-color", "&7");
         setIfMissing(cfg, "healthbar.heart-char", "❤");
-        // ===================================================
+
+        // ==================== Enemy HealthBar (NEW) ====================
+        setIfMissing(cfg, "enemy-healthbar.enabled", Boolean.valueOf(true));
+        setIfMissing(cfg, "enemy-healthbar.update-interval", Integer.valueOf(5));
+        setIfMissing(cfg, "enemy-healthbar.timeout-seconds", Integer.valueOf(5));
+        setIfMissing(cfg, "enemy-healthbar.format", "&c[%name%] &8-- &f[%hp%&7/&f%max%&f]");
 
         // ==================== Nametag ====================
         setIfMissing(cfg, "nametag.enabled", Boolean.valueOf(true));
@@ -334,7 +351,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "nametag.filled-color", "&c");
         setIfMissing(cfg, "nametag.empty-color", "&7");
         setIfMissing(cfg, "nametag.heart-char", "❤");
-        // ==================================================
 
         setIfMissing(cfg, "permissions.ypvp", "buildffa.ypvp");
         setIfMissing(cfg, "permissions.ypvp-bypass", "buildffa.ypvp.bypass");
@@ -390,7 +406,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "killstreak-rewards.rewards.10", "gapple:2 fb:1 feather:1 perl:1 speed:2 jump:3 jump:2");
         setIfMissing(cfg, "killstreak-rewards.rewards.11", "feather:1 speed:2 jump:5 perl:1");
         setIfMissing(cfg, "killstreak-rewards.rewards.12", "feather:1 jump:5 perl:1 fb:1");
-        // ===========================================================
 
         // ==================== Feather Jump ====================
         setIfMissing(cfg, "feather-jump.boost", Double.valueOf(0.9D));
@@ -400,7 +415,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "feather-jump.knockback-vertical", Double.valueOf(0.9D));
         setIfMissing(cfg, "feather-jump.damage", Double.valueOf(2.0D));
         setIfMissing(cfg, "feather-jump.message", "&b✦ &fDouble Jump!");
-        // ======================================================
 
         // ==================== Fireball ====================
         setIfMissing(cfg, "fireball.message", "");
@@ -415,7 +429,6 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "fireball.knockback.height-force", Double.valueOf(1.5D));
         setIfMissing(cfg, "fireball.knockback.radius-force", Double.valueOf(2.0D));
         setIfMissing(cfg, "fireball.knockback.damage", Double.valueOf(1.0D));
-        // ===================================================
 
         try {
             cfg.save(configFile);
@@ -503,11 +516,16 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         if (this.scoreboardManager != null) {
             this.scoreboardManager.shutdown();
         }
+        // ❌ Own HealthBar shutdown removed (never instantiated)
         if (this.healthBarManager != null) {
             this.healthBarManager.shutdown();
         }
         if (this.nametagManager != null) {
             this.nametagManager.shutdown();
+        }
+        // ✅ Shutdown enemy HP bar (clears its task + maps)
+        if (this.enemyHealthBar != null) {
+            this.enemyHealthBar.shutdown();
         }
         BuildModeManager.clearAll();
         CombatManager.clearAll();
@@ -551,12 +569,20 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         return this.kitSettings;
     }
 
+    /**
+     * @deprecated Own-HP display disabled. Always returns {@code null}.
+     *             Use {@link #getEnemyHealthBar()} instead.
+     */
+    @Deprecated
     public HealthBarManager getHealthBarManager() {
         return this.healthBarManager;
     }
 
-   
     public NametagManager getNametagManager() {
         return this.nametagManager;
+    }
+
+    public EnemyHealthBar getEnemyHealthBar() {
+        return this.enemyHealthBar;
     }
 }

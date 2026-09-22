@@ -233,7 +233,6 @@ public class BuildFFACommand implements CommandExecutor {
     // Stats Command
     // ==========================================
     private boolean handleStats(CommandSender sender, String[] args) {
-        // /buildffa stats add <kill|kdr|ks|death> <player> <amount>
         if (args.length >= 2 && args[1].equalsIgnoreCase("add")) {
             if (args.length < 5) {
                 sender.sendMessage(colorize("&cUsage: /buildffa stats add <kill|kdr|ks|death> <player> <amount>"));
@@ -286,7 +285,6 @@ public class BuildFFACommand implements CommandExecutor {
                 return true;
             }
 
-            // ✅ immediate save — bypass debounce
             this.database.savePlayerImmediate(data);
 
             sender.sendMessage(colorize("&aAdded &e" + amount + " &ato &e" + target.getName() + "'s &e" + statName + "&a."));
@@ -297,7 +295,6 @@ public class BuildFFACommand implements CommandExecutor {
             return true;
         }
 
-        // /buildffa stats reset <kill|ks|death> <player>
         if (args.length >= 2 && args[1].equalsIgnoreCase("reset")) {
             if (args.length < 4) {
                 sender.sendMessage(colorize("&cUsage: /buildffa stats reset <kill|ks|death> <player>"));
@@ -337,14 +334,12 @@ public class BuildFFACommand implements CommandExecutor {
                 return true;
             }
 
-            // ✅ immediate
             this.database.savePlayerImmediate(data);
 
             sender.sendMessage(colorize("&aReset &e" + statName + " &afor &e" + target.getName() + "&a."));
             return true;
         }
 
-        // ---- Default /stats <player> ----
         Player target;
 
         if (args.length >= 2) {
@@ -628,7 +623,6 @@ public class BuildFFACommand implements CommandExecutor {
         data.setKillstreak(0);
         data.setBestKillstreak(0);
 
-        // ✅ immediate
         this.database.savePlayerImmediate(data);
 
         sender.sendMessage(colorize("&aReset stats for &e" + target.getName()));
@@ -1037,14 +1031,18 @@ public class BuildFFACommand implements CommandExecutor {
             this.scoreboardManager.reloadConfig();
         }
 
-        // ✅ Reload kit-setting.yml + healthbar + nametag
         try {
             BuildFFA bffa = (BuildFFA) this.plugin;
             if (bffa.getKitSettings() != null) {
                 bffa.getKitSettings().reload();
             }
+            // ❌ Own HealthBar reload removed (never instantiated)
             if (bffa.getHealthBarManager() != null) {
                 bffa.getHealthBarManager().reloadConfig();
+            }
+            // ✅ NEW — reload enemy HP bar (clears maps + restarts task)
+            if (bffa.getEnemyHealthBar() != null) {
+                bffa.getEnemyHealthBar().reloadConfig();
             }
             if (bffa.getNametagManager() != null) {
                 bffa.getNametagManager().reloadConfig();
