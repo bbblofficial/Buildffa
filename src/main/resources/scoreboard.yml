@@ -4,6 +4,11 @@
 #  Theme: Aqua / White / Dark-Aqua (No Bold)
 #  Created by Muvixo | Author: VanSaMa | Made by PixelValley
 # ==========================================================
+#
+#  This file is AUTO-MERGED on plugin update.
+#  New keys are added automatically.
+#  Your existing lines are NEVER overwritten.
+# ==========================================================
 
 enabled: true
 update-interval: 10
@@ -27,6 +32,10 @@ title:
 
 # ----------------------------------------------------------
 #  Scoreboard Lines
+#
+#  ⚠️ 1.8.8 LIMIT: each line = prefix (16) + suffix (16) = max 32 chars TOTAL
+#     If a line is longer, it gets split. The split may cut off the end.
+#
 #  Internal placeholders (handled by ScoreboardManager):
 #    %player% %kills% %deaths% %kdr% %killstreak% %best_killstreak%
 #    %online% %max_online% %world% %ping% %health% %food% %y%
@@ -52,7 +61,7 @@ lines:
   - '&bStreak &8» &f%killstreak%'
   - '&bBest KS &8» &f%best_killstreak%'
   - '&3&m----------------'
-  - '&bTop KS &8» &f%buildffa_top_name_killstreak_1% &7(&b%buildffa_top_value_killstreak_1%&7)'
+  - '&bTop KS &8» &f%buildffa_top_name_killstreak_1%'
   - '&3&m----------------'
   - '&bOnline &8» &f%online%&7/&f%max_online%'
   - '&bPing &8» &f%ping%ms'

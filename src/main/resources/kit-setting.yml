@@ -44,9 +44,6 @@
 #  ARMOR
 #  Helmet + Chestplate = Leather RED (unbreakable)
 #  Leggings + Boots    = Diamond    (unbreakable)
-#
-#  ⭐ To add enchantments, uncomment the enchantments list
-#     and add entries like: - 'PROTECTION_ENVIRONMENTAL:4'
 # ----------------------------------------------------------
 armor:
 
@@ -58,10 +55,6 @@ armor:
     name: ''
     lore: []
     enchantments: []
-    # enchantments:
-    #   - 'PROTECTION_ENVIRONMENTAL:4'
-    #   - 'DURABILITY:3'
-    #   - 'OXYGEN:3'
 
   # ⭐ چرم قرمز — Chestplate
   chestplate:
@@ -71,32 +64,22 @@ armor:
     name: ''
     lore: []
     enchantments: []
-    # enchantments:
-    #   - 'PROTECTION_ENVIRONMENTAL:4'
-    #   - 'DURABILITY:3'
 
-  # مثل قبل — Diamond Leggings
+  # الماس — Leggings
   leggings:
     type: DIAMOND_LEGGINGS
     unbreakable: true
     name: ''
     lore: []
     enchantments: []
-    # enchantments:
-    #   - 'PROTECTION_ENVIRONMENTAL:4'
-    #   - 'DURABILITY:3'
 
-  # مثل قبل — Diamond Boots
+  # الماس — Boots
   boots:
     type: DIAMOND_BOOTS
     unbreakable: true
     name: ''
     lore: []
     enchantments: []
-    # enchantments:
-    #   - 'PROTECTION_ENVIRONMENTAL:4'
-    #   - 'DURABILITY:3'
-    #   - 'PROTECTION_FALL:4'
 
 # ----------------------------------------------------------
 #  ITEMS - inventory slots 0 to 35
