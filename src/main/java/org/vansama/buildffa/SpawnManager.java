@@ -9,7 +9,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -22,16 +21,22 @@ public class SpawnManager implements Listener {
     plugin.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
   }
 
+  // ============================================================
+  //  GET SPAWN
+  // ============================================================
   public Location getSpawn() {
     FileConfiguration config = this.plugin.getConfig();
     if (!config.contains("spawn.world")) {
       return null;
     }
     String worldName = config.getString("spawn.world");
+    if (worldName == null) return null;
+
     World world = Bukkit.getWorld(worldName);
     if (world == null) {
       return null;
     }
+
     double x = config.getDouble("spawn.x");
     double y = config.getDouble("spawn.y");
     double z = config.getDouble("spawn.z");
@@ -40,7 +45,12 @@ public class SpawnManager implements Listener {
     return new Location(world, x, y, z, yaw, pitch);
   }
 
+  // ============================================================
+  //  SET SPAWN
+  // ============================================================
   public void setSpawn(Location loc) {
+    if (loc == null || loc.getWorld() == null) return;
+
     FileConfiguration config = this.plugin.getConfig();
     config.set("spawn.world", loc.getWorld().getName());
     config.set("spawn.x", Double.valueOf(loc.getX()));
@@ -52,31 +62,12 @@ public class SpawnManager implements Listener {
   }
 
   // ============================================================
-  //  RESPAWN — force spawn location  // ============================================================
-  @EventHandler(priority = EventPriority.HIGHEST)
-  public void onPlayerRespawn(PlayerRespawnEvent event) {
-    Location spawn = getSpawn();
-    if (spawn != null) {
-      event.setRespawnLocation(spawn);
-    }
-
-    final Player player = event.getPlayer();
-    Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
-      @Override
-      public void run() {
-        if (!player.isOnline()) return;
-        player.setHealth(player.getMaxHealth());
-        player.setFoodLevel(20);
-        player.setSaturation(20.0F);
-        player.setExhaustion(0.0F);
-        player.setFireTicks(0);
-        player.setFallDistance(0.0F);
-      }
-    }, 1L);
-  }
-
-  // ============================================================
   //  JOIN — teleport to spawn 1 tick later
+  //
+  //  NOTE: Respawn handling is intentionally NOT here.
+  //  KitRestore.onPlayerRespawn() owns the respawn flow
+  //  (auto-respawn, heal, kit restore, teleport).
+  //  Keeping it in one place avoids double-heal / double-teleport.
   // ============================================================
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerJoin(final PlayerJoinEvent event) {

@@ -2,60 +2,100 @@ name: BuildFFA
 version: 4.0
 main: org.vansama.buildffa.BuildFFA
 author: muvixo
-description: BuildFFA - Created by Muvixo
+authors: [muvixo, VanSaMa]
+description: BuildFFA - Created by Muvixo, made by PixelValley
+api-version: 1.8
 softdepend: [PlaceholderAPI]
+
 commands:
   buildffa:
     description: Main BuildFFA command
     usage: /buildffa <help|kiteditor|setvoid|sethighlimit|setspawn|buildmode|ypvp|ypearl|fb-speed|sb|stats|top|resetstats|forceksreward|cc|creator|reload>
     aliases:
       - bffa
+
 permissions:
+  buildffa.*:
+    description: Grants all BuildFFA permissions
+    default: op
+    children:
+      buildffa.kiteditor: true
+      buildffa.setvoid: true
+      buildffa.sethighlimit: true
+      buildffa.setspawn: true
+      buildffa.reload: true
+      buildffa.highlimit.bypass: true
+      buildffa.ypvp: true
+      buildffa.ypvp.bypass: true
+      buildffa.ypearl: true
+      buildffa.ypearl.bypass: true
+      buildffa.fireball.speed: true
+      buildffa.buildmode: true
+      buildffa.scoreboard.toggle: true
+      buildffa.resetstats: true
+      buildffa.connection: true
+      buildffa.connection.bypass: true
+
   buildffa.kiteditor:
     description: Allows using the Kit Editor
     default: true
+
   buildffa.setvoid:
     description: Allows setting the void kill height
     default: op
+
   buildffa.sethighlimit:
     description: Allows setting the high build limit
     default: op
+
   buildffa.setspawn:
     description: Allows setting the respawn point
     default: op
+
   buildffa.reload:
     description: Allows reloading the config
     default: op
+
   buildffa.highlimit.bypass:
     description: Bypass the high-limit build restriction
     default: op
+
   buildffa.ypvp:
     description: Allows setting the YPvP Y level
     default: op
+
   buildffa.ypvp.bypass:
     description: Bypass the YPvP PvP restriction
     default: op
+
   buildffa.ypearl:
     description: Allows setting the YPearl Y level
     default: op
+
   buildffa.ypearl.bypass:
     description: Bypass the YPearl throw restriction
     default: op
+
   buildffa.fireball.speed:
     description: Allows changing the fireball speed
     default: op
+
   buildffa.buildmode:
     description: Allows toggling build mode (high-limit bypass)
     default: op
+
   buildffa.scoreboard.toggle:
     description: Allows toggling the scoreboard visibility
-    default: op
+    default: true
+
   buildffa.resetstats:
     description: Allows resetting player stats and forcing killstreak rewards
     default: op
+
   buildffa.connection:
     description: Allows managing connection check
     default: op
+
   buildffa.connection.bypass:
     description: Bypass the connection check kick (grant manually or use /buildffa cc bypass)
     default: false

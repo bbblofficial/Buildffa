@@ -42,6 +42,8 @@ public class Void implements Listener {
 
     private static final long DAMAGE_WINDOW_MS = 10000L;
 
+    // Tracks players whose death was caused by the void,
+    // so Kill.java knows to skip them (Void already handled the kill).
     private static final Set<UUID> voidDeaths = new HashSet<UUID>();
 
     public Void(JavaPlugin plugin) {
@@ -339,6 +341,7 @@ public class Void implements Listener {
 
     // ============================================================
     //  Teleport to spawn + full reset
+    //  (Kit is restored by Equip.giveDiamondArmor)
     // ============================================================
     private void teleportToSpawn(final Player player) {
         final Location spawn = getSpawnLocation();
@@ -422,15 +425,27 @@ public class Void implements Listener {
         return new Location(world, x, y, z, yaw, pitch);
     }
 
+    // ============================================================
+    //  DEATH — only handles kill credit + broadcast
+    //  (Drops / XP / death message are cleared by KitRestore,
+    //   so we don't touch them here to avoid double-handling.)
+    // ============================================================
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
-        event.setDeathMessage(null);
-        event.getDrops().clear();
-        event.setDroppedExp(0);
-
         Player player = event.getEntity();
         UUID victimId = player.getUniqueId();
 
+        // If this was a void death (teleport-instead-of-kill disabled),
+        // Void already saved stats + broadcast in handleVoidFall.
+        if (voidDeaths.contains(victimId)) {
+            // Nothing extra to do — the flow already handled it.
+            this.teleportingPlayers.remove(victimId);
+            return;
+        }
+
+        // If the victim had fallen below kill-height while teleport
+        // was enabled, no death event should happen here — but just
+        // in case, be safe:
         if (player.getKiller() == null && this.dyingPlayers.remove(victimId)) {
             Player killer = findKiller(player);
             if (killer == null) killer = player.getKiller();

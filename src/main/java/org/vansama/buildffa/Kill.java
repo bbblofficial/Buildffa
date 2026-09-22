@@ -5,10 +5,8 @@ import java.util.Map;
 import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -35,9 +33,8 @@ public class Kill implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
-        event.setDeathMessage(null);
-        event.getDrops().clear();
-        event.setDroppedExp(0);
+        // NOTE: death message / drops / XP clearing is handled by KitRestore.
+        // This class only handles stats + kill messages + rewards.
 
         Player deathPlayer = event.getEntity();
         UUID victimId = deathPlayer.getUniqueId();
@@ -65,7 +62,6 @@ public class Kill implements Listener {
         }
 
         if (deathPlayer.getKiller() == null) {
-            // No killer — still force teleport to spawn + heal on respawn
             return;
         }
 
@@ -97,7 +93,7 @@ public class Kill implements Listener {
 
         // ---- Kill message ----
         String killMessage = this.plugin.getConfig().getString("kill");
-        if (killMessage != null) {
+        if (killMessage != null && !killMessage.isEmpty()) {
             String broadcastMessage = colorize(killMessage)
                     .replaceAll("%killer%", killer.getName())
                     .replaceAll("%loser%", deathPlayer.getName())

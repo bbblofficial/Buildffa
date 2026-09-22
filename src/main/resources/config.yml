@@ -183,17 +183,21 @@ killstreak-rewards:
   # If true, rewards repeat every 12 killstreaks after level 12
   repeat-from-12: true
 
+  # If true, EVERY reward from 1 up to the streak is given (stacking).
+  # If false, only the highest matching reward is given.
+  stacking: false
+
   # Rewards per killstreak level
   rewards:
-    '4':   "gapple:1 fb:1 speed:1 "
-    '5':   "gapple:2 speed:2 jump:1 "
-    '6':   "gapple:2 fb:1 jump:5 speed:1 "
-    '7':   "perl:1 gapple:1 speed:2 "
-    '8':   "gapple:1 fb:1 "
-    '9':   "gapple:1 perl:1 "
-    '10':  "gapple:2 fb:1 feather:1 perl:1 speed:2 jump:3 jump:2 "
-    '11':  "feather:1 speed:2 jump:5 perl:1 "
-    '12':  "feather:1 jump:5 perl:1 fb:1 "
+    '4':   'gapple:1 fb:1 speed:1'
+    '5':   'gapple:2 speed:2 jump:1'
+    '6':   'gapple:2 fb:1 jump:5 speed:1'
+    '7':   'perl:1 gapple:1 speed:2'
+    '8':   'gapple:1 fb:1'
+    '9':   'gapple:1 perl:1'
+    '10':  'gapple:2 fb:1 feather:1 perl:1 speed:2 jump:3 jump:2'
+    '11':  'feather:1 speed:2 jump:5 perl:1'
+    '12':  'feather:1 jump:5 perl:1 fb:1'
 
 # ----------------------------------------------------------
 #  Feather Jump (Double Jump)

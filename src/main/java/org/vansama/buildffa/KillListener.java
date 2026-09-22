@@ -63,7 +63,6 @@ public class KillListener implements Listener {
 
     CombatManager.registerHit(attacker.getUniqueId(), victim.getUniqueId());
   }
-  // ============================================================
 
   @EventHandler
   public void onPlayerKill(PlayerDeathEvent event) {
@@ -92,13 +91,13 @@ public class KillListener implements Listener {
     boolean enableTitle = this.config.getBoolean("kill-screen.enable-title", true);
 
     if (enableTitle) {
-        String title = this.config.getString("kill-screen.title", "&e+%killcount% &7Kill");
-        String subtitle = this.config.getString("kill-screen.subtitle", "&e+1 Kill");
+      String title = this.config.getString("kill-screen.title", "&e+%killcount% &7Kill");
+      String subtitle = this.config.getString("kill-screen.subtitle", "&e+1 Kill");
 
-        title = title.replace("%killcount%", String.valueOf(kills));
-        subtitle = subtitle.replace("%killcount%", String.valueOf(kills));
+      title = title.replace("%killcount%", String.valueOf(kills));
+      subtitle = subtitle.replace("%killcount%", String.valueOf(kills));
 
-        sendTitle(killer, title, subtitle, kills);
+      sendTitle(killer, title, subtitle, kills);
     }
 
     killer.playSound(killer.getLocation(), Sound.LEVEL_UP, 1.0F, 1.0F);
@@ -108,12 +107,24 @@ public class KillListener implements Listener {
     CombatManager.clearPlayer(deathPlayer.getUniqueId());
   }
 
+  /**
+   * Sends a title packet to the killer only.
+   * Uses Spigot API first (1.8.8+), falls back to NMS, then chat.
+   */
   @SuppressWarnings({ "unchecked", "rawtypes" })
   private void sendTitle(Player player, String title, String subtitle, int kills) {
-    try {
-      title = colorize(title);
-      subtitle = colorize(subtitle);
+    title = colorize(title);
+    subtitle = colorize(subtitle);
 
+    // ---- Try Spigot API first (clean & reliable) ----
+    try {
+      Method sendTitleMethod = player.getClass().getMethod("sendTitle", String.class, String.class);
+      sendTitleMethod.invoke(player, title, subtitle);
+      return;
+    } catch (Throwable ignored) {}
+
+    // ---- NMS fallback ----
+    try {
       Class<?> craftPlayerClass = Class.forName("org.bukkit.craftbukkit." + nmsVersion + ".entity.CraftPlayer");
       Object craftPlayer = craftPlayerClass.cast(player);
       Object entityPlayer = craftPlayerClass.getMethod("getHandle").invoke(craftPlayer);
@@ -142,12 +153,13 @@ public class KillListener implements Listener {
       Constructor<?> timingConstructor = packetTitleClass.getConstructor(int.class, int.class, int.class);
       Object packetTiming = timingConstructor.newInstance(Integer.valueOf(0), Integer.valueOf(40), Integer.valueOf(0));
       sendPacketMethod.invoke(playerConnection, packetTiming);
+      return;
+    } catch (Throwable ignored) {}
 
-    } catch (Exception e) {
-      if (this.config.getBoolean("kill-screen.enable-chat-fallback", false)) {
-          String fallback = this.config.getString("kill-screen.chat-message", "&a+1 Kill!");
-          player.sendMessage(colorize(fallback.replace("%killcount%", String.valueOf(kills))));
-      }
+    // ---- Chat fallback ----
+    if (this.config.getBoolean("kill-screen.enable-chat-fallback", false)) {
+      String fallback = this.config.getString("kill-screen.chat-message", "&a+1 Kill!");
+      player.sendMessage(colorize(fallback.replace("%killcount%", String.valueOf(kills))));
     }
   }
 
@@ -158,14 +170,11 @@ public class KillListener implements Listener {
   public void onPlayerQuit(PlayerQuitEvent event) {
     Player player = event.getPlayer();
 
-    // If the player was in combat, reward the opponent
     UUID partnerId = CombatManager.getCombatPartner(player.getUniqueId());
     if (partnerId != null) {
       Player partner = Bukkit.getPlayer(partnerId);
       if (partner != null && partner.isOnline()) {
         if (CombatManager.areInCombat(player.getUniqueId(), partner.getUniqueId())) {
-          // Check partner also has combat against player (both hit each other)
-          // Full heal the partner
           partner.setHealth(partner.getMaxHealth());
           partner.setFoodLevel(20);
           partner.setSaturation(20.0F);
@@ -177,7 +186,6 @@ public class KillListener implements Listener {
       }
     }
 
-    // Killstreak reset on quit if in combat
     DatabaseManager db = ((BuildFFA) this.plugin).getDatabaseManager();
     if (db != null && partnerId != null) {
       PlayerData data = db.getPlayer(player.getUniqueId());

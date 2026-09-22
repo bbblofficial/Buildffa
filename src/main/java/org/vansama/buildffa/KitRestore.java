@@ -30,19 +30,45 @@ public class KitRestore implements Listener {
   }
 
   // ============================================================
+  //  AUTO RESPAWN — closes the vanilla Respawn Screen instantly
+  //  so the victim goes straight to spawn without seeing any UI.
+  // ============================================================
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void onPlayerDeathAutoRespawn(PlayerDeathEvent event) {
+    final Player player = event.getEntity();
+
+    // Run on the very next tick so death processing finishes first.
+    Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
+      @Override
+      public void run() {
+        if (player.isOnline() && player.isDead()) {
+          try {
+            player.spigot().respawn();
+          } catch (Throwable t1) {
+            try {
+              Object craftPlayer = player.getClass().getMethod("getHandle").invoke(player);
+              craftPlayer.getClass().getMethod("respawn").invoke(craftPlayer);
+            } catch (Throwable ignored) {
+              try { player.setHealth(player.getMaxHealth()); } catch (Throwable ignored2) {}
+            }
+          }
+        }
+      }
+    }, 1L);
+  }
+
+  // ============================================================
   //  ON RESPAWN — teleport to spawn + full heal + kit restore
   // ============================================================
   @EventHandler(priority = EventPriority.HIGHEST)
   public void onPlayerRespawn(PlayerRespawnEvent event) {
     final Player player = event.getPlayer();
 
-    // 1) Force the respawn location to the configured spawn
     Location spawn = getSpawnLocation();
     if (spawn != null) {
       event.setRespawnLocation(spawn);
     }
 
-    // 2) One tick later: heal + reset inventory + give kit
     Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
       @Override
       public void run() {
@@ -67,7 +93,7 @@ public class KitRestore implements Listener {
         // Give kit (custom kit if exists, otherwise default)
         equip.giveDiamondArmor(player);
 
-        // Ensure they're actually at spawn (some plugins override respawn)
+        // Ensure they are actually at spawn
         Location spawn = getSpawnLocation();
         if (spawn != null) {
           player.teleport(spawn);
@@ -77,7 +103,7 @@ public class KitRestore implements Listener {
   }
 
   // ============================================================
-  //  ON DEATH — clear drops and XP
+  //  ON DEATH — clear drops and XP, no death message, no title
   // ============================================================
   @EventHandler(priority = EventPriority.HIGHEST)
   public void onPlayerDeath(PlayerDeathEvent event) {
@@ -101,7 +127,6 @@ public class KitRestore implements Listener {
           if (!kitEditor.isEditing(player) && player.isOnline()
               && player.getGameMode() != GameMode.CREATIVE) {
             if (isEmpty(player)) {
-              // Heal
               player.setHealth(player.getMaxHealth());
               player.setFoodLevel(20);
               player.setSaturation(20.0F);
@@ -109,7 +134,6 @@ public class KitRestore implements Listener {
               player.setFireTicks(0);
               player.setFallDistance(0.0F);
 
-              // Give kit
               equip.giveDiamondArmor(player);
 
               player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&',
