@@ -13,8 +13,10 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 public class Kill implements Listener {
 
@@ -25,6 +27,11 @@ public class Kill implements Listener {
     private Map<UUID, Long> lastKillTimestamps = new HashMap<UUID, Long>();
     private Map<UUID, Long> lastVictimDeathTimestamps = new HashMap<UUID, Long>();
 
+    // ✅ کاهش debounce — قبلاً 1000ms بود که باعث از دست رفتن kill دوم می‌شد
+    private static final long KILL_DEBOUNCE_MS = 50L;
+    // ✅ کاهش debounce قربانی — قبلاً 3000ms بود که برای respawn سریع مشکل ایجاد می‌کرد
+    private static final long VICTIM_DEBOUNCE_MS = 200L;
+
     public Kill(JavaPlugin plugin, KillListener killListener, DatabaseManager databaseManager) {
         this.plugin = plugin;
         this.killListener = killListener;
@@ -33,12 +40,10 @@ public class Kill implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
-        // NOTE: death message / drops / XP clearing is handled by KitRestore.
-        // This class only handles stats + kill messages + rewards + heal.
-
         Player deathPlayer = event.getEntity();
         UUID victimId = deathPlayer.getUniqueId();
 
+        // ✅ اگه Void این death رو handle کرده، فقط flag رو پاک کن و برو
         if (Void.isVoidDeath(victimId)) {
             Void.clearVoidDeath(victimId);
             return;
@@ -46,14 +51,15 @@ public class Kill implements Listener {
 
         long now = System.currentTimeMillis();
 
+        // ----- Debounce قربانی -----
         long lastVictimDeath = this.lastVictimDeathTimestamps.containsKey(victimId)
                 ? this.lastVictimDeathTimestamps.get(victimId).longValue() : 0L;
-        if (now - lastVictimDeath < 3000L) {
+        if (now - lastVictimDeath < VICTIM_DEBOUNCE_MS) {
             return;
         }
         this.lastVictimDeathTimestamps.put(victimId, Long.valueOf(now));
 
-        // ---- Victim stats ----
+        // ----- آمار قربانی -----
         PlayerData victimData = this.databaseManager.getPlayer(victimId);
         if (victimData != null) {
             victimData.addDeath();
@@ -68,16 +74,17 @@ public class Kill implements Listener {
         Player killer = deathPlayer.getKiller();
         UUID killerId = killer.getUniqueId();
 
+        // ----- Debounce killer (خیلی کوتاه — فقط برای جلوگیری از double-fire) -----
         long lastKillTime = this.lastKillTimestamps.containsKey(killerId)
                 ? this.lastKillTimestamps.get(killerId).longValue() : 0L;
-        if (now - lastKillTime < 1000L) {
+        if (now - lastKillTime < KILL_DEBOUNCE_MS) {
             return;
         }
         this.lastKillTimestamps.put(killerId, Long.valueOf(now));
 
         int killCount = this.killListener.getKillCount(killer);
 
-        // ---- Killer stats ----
+        // ----- آمار killer -----
         PlayerData killerData = this.databaseManager.getPlayer(killerId);
         int newStreak = 0;
         if (killerData != null) {
@@ -87,17 +94,11 @@ public class Kill implements Listener {
             newStreak = killerData.getKillstreak();
         }
 
-        // ============================================================
-        //  ✅ BEDWARS-STYLE HEAL ON KILL
-        //  - فقط HP پر میشه
-        //  - food دست نمیخوره (anti-hunger جداست)
-        //  - fire/fall reset
-        // ============================================================
+        // ✅ همیشه هیل و ریوارد بده
         healOnKill(killer);
-
         giveKillstreakReward(killer, newStreak);
 
-        // ---- Kill message ----
+        // ----- پیام kill -----
         String killMessage = this.plugin.getConfig().getString("kill");
         if (killMessage != null && !killMessage.isEmpty()) {
             String broadcastMessage = colorize(killMessage)
@@ -109,12 +110,7 @@ public class Kill implements Listener {
     }
 
     // ============================================================
-    //  ✅ BEDWARS HEAL ON KILL
-    //  Config: kill-heal.enabled, kill-heal.amount, kill-heal.absorption
-    //
-    //  - HP: به max یا به مقدار مشخص
-    //  - Absorption: به عنوان bonus (اختیاری)
-    //  - Food: دست نمیخوره
+    //  BEDWARS HEAL ON KILL
     // ============================================================
     private void healOnKill(Player killer) {
         if (killer == null || !killer.isOnline()) return;
@@ -125,7 +121,6 @@ public class Kill implements Listener {
         boolean healFull = this.plugin.getConfig().getBoolean("kill-heal.full-heal", true);
         double healAmount = this.plugin.getConfig().getDouble("kill-heal.amount", 6.0D);
 
-        // 1) HP
         if (healFull) {
             killer.setHealth(killer.getMaxHealth());
         } else {
@@ -134,37 +129,32 @@ public class Kill implements Listener {
             killer.setHealth(newHealth);
         }
 
-        // 2) Fire reset
         killer.setFireTicks(0);
-
-        // 3) Fall distance reset
         killer.setFallDistance(0.0F);
 
-        // 4) Absorption (اختیاری، برای BedWars feel)
         boolean absorptionEnabled = this.plugin.getConfig().getBoolean("kill-heal.absorption.enabled", false);
         if (absorptionEnabled) {
             int absorptionLevel = this.plugin.getConfig().getInt("kill-heal.absorption.level", 1);
             int absorptionSeconds = this.plugin.getConfig().getInt("kill-heal.absorption.duration", 5);
 
-            // Absorption level 0 = 2 hearts, level 1 = 4 hearts, level 2 = 6 hearts...
             try {
                 killer.addPotionEffect(new PotionEffect(
                     org.bukkit.potion.PotionEffectType.ABSORPTION,
                     absorptionSeconds * 20,
                     absorptionLevel,
-                    true,  // ambient
-                    false  // no particles
+                    true,
+                    false
                 ));
             } catch (Throwable ignored) {}
         }
-
-        // 5) ❌ food/saturation دست نمیخوره
     }
 
     // ============================================================
     //  KILLSTREAK REWARDS
     // ============================================================
     private void giveKillstreakReward(Player player, int streak) {
+        if (player == null || !player.isOnline()) return;
+
         if (streak <= 0) {
             player.getInventory().addItem(new ItemStack(Material.GOLDEN_APPLE, 1));
             return;
@@ -201,38 +191,17 @@ public class Kill implements Listener {
         } catch (Throwable ignored) {}
     }
 
-    // ============================================================
-    //  ✅ RESOLVE LEVEL — Correct Cycle (1 → 12 → 1)
-    //
-    //  Behavior:
-    //    KS 1-3   → no reward defined → returns -1 (caller gives default gapple)
-    //    KS 4-12  → returns the exact streak level
-    //    KS 13+   → wraps: 13→1, 14→2, ..., 24→12, 25→1, ...
-    //               (if wrapped level has no reward → returns -1 → default gapple)
-    //
-    //  Example:
-    //    KS 13 → level 1 → no reward → gapple only
-    //    KS 14 → level 2 → no reward → gapple only
-    //    KS 15 → level 3 → no reward → gapple only
-    //    KS 16 → level 4 → reward 4 ✅
-    //    KS 24 → level 12 → reward 12 ✅
-    //    KS 25 → level 1 → no reward → gapple only (cycle restarts)
-    // ============================================================
     private int resolveLevel(int streak, boolean repeatFrom12) {
         if (streak <= 0) return -1;
 
         int level = streak;
         if (repeatFrom12 && streak > 12) {
-            // 13 → 1, 14 → 2, ..., 24 → 12, 25 → 1, ...
             level = ((streak - 1) % 12) + 1;
         }
 
-        // If that level has a reward, use it
         if (this.plugin.getConfig().contains("killstreak-rewards.rewards." + level)) {
             return level;
         }
-
-        // No reward at this level (e.g. 1, 2, 3) → caller gives default gapple
         return -1;
     }
 
@@ -288,23 +257,54 @@ public class Kill implements Listener {
         return null;
     }
 
+    // ============================================================
+    //  ✅ MAKE POTION — works for ANY level (I through V)
+    // ============================================================
     private ItemStack makePotion(int kind, int level) {
         ItemStack potion = new ItemStack(Material.POTION, 1);
+        PotionMeta meta = (PotionMeta) potion.getItemMeta();
 
-        short data;
+        PotionEffectType type;
         if (kind == 1) {
-            if (level <= 1) data = 8194;
-            else data = 8226;
+            type = PotionEffectType.SPEED;
         } else {
-            if (level <= 1) data = 8203;
-            else if (level == 2) data = 8235;
-            else if (level == 3) data = 8267;
-            else if (level == 4) data = 8299;
-            else data = 8331;
+            type = PotionEffectType.JUMP;
         }
 
-        potion.setDurability(data);
+        int amplifier = level - 1;
+        if (amplifier < 0) amplifier = 0;
+        if (amplifier > 9) amplifier = 9;
+
+        int durationTicks = 180 * 20;
+
+        meta.addCustomEffect(new PotionEffect(type, durationTicks, amplifier), true);
+
+        String name;
+        if (kind == 1) {
+            name = "&bPotion of Swiftness " + toRoman(level);
+        } else {
+            name = "&aPotion of Leaping " + toRoman(level);
+        }
+        meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', name));
+
+        potion.setItemMeta(meta);
         return potion;
+    }
+
+    private String toRoman(int num) {
+        switch (num) {
+            case 1: return "I";
+            case 2: return "II";
+            case 3: return "III";
+            case 4: return "IV";
+            case 5: return "V";
+            case 6: return "VI";
+            case 7: return "VII";
+            case 8: return "VIII";
+            case 9: return "IX";
+            case 10: return "X";
+            default: return String.valueOf(num);
+        }
     }
 
     private String colorize(String message) {

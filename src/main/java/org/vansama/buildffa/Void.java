@@ -20,9 +20,11 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 public class Void implements Listener {
 
@@ -34,7 +36,10 @@ public class Void implements Listener {
     private long teleportDelay;
     private String teleportMessage;
 
+    // Players currently being teleported to spawn (prevents re-trigger)
     private final Set<UUID> teleportingPlayers = new HashSet<UUID>();
+
+    // Players in the "kill mode" void-death process
     private final Set<UUID> dyingPlayers = new HashSet<UUID>();
 
     private final Map<UUID, UUID> lastDamager = new HashMap<UUID, UUID>();
@@ -42,8 +47,8 @@ public class Void implements Listener {
 
     private static final long DAMAGE_WINDOW_MS = 10000L;
 
-    // Tracks players whose death was caused by the void,
-    // so Kill.java knows to skip them (Void already handled the kill).
+    // Players whose PlayerDeathEvent should be ignored by Kill.java
+    // (Void already handled stats / heal / reward / broadcast)
     private static final Set<UUID> voidDeaths = new HashSet<UUID>();
 
     public Void(JavaPlugin plugin) {
@@ -55,7 +60,8 @@ public class Void implements Listener {
     private void loadConfiguration() {
         FileConfiguration config = this.plugin.getConfig();
         this.killHeight = config.getDouble("kill-height", 0.0D);
-        this.voidMessage = config.getString("void.death-message", "&c%player% &7fell into the void");
+        this.voidMessage = config.getString("void.death-message",
+                "&c%player% &7fell into the void");
         this.voidKilledByMessage = config.getString("void.killed-by-message",
                 "&c%player% &7was knocked into the void by &c%killer%");
         this.teleportInsteadOfKill = config.getBoolean("void.teleport-instead-of-kill", true);
@@ -114,34 +120,51 @@ public class Void implements Listener {
     }
 
     // ============================================================
-    //  Detect falling below kill-height
+    //  Void detection
     // ============================================================
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         Location to = event.getTo();
+        UUID uuid = player.getUniqueId();
 
         if (to == null) return;
         if (player.isDead() || player.getHealth() <= 0) return;
-        if (this.teleportingPlayers.contains(player.getUniqueId())) return;
-        if (this.dyingPlayers.contains(player.getUniqueId())) return;
+        if (this.teleportingPlayers.contains(uuid)) return;
+        if (this.dyingPlayers.contains(uuid)) return;
 
         if (to.getY() < this.killHeight) {
+
+            // ✅ Mark as void death so Kill.java skips the death event
+            voidDeaths.add(uuid);
+
+            // ✅ Handle stats / heal / reward / broadcast ONCE
+            //    Runs in BOTH modes.
+            handleVoidFall(player);
+
             if (this.teleportInsteadOfKill) {
-                this.teleportingPlayers.add(player.getUniqueId());
-                handleVoidFall(player);
+                // Teleport mode — player doesn't actually die
+                this.teleportingPlayers.add(uuid);
                 teleportToSpawn(player);
             } else {
-                this.dyingPlayers.add(player.getUniqueId());
-                voidDeaths.add(player.getUniqueId());
+                // Kill mode — player dies normally, Kill.java will skip it
+                this.dyingPlayers.add(uuid);
                 player.setHealth(0.0D);
             }
         }
     }
 
+    /**
+     * Handles ALL the "you fell in the void" logic:
+     *  - saves victim death + killer kill to DB
+     *  - full-heals killer
+     *  - gives killstreak reward
+     *  - broadcasts the correct message
+     *
+     * ⚠️  Does NOT touch voidDeaths — that's the caller's job.
+     *     This prevents the flag getting stuck.
+     */
     private void handleVoidFall(Player player) {
-        voidDeaths.add(player.getUniqueId());
-
         Player killer = findKiller(player);
 
         saveStats(player, killer);
@@ -214,8 +237,11 @@ public class Void implements Listener {
         }
     }
 
+    // ============================================================
+    //  Killstreak rewards
+    // ============================================================
     private void giveKillstreakReward(Player killer) {
-        if (killer == null) return;
+        if (killer == null || !killer.isOnline()) return;
 
         DatabaseManager db = ((BuildFFA) this.plugin).getDatabaseManager();
         if (db == null) return;
@@ -234,7 +260,8 @@ public class Void implements Listener {
             return;
         }
 
-        boolean repeatFrom12 = this.plugin.getConfig().getBoolean("killstreak-rewards.repeat-from-12", true);
+        boolean repeatFrom12 = this.plugin.getConfig()
+                .getBoolean("killstreak-rewards.repeat-from-12", true);
 
         int level = resolveLevel(streak, repeatFrom12);
         if (level == -1 || !giveRewardForLevel(killer, level)) {
@@ -249,21 +276,7 @@ public class Void implements Listener {
     }
 
     // ============================================================
-    //  ✅ RESOLVE LEVEL — Correct Cycle (1 → 12 → 1)
-    //
-    //  Behavior:
-    //    KS 1-3   → no reward defined → returns -1 (caller gives default gapple)
-    //    KS 4-12  → returns the exact streak level
-    //    KS 13+   → wraps: 13→1, 14→2, ..., 24→12, 25→1, ...
-    //               (if wrapped level has no reward → returns -1 → default gapple)
-    //
-    //  Example:
-    //    KS 13 → level 1 → no reward → gapple only
-    //    KS 14 → level 2 → no reward → gapple only
-    //    KS 15 → level 3 → no reward → gapple only
-    //    KS 16 → level 4 → reward 4 ✅
-    //    KS 24 → level 12 → reward 12 ✅
-    //    KS 25 → level 1 → no reward → gapple only (cycle restarts)
+    //  RESOLVE LEVEL — Correct Cycle (1 → 12 → 1)
     // ============================================================
     private int resolveLevel(int streak, boolean repeatFrom12) {
         if (streak <= 0) return -1;
@@ -276,12 +289,12 @@ public class Void implements Listener {
         if (this.plugin.getConfig().contains("killstreak-rewards.rewards." + level)) {
             return level;
         }
-
         return -1;
     }
 
     private boolean giveRewardForLevel(Player player, int level) {
-        String rewardString = this.plugin.getConfig().getString("killstreak-rewards.rewards." + level, "");
+        String rewardString = this.plugin.getConfig()
+                .getString("killstreak-rewards.rewards." + level, "");
         if (rewardString == null || rewardString.isEmpty()) return false;
 
         String[] parts = rewardString.split(" ");
@@ -323,24 +336,59 @@ public class Void implements Listener {
         return null;
     }
 
+    // ============================================================
+    //  MAKE POTION — works for ANY level (I through V)
+    // ============================================================
     private ItemStack makePotion(int kind, int level) {
         ItemStack potion = new ItemStack(Material.POTION, 1);
-        short data;
+        PotionMeta meta = (PotionMeta) potion.getItemMeta();
+
+        PotionEffectType type;
         if (kind == 1) {
-            if (level <= 1) data = 8194;
-            else data = 8226;
+            type = PotionEffectType.SPEED;
         } else {
-            if (level <= 1) data = 8203;
-            else if (level == 2) data = 8235;
-            else if (level == 3) data = 8267;
-            else if (level == 4) data = 8299;
-            else data = 8331;
+            type = PotionEffectType.JUMP;
         }
-        potion.setDurability(data);
+
+        int amplifier = level - 1;
+        if (amplifier < 0) amplifier = 0;
+        if (amplifier > 9) amplifier = 9;
+
+        int durationTicks = 180 * 20;
+
+        meta.addCustomEffect(new PotionEffect(type, durationTicks, amplifier), true);
+
+        String name;
+        if (kind == 1) {
+            name = "&bPotion of Swiftness " + toRoman(level);
+        } else {
+            name = "&aPotion of Leaping " + toRoman(level);
+        }
+        meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', name));
+
+        potion.setItemMeta(meta);
         return potion;
     }
 
+    private String toRoman(int num) {
+        switch (num) {
+            case 1: return "I";
+            case 2: return "II";
+            case 3: return "III";
+            case 4: return "IV";
+            case 5: return "V";
+            case 6: return "VI";
+            case 7: return "VII";
+            case 8: return "VIII";
+            case 9: return "IX";
+            case 10: return "X";
+            default: return String.valueOf(num);
+        }
+    }
+
     private void fullHeal(Player player) {
+        if (player == null || !player.isOnline()) return;
+
         player.setHealth(player.getMaxHealth());
         player.setFoodLevel(20);
         player.setSaturation(20.0F);
@@ -355,7 +403,7 @@ public class Void implements Listener {
 
     // ============================================================
     //  Teleport to spawn + full reset
-    //  (Kit is restored by Equip.giveDiamondArmor)
+    //  ✅ Clears teleportingPlayers AND voidDeaths when done.
     // ============================================================
     private void teleportToSpawn(final Player player) {
         final Location spawn = getSpawnLocation();
@@ -363,17 +411,18 @@ public class Void implements Listener {
         Runnable teleportTask = new Runnable() {
             @Override
             public void run() {
+                UUID uuid = player.getUniqueId();
+
                 if (!player.isOnline()) {
-                    teleportingPlayers.remove(player.getUniqueId());
+                    teleportingPlayers.remove(uuid);
+                    voidDeaths.remove(uuid);
                     return;
                 }
 
-                // Clear inventory + armor + cursor
                 player.getInventory().clear();
                 player.getInventory().setArmorContents(null);
                 player.setItemOnCursor(null);
 
-                // Full heal
                 player.setHealth(player.getMaxHealth());
                 player.setFoodLevel(20);
                 player.setSaturation(20.0F);
@@ -383,7 +432,6 @@ public class Void implements Listener {
                 player.setLevel(0);
                 player.setExp(0.0F);
 
-                // Restore kit
                 try {
                     BuildFFA bffa = (BuildFFA) plugin;
                     if (bffa.getEquip() != null) {
@@ -393,7 +441,6 @@ public class Void implements Listener {
                     plugin.getLogger().warning("Void kit restore failed: " + t.getMessage());
                 }
 
-                // Teleport
                 if (spawn != null) {
                     player.teleport(spawn);
                 } else {
@@ -405,10 +452,14 @@ public class Void implements Listener {
                     player.sendMessage(ChatColor.translateAlternateColorCodes('&', msg));
                 }
 
+                // ✅ IMPORTANT: clear BOTH flags after a short delay
                 Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                     @Override
                     public void run() {
-                        teleportingPlayers.remove(player.getUniqueId());
+                        UUID id = player.getUniqueId();
+                        teleportingPlayers.remove(id);
+                        // 🔑 FIX: this was the main bug — flag was never cleared
+                        voidDeaths.remove(id);
                     }
                 }, 20L);
             }
@@ -440,52 +491,27 @@ public class Void implements Listener {
     }
 
     // ============================================================
-    //  DEATH — only handles kill credit + broadcast
-    //  (Drops / XP / death message are cleared by KitRestore,
-    //   so we don't touch them here to avoid double-handling.)
+    //  Death handling — CLEANUP ONLY
+    //
+    //  Priority MONITOR → runs AFTER Kill.java (HIGHEST).
+    //  So Kill.java sees voidDeaths still set → skips.
+    //  Then we clean up all state.
+    //
+    //  No broadcasts, no heal, no stats here —
+    //  handleVoidFall already did all of that.
     // ============================================================
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerDeath(PlayerDeathEvent event) {
-        Player player = event.getEntity();
-        UUID victimId = player.getUniqueId();
-
-        // If this was a void death (teleport-instead-of-kill disabled),
-        // Void already saved stats + broadcast in handleVoidFall.
-        if (voidDeaths.contains(victimId)) {
-            // Nothing extra to do — the flow already handled it.
-            this.teleportingPlayers.remove(victimId);
-            return;
-        }
-
-        // If the victim had fallen below kill-height while teleport
-        // was enabled, no death event should happen here — but just
-        // in case, be safe:
-        if (player.getKiller() == null && this.dyingPlayers.remove(victimId)) {
-            Player killer = findKiller(player);
-            if (killer == null) killer = player.getKiller();
-
-            if (killer != null) {
-                fullHeal(killer);
-            }
-
-            String msg;
-            if (killer != null) {
-                msg = this.voidKilledByMessage
-                        .replace("%player%", player.getName())
-                        .replace("%killer%", killer.getName());
-            } else {
-                msg = this.voidMessage.replace("%player%", player.getName());
-            }
-
-            if (msg != null && !msg.isEmpty()) {
-                Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', msg));
-            }
-
-            this.lastDamager.remove(victimId);
-            this.lastDamageTime.remove(victimId);
-        }
+        UUID victimId = event.getEntity().getUniqueId();
 
         this.teleportingPlayers.remove(victimId);
+        this.dyingPlayers.remove(victimId);
+        this.lastDamager.remove(victimId);
+        this.lastDamageTime.remove(victimId);
+
+        // Safety: if Kill.java didn't clear it, clear it now.
+        // (Kill.java clears it when it detects isVoidDeath.)
+        voidDeaths.remove(victimId);
     }
 
     public boolean isTeleporting(UUID uuid) {

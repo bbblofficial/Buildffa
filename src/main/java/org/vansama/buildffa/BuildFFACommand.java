@@ -13,8 +13,11 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 public class BuildFFACommand implements CommandExecutor {
 
@@ -511,24 +514,56 @@ public class BuildFFACommand implements CommandExecutor {
         return null;
     }
 
+    // ============================================================
+    //  ✅ MAKE REWARD POTION — works for ANY level (I through V)
+    // ============================================================
     private org.bukkit.inventory.ItemStack makeRewardPotion(int kind, int level) {
         org.bukkit.inventory.ItemStack potion = new org.bukkit.inventory.ItemStack(
                 org.bukkit.Material.POTION, 1);
 
-        short data;
+        PotionMeta meta = (PotionMeta) potion.getItemMeta();
+
+        PotionEffectType type;
         if (kind == 1) {
-            if (level <= 1) data = 8194;
-            else data = 8226;
+            type = PotionEffectType.SPEED;
         } else {
-            if (level <= 1) data = 8203;
-            else if (level == 2) data = 8235;
-            else if (level == 3) data = 8267;
-            else if (level == 4) data = 8299;
-            else data = 8331;
+            type = PotionEffectType.JUMP;
         }
 
-        potion.setDurability(data);
+        int amplifier = level - 1;
+        if (amplifier < 0) amplifier = 0;
+        if (amplifier > 9) amplifier = 9;
+
+        int durationTicks = 180 * 20;
+
+        meta.addCustomEffect(new PotionEffect(type, durationTicks, amplifier), true);
+
+        String name;
+        if (kind == 1) {
+            name = "&bPotion of Swiftness " + toRoman(level);
+        } else {
+            name = "&aPotion of Leaping " + toRoman(level);
+        }
+        meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', name));
+
+        potion.setItemMeta(meta);
         return potion;
+    }
+
+    private String toRoman(int num) {
+        switch (num) {
+            case 1: return "I";
+            case 2: return "II";
+            case 3: return "III";
+            case 4: return "IV";
+            case 5: return "V";
+            case 6: return "VI";
+            case 7: return "VII";
+            case 8: return "VIII";
+            case 9: return "IX";
+            case 10: return "X";
+            default: return String.valueOf(num);
+        }
     }
 
     // ==========================================
@@ -1036,11 +1071,9 @@ public class BuildFFACommand implements CommandExecutor {
             if (bffa.getKitSettings() != null) {
                 bffa.getKitSettings().reload();
             }
-            // ❌ Own HealthBar reload removed (never instantiated)
             if (bffa.getHealthBarManager() != null) {
                 bffa.getHealthBarManager().reloadConfig();
             }
-            // ✅ NEW — reload enemy HP bar (clears maps + restarts task)
             if (bffa.getEnemyHealthBar() != null) {
                 bffa.getEnemyHealthBar().reloadConfig();
             }
@@ -1057,7 +1090,7 @@ public class BuildFFACommand implements CommandExecutor {
     }
 
     // ==========================================
-    // Help (permission-aware)
+    // Help
     // ==========================================
     private void sendHelp(CommandSender sender) {
         sender.sendMessage(colorize("&8&m----------------------------------"));
