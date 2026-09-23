@@ -145,6 +145,22 @@ database:
 #    feather  = Feather (double-jump, right-click in air)
 #    speed:N  = Potion of Swiftness (N = level 1-2)
 #    jump:N   = Potion of Leaping (N = level 1-5)
+#
+#  JUMP LEVELS (1.8.8):
+#    jump:1 = Jump Boost I
+#    jump:2 = Jump Boost II
+#    jump:3 = Jump Boost III
+#    jump:4 = Jump Boost IV
+#    jump:5 = Jump Boost V  ← strongest
+#
+#  ⚠️ CYCLE BEHAVIOR:
+#    With repeat-from-12: true, killstreaks > 12 wrap around:
+#      KS 13 → level 1 → no reward → only default gapple
+#      KS 14 → level 2 → no reward → only default gapple
+#      KS 15 → level 3 → no reward → only default gapple
+#      KS 16 → level 4 → reward 4 ✅
+#      KS 24 → level 12 → reward 12 ✅
+#      KS 25 → level 1 → cycle restarts
 # ----------------------------------------------------------
 killstreak-rewards:
   enabled: true
@@ -164,7 +180,7 @@ killstreak-rewards:
     '7':   'perl:1 gapple:1 speed:2'
     '8':   'gapple:1 fb:1'
     '9':   'gapple:1 perl:1'
-    '10':  'gapple:2 fb:1 feather:1 perl:1 speed:2 jump:3 jump:2'
+    '10':  'gapple:2 fb:1 feather:1 perl:1 speed:2 jump:5 jump:3'
     '11':  'feather:1 speed:2 jump:5 perl:1'
     '12':  'feather:1 jump:5 perl:1 fb:1'
 
@@ -335,7 +351,7 @@ healthbar:
   heart-char: '❤'
 
 # ==========================================================
-#  ✅ NEW — Enemy HealthBar (ActionBar)
+#  ✅ Enemy HealthBar (ActionBar)
 # ==========================================================
 #  Shows the HP of the player you LAST HIT, above your hotbar.
 #  Perfect for PvP — you see enemy HP without cluttering the screen.
@@ -371,28 +387,33 @@ enemy-healthbar:
   # Format string — see examples above
   format: '&c[%name%] &8-- &f[%hp%&7/&f%max%&f]'
 
-# ----------------------------------------------------------
+# ==========================================================
 #  Nametag HP Display (BELOW player's name)
-#
+# ==========================================================
 #  Shows live HP below each player's name (like BedWars).
 #
-#  ✅ Uses pure Bukkit API (DisplaySlot.BELOW_NAME)
+#  ✅ Uses HEALTH criteria → client auto-renders "20 ❤"
+#  ✅ Uses pure NMS packets (safe on 1.8.8)
 #  ✅ No prefix/suffix → no "22 > 16" disconnect
-#  ✅ Safe on 1.8.8
 #
-#  display-name: the text shown next to the HP number
-#    Examples:
-#      '&c❤'         → ❤ 20
-#      '&cHP'        → HP 20
-#      '&7[&c❤&7]'   → [❤] 20
-#      ''            → 20 (just the number)
-# ----------------------------------------------------------
+#  IMPORTANT:
+#    On 1.8.8 the client ALWAYS renders the format as:
+#         {display-name} {score}
+#    The heart ❤ AFTER the number is added automatically
+#    by the vanilla client when the objective uses the
+#    "health" criteria and display-name is EMPTY.
+#
+#  display-name: the text shown BEFORE the HP number
+#    ''            → "20 ❤"   ✅ (exactly like the image)
+#    '&c❤'         → "❤ 20"
+#    '&cHP'        → "HP 20"
+#    '&7[&c❤&7]'   → "[❤] 20"
+# ==========================================================
 nametag:
   enabled: true
   update-interval: 10
-  display-name: ''   # خالی = فقط عدد
-  # یا
-  # display-name: '&c❤'
+  # خالی = فقط عدد + قلب خودکار وانیلا → "20 ❤"
+  display-name: ''
 
 # ----------------------------------------------------------
 #  Permissions

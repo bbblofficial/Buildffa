@@ -18,6 +18,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 /**
  * Displays HP below each player's name using DisplaySlot.BELOW_NAME.
  *
+ * ✅ Uses HEALTH criteria → client renders "20 ❤" automatically
  * ✅ Sends integer value (compatible with Lunar / Feather / vanilla)
  * ✅ Uses PacketPlayOutScoreboardObjective + PacketPlayOutScoreboardScore
  * ✅ Per-viewer scoreboard (no conflict with sidebar)
@@ -41,7 +42,9 @@ public class NametagManager implements Listener {
     private Constructor<?> packetObjectiveConstructor;
     private Constructor<?> packetDisplayConstructor;
     private Constructor<?> packetScoreConstructor;
+    private Constructor<?> objectiveConstructor;
 
+    private Object healthCriteria;   // cached criteria instance
     private boolean nmsReady = false;
 
     private int taskId = -1;
@@ -75,11 +78,34 @@ public class NametagManager implements Listener {
             this.packetObjectiveConstructor = packetObjectiveClass.getConstructor(scoreboardObjectiveClass, int.class);
             this.packetDisplayConstructor = packetDisplayObjectiveClass.getConstructor(int.class, scoreboardObjectiveClass);
             this.packetScoreConstructor = packetScoreClass.getConstructor(String.class, scoreboardObjectiveClass, int.class, enumScoreboardActionClass);
+            this.objectiveConstructor = scoreboardObjectiveClass.getConstructor(scoreboardClass, String.class, iScoreboardCriteriaClass);
+
+            // ✅ CRITICAL FIX: "health" criteria is field "e" on 1.8.8, NOT "b"
+            //    Field "b" = deathCount → wrong!
+            //    Field "e" = health     → correct! Client renders "20 ❤"
+            try {
+                this.healthCriteria = iScoreboardCriteriaClass.getField("e").get(null);
+            } catch (NoSuchFieldException ex) {
+                // Fallback: try "b" for safety, or search by name
+                this.healthCriteria = null;
+                for (Field f : iScoreboardCriteriaClass.getFields()) {
+                    Object val = f.get(null);
+                    if (val != null && val.toString().toLowerCase().contains("health")) {
+                        this.healthCriteria = val;
+                        break;
+                    }
+                }
+                if (this.healthCriteria == null) {
+                    // Last resort — use "b" (may show death count instead)
+                    this.healthCriteria = iScoreboardCriteriaClass.getField("b").get(null);
+                }
+            }
 
             this.nmsReady = true;
         } catch (Throwable t) {
             this.nmsReady = false;
             plugin.getLogger().warning("Nametag NMS setup failed: " + t.getMessage());
+            t.printStackTrace();
         }
     }
 
@@ -108,20 +134,19 @@ public class NametagManager implements Listener {
     }
 
     // ============================================================
-    //  UPDATE VIEWER — send health as INTEGER
+    //  UPDATE VIEWER — send health as INTEGER with HEALTH criteria
     // ============================================================
     private void updateViewer(Player viewer) {
         try {
             // Create a fresh scoreboard for this viewer
             Object scoreboard = scoreboardClass.newInstance();
 
-            // Create objective with "health" criteria
-            Object healthCriteria = iScoreboardCriteriaClass.getField("b").get(null); // "health" criteria
-            Constructor<?> objCons = scoreboardObjectiveClass.getConstructor(
-                    scoreboardClass, String.class, iScoreboardCriteriaClass);
-            Object objective = objCons.newInstance(scoreboard, "bffa_hp", healthCriteria);
+            // ✅ Create objective with HEALTH criteria (field "e" on 1.8.8)
+            Object objective = objectiveConstructor.newInstance(
+                    scoreboard, "bffa_hp", healthCriteria);
 
-            // Set display name (the text next to the number)
+            // ✅ Leave displayName EMPTY so the client shows the default "20 ❤"
+            //    (If you set a non-empty displayName, client shows "{displayName} {score}")
             String displayName = plugin.getConfig().getString("nametag.display-name", "");
             if (displayName != null && !displayName.isEmpty()) {
                 scoreboardObjectiveClass.getMethod("setDisplayName", String.class)
@@ -132,7 +157,7 @@ public class NametagManager implements Listener {
             Object objPacket = packetObjectiveConstructor.newInstance(objective, 0);
             sendPacket(viewer, objPacket);
 
-            // Display objective below name (slot 2)
+            // Display objective below name (slot 2 = BELOW_NAME)
             Object displayPacket = packetDisplayConstructor.newInstance(2, objective);
             sendPacket(viewer, displayPacket);
 
@@ -142,6 +167,8 @@ public class NametagManager implements Listener {
                 int health = (int) Math.ceil(target.getHealth());
                 if (health < 0) health = 0;
 
+                // ✅ Use the player's real name as the entry — the HEALTH criteria
+                //    will make the client render "{health} ❤" automatically
                 Object score = packetScoreConstructor.newInstance(
                         target.getName(), objective, health, getActionEnum("CHANGE"));
                 sendPacket(viewer, score);

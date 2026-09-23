@@ -248,21 +248,35 @@ public class Void implements Listener {
         } catch (Throwable ignored) {}
     }
 
+    // ============================================================
+    //  ✅ RESOLVE LEVEL — Correct Cycle (1 → 12 → 1)
+    //
+    //  Behavior:
+    //    KS 1-3   → no reward defined → returns -1 (caller gives default gapple)
+    //    KS 4-12  → returns the exact streak level
+    //    KS 13+   → wraps: 13→1, 14→2, ..., 24→12, 25→1, ...
+    //               (if wrapped level has no reward → returns -1 → default gapple)
+    //
+    //  Example:
+    //    KS 13 → level 1 → no reward → gapple only
+    //    KS 14 → level 2 → no reward → gapple only
+    //    KS 15 → level 3 → no reward → gapple only
+    //    KS 16 → level 4 → reward 4 ✅
+    //    KS 24 → level 12 → reward 12 ✅
+    //    KS 25 → level 1 → no reward → gapple only (cycle restarts)
+    // ============================================================
     private int resolveLevel(int streak, boolean repeatFrom12) {
-        if (this.plugin.getConfig().contains("killstreak-rewards.rewards." + streak)) {
-            return streak;
-        }
+        if (streak <= 0) return -1;
+
+        int level = streak;
         if (repeatFrom12 && streak > 12) {
-            int wrapped = ((streak - 1) % 12) + 1;
-            if (this.plugin.getConfig().contains("killstreak-rewards.rewards." + wrapped)) {
-                return wrapped;
-            }
+            level = ((streak - 1) % 12) + 1;
         }
-        for (int i = streak - 1; i >= 1; i--) {
-            if (this.plugin.getConfig().contains("killstreak-rewards.rewards." + i)) {
-                return i;
-            }
+
+        if (this.plugin.getConfig().contains("killstreak-rewards.rewards." + level)) {
+            return level;
         }
+
         return -1;
     }
 
