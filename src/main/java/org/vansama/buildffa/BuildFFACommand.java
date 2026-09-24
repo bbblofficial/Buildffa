@@ -3,9 +3,11 @@ package org.vansama.buildffa;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -40,6 +42,76 @@ public class BuildFFACommand implements CommandExecutor {
     private void sendNoPerm(CommandSender sender) {
         String msg = this.plugin.getConfig().getString("messages.no-permission", "&cYou do not have permission to do this.");
         sender.sendMessage(colorize(msg));
+    }
+
+    // ============================================================
+    //  OFFLINE PLAYER RESOLVER
+    //  Returns a small holder with UUID + resolved name, or null.
+    // ============================================================
+    private static class TargetInfo {
+        final UUID uuid;
+        final String name;
+        final boolean online;
+        final Player onlinePlayer;   // non-null only if online
+
+        TargetInfo(UUID uuid, String name, boolean online, Player onlinePlayer) {
+            this.uuid = uuid;
+            this.name = name;
+            this.online = online;
+            this.onlinePlayer = onlinePlayer;
+        }
+    }
+
+    /**
+     * Resolves a player by name — online first, then offline.
+     * Returns null if the player has never joined the server.
+     */
+    private TargetInfo resolveTarget(CommandSender sender, String name) {
+        if (name == null || name.isEmpty()) {
+            sender.sendMessage(colorize("&cPlayer name is empty."));
+            return null;
+        }
+
+        // 1) Online?
+        Player online = Bukkit.getPlayerExact(name);
+        if (online != null && online.isOnline()) {
+            return new TargetInfo(online.getUniqueId(), online.getName(), true, online);
+        }
+
+        // 2) Offline lookup
+        OfflinePlayer offline = Bukkit.getOfflinePlayer(name);
+        if (offline == null) {
+            sender.sendMessage(colorize("&cPlayer never joined this server: &e" + name));
+            return null;
+        }
+
+        // hasPlayedBefore() is false for players who never joined
+        boolean known = offline.hasPlayedBefore() || offline.isOnline();
+        if (!known) {
+            sender.sendMessage(colorize("&cPlayer never joined this server: &e" + name));
+            return null;
+        }
+
+        String resolvedName = offline.getName();
+        if (resolvedName == null || resolvedName.isEmpty()) {
+            resolvedName = name;
+        }
+
+        return new TargetInfo(offline.getUniqueId(), resolvedName, false, null);
+    }
+
+    // ============================================================
+    //  LOAD PlayerData with offline-safe fallback
+    // ============================================================
+    private PlayerData loadDataSafe(TargetInfo info) {
+        PlayerData data = this.database.getPlayer(info.uuid);
+        if (data == null) {
+            data = this.database.loadPlayer(info.uuid);
+        }
+        if (data != null) {
+            data.setName(info.name);
+        }
+        return data;
     }
 
     @Override
@@ -233,9 +305,11 @@ public class BuildFFACommand implements CommandExecutor {
     }
 
     // ==========================================
-    // Stats Command
+    // Stats Command (online + offline)
     // ==========================================
     private boolean handleStats(CommandSender sender, String[] args) {
+
+        // ==================== /buildffa stats add ====================
         if (args.length >= 2 && args[1].equalsIgnoreCase("add")) {
             if (args.length < 5) {
                 sender.sendMessage(colorize("&cUsage: /buildffa stats add <kill|kdr|ks|death> <player> <amount>"));
@@ -243,12 +317,7 @@ public class BuildFFACommand implements CommandExecutor {
             }
 
             String stat = args[2].toLowerCase();
-            Player target = Bukkit.getPlayer(args[3]);
-            if (target == null) {
-                sender.sendMessage(colorize("&cPlayer not found: &e" + args[3]));
-                return true;
-            }
-
+            String targetName = args[3];
             int amount;
             try {
                 amount = Integer.parseInt(args[4]);
@@ -257,12 +326,12 @@ public class BuildFFACommand implements CommandExecutor {
                 return true;
             }
 
-            PlayerData data = this.database.getPlayer(target.getUniqueId());
+            TargetInfo info = resolveTarget(sender, targetName);
+            if (info == null) return true;
+
+            PlayerData data = loadDataSafe(info);
             if (data == null) {
-                data = this.database.loadPlayer(target.getUniqueId());
-            }
-            if (data == null) {
-                sender.sendMessage(colorize("&cNo data found for &e" + target.getName()));
+                sender.sendMessage(colorize("&cNo data found for &e" + info.name));
                 return true;
             }
 
@@ -290,7 +359,8 @@ public class BuildFFACommand implements CommandExecutor {
 
             this.database.savePlayerImmediate(data);
 
-            sender.sendMessage(colorize("&aAdded &e" + amount + " &ato &e" + target.getName() + "'s &e" + statName + "&a."));
+            sender.sendMessage(colorize("&aAdded &e" + amount + " &ato &e" + info.name
+                    + "'s &e" + statName + "&a." + (info.online ? "" : " &7(offline)")));
             sender.sendMessage(colorize("&7Kills: &a" + data.getKills()
                     + " &7| Deaths: &c" + data.getDeaths()
                     + " &7| KS: &b" + data.getKillstreak()
@@ -298,6 +368,7 @@ public class BuildFFACommand implements CommandExecutor {
             return true;
         }
 
+        // ==================== /buildffa stats reset ====================
         if (args.length >= 2 && args[1].equalsIgnoreCase("reset")) {
             if (args.length < 4) {
                 sender.sendMessage(colorize("&cUsage: /buildffa stats reset <kill|ks|death> <player>"));
@@ -305,18 +376,14 @@ public class BuildFFACommand implements CommandExecutor {
             }
 
             String stat = args[2].toLowerCase();
-            Player target = Bukkit.getPlayer(args[3]);
-            if (target == null) {
-                sender.sendMessage(colorize("&cPlayer not found: &e" + args[3]));
-                return true;
-            }
+            String targetName = args[3];
 
-            PlayerData data = this.database.getPlayer(target.getUniqueId());
+            TargetInfo info = resolveTarget(sender, targetName);
+            if (info == null) return true;
+
+            PlayerData data = loadDataSafe(info);
             if (data == null) {
-                data = this.database.loadPlayer(target.getUniqueId());
-            }
-            if (data == null) {
-                sender.sendMessage(colorize("&cNo data found for &e" + target.getName()));
+                sender.sendMessage(colorize("&cNo data found for &e" + info.name));
                 return true;
             }
 
@@ -339,34 +406,35 @@ public class BuildFFACommand implements CommandExecutor {
 
             this.database.savePlayerImmediate(data);
 
-            sender.sendMessage(colorize("&aReset &e" + statName + " &afor &e" + target.getName() + "&a."));
+            sender.sendMessage(colorize("&aReset &e" + statName + " &afor &e" + info.name + "&a."
+                    + (info.online ? "" : " &7(offline)")));
             return true;
         }
 
-        Player target;
+        // ==================== /buildffa stats [player] ====================
+        TargetInfo info;
 
         if (args.length >= 2) {
-            target = Bukkit.getPlayer(args[1]);
-            if (target == null) {
-                sender.sendMessage(colorize("&cPlayer not found: &e" + args[1]));
-                return true;
-            }
+            info = resolveTarget(sender, args[1]);
+            if (info == null) return true;
         } else {
             if (!(sender instanceof Player)) {
                 sender.sendMessage(colorize("&cUsage from console: /buildffa stats <player>"));
                 return true;
             }
-            target = (Player) sender;
+            Player self = (Player) sender;
+            info = new TargetInfo(self.getUniqueId(), self.getName(), true, self);
         }
 
-        PlayerData data = this.database.getPlayer(target.getUniqueId());
+        PlayerData data = loadDataSafe(info);
         if (data == null) {
-            sender.sendMessage(colorize("&cNo data found for &e" + target.getName()));
+            sender.sendMessage(colorize("&cNo data found for &e" + info.name));
             return true;
         }
 
         sender.sendMessage(colorize("&8&m----------------------------------"));
-        sender.sendMessage(colorize("&6&lStats &7- &f" + data.getName()));
+        sender.sendMessage(colorize("&6&lStats &7- &f" + data.getName()
+                + (info.online ? "" : " &7(offline)")));
         sender.sendMessage(colorize("&7Kills: &a" + data.getKills()));
         sender.sendMessage(colorize("&7Deaths: &c" + data.getDeaths()));
         sender.sendMessage(colorize("&7KDR: &e" + String.format("%.2f", data.getKDR())));
@@ -377,7 +445,7 @@ public class BuildFFACommand implements CommandExecutor {
     }
 
     // ==========================================
-    // Force Killstreak Reward
+    // Force Killstreak Reward (self only)
     // ==========================================
     private boolean handleForceKsReward(CommandSender sender, String[] args) {
         if (!(sender instanceof Player)) {
@@ -514,9 +582,6 @@ public class BuildFFACommand implements CommandExecutor {
         return null;
     }
 
-    // ============================================================
-    //  ✅ MAKE REWARD POTION — works for ANY level (I through V)
-    // ============================================================
     private org.bukkit.inventory.ItemStack makeRewardPotion(int kind, int level) {
         org.bukkit.inventory.ItemStack potion = new org.bukkit.inventory.ItemStack(
                 org.bukkit.Material.POTION, 1);
@@ -633,7 +698,7 @@ public class BuildFFACommand implements CommandExecutor {
     }
 
     // ==========================================
-    // Reset Stats
+    // Reset Stats (online + offline)
     // ==========================================
     private boolean handleResetStats(CommandSender sender, String[] args) {
         if (args.length < 2) {
@@ -641,15 +706,12 @@ public class BuildFFACommand implements CommandExecutor {
             return true;
         }
 
-        Player target = Bukkit.getPlayer(args[1]);
-        if (target == null) {
-            sender.sendMessage(colorize("&cPlayer not found: &e" + args[1]));
-            return true;
-        }
+        TargetInfo info = resolveTarget(sender, args[1]);
+        if (info == null) return true;
 
-        PlayerData data = this.database.getPlayer(target.getUniqueId());
+        PlayerData data = loadDataSafe(info);
         if (data == null) {
-            sender.sendMessage(colorize("&cNo data found."));
+            sender.sendMessage(colorize("&cNo data found for &e" + info.name));
             return true;
         }
 
@@ -660,8 +722,12 @@ public class BuildFFACommand implements CommandExecutor {
 
         this.database.savePlayerImmediate(data);
 
-        sender.sendMessage(colorize("&aReset stats for &e" + target.getName()));
-        target.sendMessage(colorize("&cYour stats have been reset by an admin."));
+        sender.sendMessage(colorize("&aReset stats for &e" + info.name + "&a."
+                + (info.online ? "" : " &7(offline)")));
+
+        if (info.online && info.onlinePlayer != null) {
+            info.onlinePlayer.sendMessage(colorize("&cYour stats have been reset by an admin."));
+        }
         return true;
     }
 
