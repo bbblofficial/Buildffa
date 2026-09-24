@@ -56,79 +56,118 @@ public class KitEditor implements Listener {
     return this.database;
   }
 
-  public void openKitEditorGUI(final Player player) {
-    Inventory inv = Bukkit.createInventory(null, SIZE, colorize("&6&lKit Editor"));
+public void openKitEditorGUI(final Player player) {
+  Inventory inv = Bukkit.createInventory(null, SIZE, colorize("&6&lKit Editor"));
 
-    UUID uuid = player.getUniqueId();
+  UUID uuid = player.getUniqueId();
 
-    ItemStack[] kitContents;
-    ItemStack helmet, chestplate, leggings, boots;
+  ItemStack[] kitContents;
+  ItemStack helmet, chestplate, leggings, boots;
 
-    if (kitDatabase.hasKit(uuid)) {
-      List<ItemStack> contentsList = kitDatabase.getContents(uuid);
-      kitContents = new ItemStack[36];
-      if (contentsList != null) {
-        for (int i = 0; i < contentsList.size() && i < 36; i++) {
-          ItemStack item = contentsList.get(i);
-          if (item != null) {
-            kitContents[i] = item;
+  if (kitDatabase.hasKit(uuid)) {
+    // ============================================================
+    //  Player already saved a kit → load it from DB
+    // ============================================================
+    List<ItemStack> contentsList = kitDatabase.getContents(uuid);
+    kitContents = new ItemStack[36];
+    if (contentsList != null) {
+      for (int i = 0; i < contentsList.size() && i < 36; i++) {
+        ItemStack item = contentsList.get(i);
+        if (item != null) {
+          kitContents[i] = item;
+        }
+      }
+    }
+    helmet = kitDatabase.getHelmet(uuid);
+    chestplate = kitDatabase.getChestplate(uuid);
+    leggings = kitDatabase.getLeggings(uuid);
+    boots = kitDatabase.getBoots(uuid);
+  } else {
+    // ============================================================
+    //  ✅ FIX: Use the SERVER DEFAULT KIT from kit-setting.yml
+    //  (red leather helmet/chestplate + diamond leggings/boots)
+    //  instead of the old hardcoded iron kit.
+    // ============================================================
+    helmet = null;
+    chestplate = null;
+    leggings = null;
+    boots = null;
+    kitContents = new ItemStack[36];
+
+    try {
+      BuildFFA bffa = (BuildFFA) this.plugin;
+      KitSettingsManager settings = bffa.getKitSettings();
+      if (settings != null) {
+        List<ItemStack> defaults = settings.getDefaultKitContents();
+        if (defaults != null && !defaults.isEmpty()) {
+          // Layout: [0]=helmet, [1]=chestplate, [2]=leggings, [3]=boots, [4..39]=items
+          if (defaults.size() >= 1) helmet = defaults.get(0);
+          if (defaults.size() >= 2) chestplate = defaults.get(1);
+          if (defaults.size() >= 3) leggings = defaults.get(2);
+          if (defaults.size() >= 4) boots = defaults.get(3);
+
+          // Copy the rest of the items into the 36-slot contents array
+          for (int i = 4; i < defaults.size() && (i - 4) < 36; i++) {
+            ItemStack item = defaults.get(i);
+            if (item != null && item.getType() != Material.AIR) {
+              kitContents[i - 4] = item;
+            }
           }
         }
       }
-      helmet = kitDatabase.getHelmet(uuid);
-      chestplate = kitDatabase.getChestplate(uuid);
-      leggings = kitDatabase.getLeggings(uuid);
-      boots = kitDatabase.getBoots(uuid);
-    } else {
-      kitContents = getDefaultKitContents();
-      helmet = unbreakable(new ItemStack(Material.IRON_HELMET));
-      chestplate = unbreakable(new ItemStack(Material.IRON_CHESTPLATE));
-      leggings = unbreakable(new ItemStack(Material.DIAMOND_LEGGINGS));
-      boots = unbreakable(new ItemStack(Material.DIAMOND_BOOTS));
+    } catch (Throwable t) {
+      this.plugin.getLogger().warning("KitEditor: failed to load server default kit: " + t.getMessage());
     }
 
-    for (int i = 0; i < 27 && i < kitContents.length; i++) {
-      if (kitContents[i] != null) {
-        inv.setItem(i, kitContents[i]);
-      }
-    }
-
-    inv.setItem(27, helmet);
-    inv.setItem(28, chestplate);
-    inv.setItem(29, leggings);
-    inv.setItem(30, boots);
-
-    ItemStack saveBtn = createButton(Material.EMERALD_BLOCK, colorize("&a&lSave Kit"), Arrays.asList(
-        colorize("&7Click to save your current kit")
-    ));
-    ItemStack cancelBtn = createButton(Material.REDSTONE_BLOCK, colorize("&c&lCancel"), Arrays.asList(
-        colorize("&7Click to cancel editing"),
-        colorize("&7Your kit will NOT be saved")
-    ));
-    ItemStack resetBtn = createButton(Material.BARRIER, colorize("&e&lReset Kit"), Arrays.asList(
-        colorize("&7Click to reset to default kit")
-    ));
-    ItemStack infoBtn = createButton(Material.BOOK, colorize("&b&lInfo"), Arrays.asList(
-        colorize("&7Top 27 slots = kit contents"),
-        colorize("&7Armor is locked (cannot be edited)"),
-        colorize("&7Click Save when done")
-    ));
-
-    inv.setItem(SLOT_SAVE, saveBtn);
-    inv.setItem(SLOT_CANCEL, cancelBtn);
-    inv.setItem(SLOT_RESET, resetBtn);
-    inv.setItem(SLOT_INFO, infoBtn);
-
-    this.openEditors.put(player.getUniqueId(), inv);
-    this.editingKit.put(player.getUniqueId(), Boolean.valueOf(true));
-    this.saving.put(player.getUniqueId(), Boolean.valueOf(false));
-
-    player.openInventory(inv);
-    player.sendMessage(colorize("&8&m----------------------------------"));
-    player.sendMessage(colorize("&6&lKit Editor &7opened"));
-    player.sendMessage(colorize("&7Move items freely, then click &aSave &7or &cCancel"));
-    player.sendMessage(colorize("&8&m----------------------------------"));
+    // Fallback if kit-setting.yml failed to load
+    if (helmet == null) helmet = unbreakable(new ItemStack(Material.LEATHER_HELMET));
+    if (chestplate == null) chestplate = unbreakable(new ItemStack(Material.LEATHER_CHESTPLATE));
+    if (leggings == null) leggings = unbreakable(new ItemStack(Material.DIAMOND_LEGGINGS));
+    if (boots == null) boots = unbreakable(new ItemStack(Material.DIAMOND_BOOTS));
   }
+
+  for (int i = 0; i < 27 && i < kitContents.length; i++) {
+    if (kitContents[i] != null) {
+      inv.setItem(i, kitContents[i]);
+    }
+  }
+
+  inv.setItem(27, helmet);
+  inv.setItem(28, chestplate);
+  inv.setItem(29, leggings);
+  inv.setItem(30, boots);
+
+  ItemStack saveBtn = createButton(Material.EMERALD_BLOCK, colorize("&a&lSave Kit"), Arrays.asList(
+      colorize("&7Click to save your current kit")
+  ));
+  ItemStack cancelBtn = createButton(Material.REDSTONE_BLOCK, colorize("&c&lCancel"), Arrays.asList(
+      colorize("&7Click to cancel editing"),
+      colorize("&7Your kit will NOT be saved")
+  ));
+  ItemStack resetBtn = createButton(Material.BARRIER, colorize("&e&lReset Kit"), Arrays.asList(
+      colorize("&7Click to reset to default kit")
+  ));
+  ItemStack infoBtn = createButton(Material.BOOK, colorize("&b&lInfo"), Arrays.asList(
+      colorize("&7Top 27 slots = kit contents"),
+      colorize("&7Armor is locked (cannot be edited)"),
+      colorize("&7Click Save when done")
+  ));
+
+  inv.setItem(SLOT_SAVE, saveBtn);
+  inv.setItem(SLOT_CANCEL, cancelBtn);
+  inv.setItem(SLOT_RESET, resetBtn);
+  inv.setItem(SLOT_INFO, infoBtn);
+
+  this.openEditors.put(player.getUniqueId(), inv);
+  this.editingKit.put(player.getUniqueId(), Boolean.valueOf(true));
+  this.saving.put(player.getUniqueId(), Boolean.valueOf(false));
+
+  player.openInventory(inv);
+  player.sendMessage(colorize("&8&m----------------------------------"));
+  player.sendMessage(colorize("&6&lKit Editor &7opened"));
+  player.sendMessage(colorize("&7Move items freely, then click &aSave &7or &cCancel"));
+  player.sendMessage(colorize("&8&m----------------------------------"));
+}
 
   private ItemStack[] getDefaultKitContents() {
     ItemStack[] contents = new ItemStack[36];
