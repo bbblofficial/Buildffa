@@ -26,9 +26,17 @@ public class KillListener implements Listener {
   private Map<UUID, Integer> killCounts = new HashMap<UUID, Integer>();
   private Map<UUID, Long> lastKillTimes = new ConcurrentHashMap<UUID, Long>();
   private Map<UUID, Long> lastVictimTimes = new ConcurrentHashMap<UUID, Long>();
+
+  // ✅ NEW: last time this player did ANY activity (kill or got hit)
+  private Map<UUID, Long> lastActivityTimes = new ConcurrentHashMap<UUID, Long>();
+
   private JavaPlugin plugin;
   private FileConfiguration config;
   private String nmsVersion;
+
+  // ✅ NEW: idle timeout in milliseconds (default 60s = 1 minute)
+  private static final long IDLE_TIMEOUT_MS = 60_000L;
+  private int idleTaskId = -1;
 
   public KillListener(JavaPlugin plugin) {
     this.plugin = plugin;
@@ -37,6 +45,42 @@ public class KillListener implements Listener {
 
     String packageName = plugin.getServer().getClass().getPackage().getName();
     this.nmsVersion = packageName.substring(packageName.lastIndexOf('.') + 1);
+
+    // ✅ NEW: start idle-reset task
+    startIdleResetTask();
+  }
+
+  // ============================================================
+  //  ✅ IDLE RESET TASK
+  //  Every second, check if any player has been idle for more
+  //  than IDLE_TIMEOUT_MS. If yes, reset their kill counter.
+  // ============================================================
+  private void startIdleResetTask() {
+    if (this.idleTaskId != -1) {
+      Bukkit.getScheduler().cancelTask(this.idleTaskId);
+    }
+
+    this.idleTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(this.plugin,
+        new Runnable() {
+          @Override
+          public void run() {
+            long now = System.currentTimeMillis();
+
+            for (Player player : Bukkit.getOnlinePlayers()) {
+              UUID id = player.getUniqueId();
+              Long last = lastActivityTimes.get(id);
+              if (last == null) continue;
+
+              if (now - last.longValue() >= IDLE_TIMEOUT_MS) {
+                // Idle too long → reset kill counter
+                if (killCounts.containsKey(id)) {
+                  killCounts.remove(id);
+                }
+                lastActivityTimes.remove(id);
+              }
+            }
+          }
+        }, 20L, 20L);
   }
 
   // ============================================================
@@ -62,6 +106,11 @@ public class KillListener implements Listener {
     if (attacker.getUniqueId().equals(victim.getUniqueId())) return;
 
     CombatManager.registerHit(attacker.getUniqueId(), victim.getUniqueId());
+
+    // ✅ NEW: mark activity for both players
+    long now = System.currentTimeMillis();
+    lastActivityTimes.put(attacker.getUniqueId(), Long.valueOf(now));
+    lastActivityTimes.put(victim.getUniqueId(), Long.valueOf(now));
   }
 
   @EventHandler
@@ -72,13 +121,15 @@ public class KillListener implements Listener {
 
     long currentTime = System.currentTimeMillis();
 
-    long lastVictimTime = this.lastVictimTimes.getOrDefault(deathPlayer.getUniqueId(), Long.valueOf(0L)).longValue();
+    long lastVictimTime = this.lastVictimTimes.getOrDefault(
+        deathPlayer.getUniqueId(), Long.valueOf(0L)).longValue();
     if (currentTime - lastVictimTime < 3000L) {
       return;
     }
     this.lastVictimTimes.put(deathPlayer.getUniqueId(), Long.valueOf(currentTime));
 
-    long lastKillTime = this.lastKillTimes.getOrDefault(killer.getUniqueId(), Long.valueOf(0L)).longValue();
+    long lastKillTime = this.lastKillTimes.getOrDefault(
+        killer.getUniqueId(), Long.valueOf(0L)).longValue();
     if (currentTime - lastKillTime < 80L) {
       return;
     }
@@ -87,6 +138,10 @@ public class KillListener implements Listener {
     UUID killerId = killer.getUniqueId();
     int kills = this.killCounts.getOrDefault(killerId, Integer.valueOf(0)).intValue() + 1;
     this.killCounts.put(killerId, Integer.valueOf(kills));
+
+    // ✅ NEW: update activity timestamp so kill counter doesn't reset mid-fight
+    lastActivityTimes.put(killerId, Long.valueOf(currentTime));
+    lastActivityTimes.put(deathPlayer.getUniqueId(), Long.valueOf(currentTime));
 
     boolean enableTitle = this.config.getBoolean("kill-screen.enable-title", true);
 
@@ -208,6 +263,8 @@ public class KillListener implements Listener {
     this.killCounts.remove(player.getUniqueId());
     this.lastKillTimes.remove(player.getUniqueId());
     this.lastVictimTimes.remove(player.getUniqueId());
+    // ✅ NEW: clear activity timestamp
+    this.lastActivityTimes.remove(player.getUniqueId());
   }
 
   public int getKillCount(Player player) {
@@ -218,6 +275,8 @@ public class KillListener implements Listener {
     UUID playerId = player.getUniqueId();
     int currentKills = this.killCounts.getOrDefault(playerId, Integer.valueOf(0)).intValue();
     this.killCounts.put(playerId, Integer.valueOf(currentKills + increment));
+    // ✅ NEW: mark activity
+    this.lastActivityTimes.put(playerId, Long.valueOf(System.currentTimeMillis()));
   }
 
   private String colorize(String message) {
