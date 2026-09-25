@@ -46,13 +46,12 @@ public class BuildFFACommand implements CommandExecutor {
 
     // ============================================================
     //  OFFLINE PLAYER RESOLVER
-    //  Returns a small holder with UUID + resolved name, or null.
     // ============================================================
     private static class TargetInfo {
         final UUID uuid;
         final String name;
         final boolean online;
-        final Player onlinePlayer;   // non-null only if online
+        final Player onlinePlayer;
 
         TargetInfo(UUID uuid, String name, boolean online, Player onlinePlayer) {
             this.uuid = uuid;
@@ -62,30 +61,23 @@ public class BuildFFACommand implements CommandExecutor {
         }
     }
 
-    /**
-     * Resolves a player by name — online first, then offline.
-     * Returns null if the player has never joined the server.
-     */
     private TargetInfo resolveTarget(CommandSender sender, String name) {
         if (name == null || name.isEmpty()) {
             sender.sendMessage(colorize("&cPlayer name is empty."));
             return null;
         }
 
-        // 1) Online?
         Player online = Bukkit.getPlayerExact(name);
         if (online != null && online.isOnline()) {
             return new TargetInfo(online.getUniqueId(), online.getName(), true, online);
         }
 
-        // 2) Offline lookup
         OfflinePlayer offline = Bukkit.getOfflinePlayer(name);
         if (offline == null) {
             sender.sendMessage(colorize("&cPlayer never joined this server: &e" + name));
             return null;
         }
 
-        // hasPlayedBefore() is false for players who never joined
         boolean known = offline.hasPlayedBefore() || offline.isOnline();
         if (!known) {
             sender.sendMessage(colorize("&cPlayer never joined this server: &e" + name));
@@ -100,9 +92,6 @@ public class BuildFFACommand implements CommandExecutor {
         return new TargetInfo(offline.getUniqueId(), resolvedName, false, null);
     }
 
-    // ============================================================
-    //  LOAD PlayerData with offline-safe fallback
-    // ============================================================
     private PlayerData loadDataSafe(TargetInfo info) {
         PlayerData data = this.database.getPlayer(info.uuid);
         if (data == null) {
@@ -164,6 +153,16 @@ public class BuildFFACommand implements CommandExecutor {
             return handleResetStats(sender, args);
         }
 
+        if (sub.equals("resetallleaderboards") || sub.equals("resetalllb")) {
+            if (!sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))) { sendNoPerm(sender); return true; }
+            return handleResetAllLeaderboards(sender);
+        }
+
+        if (sub.equals("resetallstats")) {
+            if (!sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))) { sendNoPerm(sender); return true; }
+            return handleResetAllLeaderboards(sender);
+        }
+
         if (sub.equals("forceksreward")) {
             if (!sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))) { sendNoPerm(sender); return true; }
             return handleForceKsReward(sender, args);
@@ -182,6 +181,27 @@ public class BuildFFACommand implements CommandExecutor {
         if (sub.equals("dbbackup")) {
             if (!sender.hasPermission(getPerm("reload", "buildffa.reload"))) { sendNoPerm(sender); return true; }
             return handleDbBackup(sender);
+        }
+
+        // ==================== LEADERBOARDS ====================
+        if (sub.equals("deathleaderboard") || sub.equals("deathsleaderboard") || sub.equals("dtop")) {
+            return handleDeathLeaderboard(sender, args);
+        }
+
+        if (sub.equals("killleaderboard") || sub.equals("killsleaderboard") || sub.equals("ktop")) {
+            return handleKillLeaderboard(sender, args);
+        }
+
+        if (sub.equals("kdrleaderboard") || sub.equals("kdrtop")) {
+            return handleKdrLeaderboard(sender, args);
+        }
+
+        if (sub.equals("streakleaderboard") || sub.equals("ksleaderboard") || sub.equals("kstop")) {
+            return handleStreakLeaderboard(sender, args);
+        }
+
+        if (sub.equals("leaderboards") || sub.equals("lb") || sub.equals("lbs")) {
+            return handleAllLeaderboards(sender);
         }
 
         // ==================== PLAYER ====================
@@ -309,7 +329,6 @@ public class BuildFFACommand implements CommandExecutor {
     // ==========================================
     private boolean handleStats(CommandSender sender, String[] args) {
 
-        // ==================== /buildffa stats add ====================
         if (args.length >= 2 && args[1].equalsIgnoreCase("add")) {
             if (args.length < 5) {
                 sender.sendMessage(colorize("&cUsage: /buildffa stats add <kill|kdr|ks|death> <player> <amount>"));
@@ -368,7 +387,6 @@ public class BuildFFACommand implements CommandExecutor {
             return true;
         }
 
-        // ==================== /buildffa stats reset ====================
         if (args.length >= 2 && args[1].equalsIgnoreCase("reset")) {
             if (args.length < 4) {
                 sender.sendMessage(colorize("&cUsage: /buildffa stats reset <kill|ks|death> <player>"));
@@ -411,7 +429,6 @@ public class BuildFFACommand implements CommandExecutor {
             return true;
         }
 
-        // ==================== /buildffa stats [player] ====================
         TargetInfo info;
 
         if (args.length >= 2) {
@@ -632,7 +649,7 @@ public class BuildFFACommand implements CommandExecutor {
     }
 
     // ==========================================
-    // Top Command
+    // Top Command (generic)
     // ==========================================
     private boolean handleTop(CommandSender sender, String[] args) {
         String type = "kills";
@@ -698,6 +715,218 @@ public class BuildFFACommand implements CommandExecutor {
     }
 
     // ==========================================
+    // Death Leaderboard
+    // ==========================================
+    private boolean handleDeathLeaderboard(CommandSender sender, String[] args) {
+        int limit = 10;
+        if (args.length >= 2) {
+            try {
+                limit = Integer.parseInt(args[1]);
+            } catch (NumberFormatException e) {
+                limit = 10;
+            }
+        }
+        if (limit < 1) limit = 1;
+        if (limit > 20) limit = 20;
+
+        List<PlayerData> top = this.database.getTopDeaths(limit);
+
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+        sender.sendMessage(colorize("&6&lTop " + limit + " &7- &cDEATHS Leaderboard"));
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+
+        if (top.isEmpty()) {
+            sender.sendMessage(colorize("&7No data yet."));
+        } else {
+            int rank = 1;
+            for (PlayerData data : top) {
+                String prefix;
+                if (rank == 1) prefix = "&4&l#1 ";
+                else if (rank == 2) prefix = "&c&l#2 ";
+                else if (rank == 3) prefix = "&6&l#3 ";
+                else prefix = "&7#" + rank + " ";
+
+                sender.sendMessage(colorize(prefix + "&f" + data.getName()
+                        + " &8- &c" + data.getDeaths() + " deaths"));
+                rank++;
+            }
+        }
+
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+        return true;
+    }
+
+    // ==========================================
+    // Kill Leaderboard
+    // ==========================================
+    private boolean handleKillLeaderboard(CommandSender sender, String[] args) {
+        int limit = 10;
+        if (args.length >= 2) {
+            try {
+                limit = Integer.parseInt(args[1]);
+            } catch (NumberFormatException e) {
+                limit = 10;
+            }
+        }
+        if (limit < 1) limit = 1;
+        if (limit > 20) limit = 20;
+
+        List<PlayerData> top = this.database.getTopKills(limit);
+
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+        sender.sendMessage(colorize("&6&lTop " + limit + " &7- &aKILLS Leaderboard"));
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+
+        if (top.isEmpty()) {
+            sender.sendMessage(colorize("&7No data yet."));
+        } else {
+            int rank = 1;
+            for (PlayerData data : top) {
+                String prefix;
+                if (rank == 1) prefix = "&6&l#1 ";
+                else if (rank == 2) prefix = "&7&l#2 ";
+                else if (rank == 3) prefix = "&c&l#3 ";
+                else prefix = "&7#" + rank + " ";
+
+                sender.sendMessage(colorize(prefix + "&f" + data.getName()
+                        + " &8- &a" + data.getKills() + " kills"));
+                rank++;
+            }
+        }
+
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+        return true;
+    }
+
+    // ==========================================
+    // KDR Leaderboard
+    // ==========================================
+    private boolean handleKdrLeaderboard(CommandSender sender, String[] args) {
+        int limit = 10;
+        if (args.length >= 2) {
+            try {
+                limit = Integer.parseInt(args[1]);
+            } catch (NumberFormatException e) {
+                limit = 10;
+            }
+        }
+        if (limit < 1) limit = 1;
+        if (limit > 20) limit = 20;
+
+        List<PlayerData> top = this.database.getTopKDR(limit);
+
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+        sender.sendMessage(colorize("&6&lTop " + limit + " &7- &eKDR Leaderboard"));
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+
+        if (top.isEmpty()) {
+            sender.sendMessage(colorize("&7No data yet."));
+        } else {
+            int rank = 1;
+            for (PlayerData data : top) {
+                String prefix;
+                if (rank == 1) prefix = "&6&l#1 ";
+                else if (rank == 2) prefix = "&7&l#2 ";
+                else if (rank == 3) prefix = "&c&l#3 ";
+                else prefix = "&7#" + rank + " ";
+
+                sender.sendMessage(colorize(prefix + "&f" + data.getName()
+                        + " &8- &e" + String.format("%.2f", data.getKDR()) + " KDR"
+                        + " &7(&a" + data.getKills() + "&7/&c" + data.getDeaths() + "&7)"));
+                rank++;
+            }
+        }
+
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+        return true;
+    }
+
+    // ==========================================
+    // Killstreak Leaderboard
+    // ==========================================
+    private boolean handleStreakLeaderboard(CommandSender sender, String[] args) {
+        int limit = 10;
+        if (args.length >= 2) {
+            try {
+                limit = Integer.parseInt(args[1]);
+            } catch (NumberFormatException e) {
+                limit = 10;
+            }
+        }
+        if (limit < 1) limit = 1;
+        if (limit > 20) limit = 20;
+
+        List<PlayerData> top = this.database.getTopKillstreak(limit);
+
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+        sender.sendMessage(colorize("&6&lTop " + limit + " &7- &bKILLSTREAK Leaderboard"));
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+
+        if (top.isEmpty()) {
+            sender.sendMessage(colorize("&7No data yet."));
+        } else {
+            int rank = 1;
+            for (PlayerData data : top) {
+                String prefix;
+                if (rank == 1) prefix = "&6&l#1 ";
+                else if (rank == 2) prefix = "&7&l#2 ";
+                else if (rank == 3) prefix = "&c&l#3 ";
+                else prefix = "&7#" + rank + " ";
+
+                sender.sendMessage(colorize(prefix + "&f" + data.getName()
+                        + " &8- &b" + data.getBestKillstreak() + " KS"));
+                rank++;
+            }
+        }
+
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+        return true;
+    }
+
+    // ==========================================
+    // All Leaderboards at once
+    // ==========================================
+    private boolean handleAllLeaderboards(CommandSender sender) {
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+        sender.sendMessage(colorize("&6&l★ &e&lALL LEADERBOARDS &6&l★"));
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+
+        printLeaderboard(sender, "&aKILLS", this.database.getTopKills(5), "kills");
+        sender.sendMessage("");
+        printLeaderboard(sender, "&cDEATHS", this.database.getTopDeaths(5), "deaths");
+        sender.sendMessage("");
+        printLeaderboard(sender, "&eKDR", this.database.getTopKDR(5), "kdr");
+        sender.sendMessage("");
+        printLeaderboard(sender, "&bKILLSTREAK", this.database.getTopKillstreak(5), "killstreak");
+
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+        return true;
+    }
+
+    private void printLeaderboard(CommandSender sender, String title, List<PlayerData> top, String type) {
+        sender.sendMessage(colorize("&8» &l" + title + " &7(Top 5)"));
+        if (top == null || top.isEmpty()) {
+            sender.sendMessage(colorize("  &7No data yet."));
+            return;
+        }
+        int rank = 1;
+        for (PlayerData data : top) {
+            String value;
+            if (type.equals("deaths")) {
+                value = "&c" + data.getDeaths();
+            } else if (type.equals("kdr")) {
+                value = "&e" + String.format("%.2f", data.getKDR());
+            } else if (type.equals("killstreak")) {
+                value = "&b" + data.getBestKillstreak();
+            } else {
+                value = "&a" + data.getKills();
+            }
+            sender.sendMessage(colorize("  &7#" + rank + " &f" + data.getName() + " &8» " + value));
+            rank++;
+        }
+    }
+
+    // ==========================================
     // Reset Stats (online + offline)
     // ==========================================
     private boolean handleResetStats(CommandSender sender, String[] args) {
@@ -728,6 +957,53 @@ public class BuildFFACommand implements CommandExecutor {
         if (info.online && info.onlinePlayer != null) {
             info.onlinePlayer.sendMessage(colorize("&cYour stats have been reset by an admin."));
         }
+        return true;
+    }
+
+    // ==========================================
+    // Reset ALL Leaderboards
+    // ==========================================
+    private boolean handleResetAllLeaderboards(CommandSender sender) {
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+        sender.sendMessage(colorize("&6&lResetting ALL Leaderboards..."));
+        sender.sendMessage(colorize("&8&m----------------------------------"));
+
+        try {
+            List<PlayerData> allPlayers = this.database.getAllPlayers();
+            int count = 0;
+
+            for (PlayerData data : allPlayers) {
+                data.setKills(0);
+                data.setDeaths(0);
+                data.setKillstreak(0);
+                data.setBestKillstreak(0);
+                this.database.savePlayerImmediate(data);
+                count++;
+            }
+
+            // Clear in-memory kill counts too
+            BuildFFA bffa = (BuildFFA) this.plugin;
+            if (bffa.getKillListener() != null) {
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    // Reset kill counter for the running session
+                    try {
+                        bffa.getKillListener().updateKillCount(p, -bffa.getKillListener().getKillCount(p));
+                    } catch (Throwable ignored) {}
+                }
+            }
+
+            sender.sendMessage(colorize("&aSuccessfully reset &e" + count + " &aleaderboard entries."));
+            sender.sendMessage(colorize("&7All kills, deaths, KDR, and killstreaks are now &e0&7."));
+            sender.sendMessage(colorize("&7Leaderboards will refresh on next update."));
+
+            Bukkit.broadcastMessage(colorize("&c&l⚠ &cAll leaderboards have been reset by an admin!"));
+
+        } catch (Throwable t) {
+            sender.sendMessage(colorize("&cFailed to reset leaderboards: &e" + t.getMessage()));
+            this.plugin.getLogger().warning("resetallleaderboards failed: " + t.getMessage());
+        }
+
+        sender.sendMessage(colorize("&8&m----------------------------------"));
         return true;
     }
 
@@ -1174,6 +1450,11 @@ public class BuildFFACommand implements CommandExecutor {
 
         sender.sendMessage(colorize("&e/buildffa stats [player] &7- Show player stats"));
         sender.sendMessage(colorize("&e/buildffa top [kills|deaths|kdr|streak] [limit] &7- Show top players"));
+        sender.sendMessage(colorize("&e/buildffa deathleaderboard [limit] &7- Deaths leaderboard"));
+        sender.sendMessage(colorize("&e/buildffa killleaderboard [limit] &7- Kills leaderboard"));
+        sender.sendMessage(colorize("&e/buildffa kdrleaderboard [limit] &7- KDR leaderboard"));
+        sender.sendMessage(colorize("&e/buildffa streakleaderboard [limit] &7- Killstreak leaderboard"));
+        sender.sendMessage(colorize("&e/buildffa leaderboards &7- Show all leaderboards"));
         sender.sendMessage(colorize("&e/buildffa creator &7- Show plugin credits"));
 
         boolean isAdmin = sender.hasPermission(getPerm("setvoid", "buildffa.setvoid"))
@@ -1230,6 +1511,7 @@ public class BuildFFACommand implements CommandExecutor {
                 sender.sendMessage(colorize("&e/buildffa stats add <kill|kdr|ks|death> <player> <amount> &7- Add to a stat"));
                 sender.sendMessage(colorize("&e/buildffa stats reset <kill|ks|death> <player> &7- Reset a stat"));
                 sender.sendMessage(colorize("&e/buildffa resetstats <player> &7- Reset all player stats"));
+                sender.sendMessage(colorize("&e/buildffa resetallleaderboards &7- Reset ALL leaderboards"));
                 sender.sendMessage(colorize("&e/buildffa forceksreward <ks> &7- Give yourself the reward for that killstreak"));
             }
 

@@ -1033,6 +1033,9 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   4b406d1795b822b182cbcf793588b9df23695be7 1fc54119986a8568951b261a60615af6a3976092 muvixo <godarshia20@gmail.com> 1790120433 +0330	commit: SQiiiL
   1fc54119986a8568951b261a60615af6a3976092 395d1e4080140eba08538a055de844f3854ae209 muvixo <godarshia20@gmail.com> 1790125144 +0330	commit: SQiiiL
   395d1e4080140eba08538a055de844f3854ae209 7102bb53d14e637655a85480f69aeeb27d1a6169 muvixo <godarshia20@gmail.com> 1790138515 +0330	commit: SQiiiL
+  7102bb53d14e637655a85480f69aeeb27d1a6169 ed0e33299534be72846e6ec3fccf961eef030674 muvixo <godarshia20@gmail.com> 1790288824 +0330	commit: SQiiiL
+  ed0e33299534be72846e6ec3fccf961eef030674 f74f6b0e2255688aef44c38e0325f39a3f8bf32e muvixo <godarshia20@gmail.com> 1790289035 +0330	commit: SQiiiL
+  f74f6b0e2255688aef44c38e0325f39a3f8bf32e 88a34e1adc48c28eda3452ece176f92dde813605 muvixo <godarshia20@gmail.com> 1790293592 +0330	commit: SQiiiL
 │   │   └── refs
 │   │       ├── heads
 │   │       │   └── main
@@ -1150,6 +1153,9 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   4b406d1795b822b182cbcf793588b9df23695be7 1fc54119986a8568951b261a60615af6a3976092 muvixo <godarshia20@gmail.com> 1790120433 +0330	commit: SQiiiL
   1fc54119986a8568951b261a60615af6a3976092 395d1e4080140eba08538a055de844f3854ae209 muvixo <godarshia20@gmail.com> 1790125144 +0330	commit: SQiiiL
   395d1e4080140eba08538a055de844f3854ae209 7102bb53d14e637655a85480f69aeeb27d1a6169 muvixo <godarshia20@gmail.com> 1790138515 +0330	commit: SQiiiL
+  7102bb53d14e637655a85480f69aeeb27d1a6169 ed0e33299534be72846e6ec3fccf961eef030674 muvixo <godarshia20@gmail.com> 1790288824 +0330	commit: SQiiiL
+  ed0e33299534be72846e6ec3fccf961eef030674 f74f6b0e2255688aef44c38e0325f39a3f8bf32e muvixo <godarshia20@gmail.com> 1790289035 +0330	commit: SQiiiL
+  f74f6b0e2255688aef44c38e0325f39a3f8bf32e 88a34e1adc48c28eda3452ece176f92dde813605 muvixo <godarshia20@gmail.com> 1790293592 +0330	commit: SQiiiL
 │   │       └── remotes
 │   │           └── origin
 │   │               └── main
@@ -1261,6 +1267,9 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   4b406d1795b822b182cbcf793588b9df23695be7 1fc54119986a8568951b261a60615af6a3976092 muvixo <godarshia20@gmail.com> 1790120455 +0330	update by push
   1fc54119986a8568951b261a60615af6a3976092 395d1e4080140eba08538a055de844f3854ae209 muvixo <godarshia20@gmail.com> 1790125175 +0330	update by push
   395d1e4080140eba08538a055de844f3854ae209 7102bb53d14e637655a85480f69aeeb27d1a6169 muvixo <godarshia20@gmail.com> 1790138561 +0330	update by push
+  7102bb53d14e637655a85480f69aeeb27d1a6169 ed0e33299534be72846e6ec3fccf961eef030674 muvixo <godarshia20@gmail.com> 1790288844 +0330	update by push
+  ed0e33299534be72846e6ec3fccf961eef030674 f74f6b0e2255688aef44c38e0325f39a3f8bf32e muvixo <godarshia20@gmail.com> 1790289093 +0330	update by push
+  f74f6b0e2255688aef44c38e0325f39a3f8bf32e 88a34e1adc48c28eda3452ece176f92dde813605 muvixo <godarshia20@gmail.com> 1790293628 +0330	update by push
 │   ├── objects
 │   │   ├── 00
 │   │   │   ├── 0fd67875ec0ed06e64d240d4964a1e5be06f47
@@ -1351,7 +1360,9 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── 89d8c7efa319b6b16337e7efe0935de6515fe3
   [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
-│   │   │   └── ed12f7dbcc883d519e21da4cfbe3b3c7530b0b
+│   │   │   ├── ed12f7dbcc883d519e21da4cfbe3b3c7530b0b
+  [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+│   │   │   └── eee19291225223bebf948ad38248a3e203414a
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   ├── 09
 │   │   │   ├── 052799659e6547f273fed7fd66e9769463f7d2
@@ -1435,6 +1446,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
 │   │   │   ├── 7dfafe5a246f16e920fe838bfa788e25ae6e63
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+│   │   │   ├── ba5972689b3ddee0299db537b8f316f6f8c8ce
+  [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
 │   │   │   └── f782832afae11a214b248debcc5e61ad3aebe1
   [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
 │   │   ├── 11
@@ -1691,13 +1704,17 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
 │   │   │   ├── 8ba5cbedcf28524e7fb21229a3fd59c74a0cb9
   [Error: 'utf-8' codec can't decode byte 0xcd in position 2: invalid continuation byte]
-│   │   │   └── be7c595c6556be938de477b92f10aa2f377347
+│   │   │   ├── be7c595c6556be938de477b92f10aa2f377347
   [Error: 'utf-8' codec can't decode byte 0xa5 in position 2: invalid start byte]
+│   │   │   └── efd586e0f449ccea08de942b52bbf5b5f95e62
+  [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   ├── 27
 │   │   │   ├── 1c728e482a8a342614b3a945062de3c6c8843f
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── 4cd0a966d3ce80f6ca29240fdd489aa493f158
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+│   │   │   ├── 68efb67801d47b638572f33b62517fbf3b37b9
+  [Error: 'utf-8' codec can't decode byte 0x8d in position 2: invalid start byte]
 │   │   │   ├── 78d027ad683ead7dd9ae2f16285bcf404bf8c8
   [Error: 'utf-8' codec can't decode byte 0xce in position 18: invalid continuation byte]
 │   │   │   ├── 87a83fad3a4a6987554ce3b38c05a30b20fb50
@@ -1904,6 +1921,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
 │   │   ├── 37
 │   │   │   ├── 0b55ab9f0ee4af25d1c9cc6ca110fb55486e75
   [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
+│   │   │   ├── 1e2051fc254a8a58bdb6d1c9ccc8b7747cac24
+  [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
 │   │   │   ├── 613e22710d7617a352cf809ffd4a6b61d65b64
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── 7505eae2633293ca172a682abd2839cc296135
@@ -2067,10 +2086,14 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── 44f17424930ac5fd53508c34782aa0defa9421
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
-│   │   │   └── 47cf594880f3f677e8941021d5c230ed189571
+│   │   │   ├── 47cf594880f3f677e8941021d5c230ed189571
   [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
+│   │   │   └── 74b9fb1dd3659d9a8a5f227c32ddc402269dd3
+  [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   ├── 47
 │   │   │   ├── 39d6c3e9389a24f41e7d2d6bdae5474e6110be
+  [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+│   │   │   ├── 57c0ed15c55e8f815a13afa28ab030628f7897
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   └── 90889a3b684365b2d3a5230bc042c022f899e0
   [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
@@ -2103,8 +2126,10 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   [Error: 'utf-8' codec can't decode byte 0xbd in position 2: invalid start byte]
 │   │   │   ├── be4450f966116f00dad32fa624c17fa2fc261f
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
-│   │   │   └── e4c0b1f7cdeca253a2bbe1d0cd908fc2fb4b9d
+│   │   │   ├── e4c0b1f7cdeca253a2bbe1d0cd908fc2fb4b9d
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+│   │   │   └── f1cccede54bd4eb6423193f11169dd7e4af089
+  [Error: 'utf-8' codec can't decode byte 0xce in position 19: invalid continuation byte]
 │   │   ├── 4b
 │   │   │   ├── 3f1ae86cbdbc7b478cca51fd9bb32b008015f6
   [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
@@ -2123,7 +2148,9 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── 7ae5850dc080f062aed80a82a373dd08d5a97c
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
-│   │   │   └── c8e2674bbf83cbbc1e2872490522ae5918c96d
+│   │   │   ├── c8e2674bbf83cbbc1e2872490522ae5918c96d
+  [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+│   │   │   └── fe087760a07d0826ff3d002ec45b44a4c768c8
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   ├── 4d
 │   │   │   ├── 499d7d9a3987076be718d1de76808166440383
@@ -2311,6 +2338,10 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
 │   │   │   └── 9fb206faa89f558eea99366903f24c781eaeed
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   ├── 5c
+│   │   │   ├── 3f71fe2f83ee288df78837519684b1270ac819
+  [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+│   │   │   ├── 4d156ec2e3b493f881ff89456cd21d91a2299f
+  [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── 68a9a4a5cd2161caba18528e191f84abf14e63
   [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
 │   │   │   ├── 8c9b750f167c823a241af01984bdbddc9b0097
@@ -2428,6 +2459,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
 │   │   │   └── ee141082878296e32912f8084382fd8d713750
   [Error: 'utf-8' codec can't decode byte 0xbd in position 2: invalid start byte]
 │   │   ├── 67
+│   │   │   ├── 1590597462f6dd435021c57a741c301a415fcd
+  [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── 68a6c1602ff64c2affce1ac64b6bc07c21c61e
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   └── f719653a808d168716ee5afa657d05f38de167
@@ -2576,6 +2609,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
 │   │   ├── 73
 │   │   │   ├── 0dbfb76aeda3aaac883462e313a426e6cd7604
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+│   │   │   ├── 1465706b1162edc0a2c028fc3b9509a785f920
+  [Error: 'utf-8' codec can't decode byte 0xad in position 2: invalid start byte]
 │   │   │   ├── 33451f67cb036073d3c08cdad048f6c817fd22
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── 34f7f5af0585720693518a81ff2595b279cab9
@@ -2724,6 +2759,9 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   [Error: 'utf-8' codec can't decode byte 0xdd in position 4: invalid continuation byte]
 │   │   │   └── ae4bbd7a1898d445307ed4e7ddc65d8a71bde8
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+│   │   ├── 84
+│   │   │   └── 5b78ead6ec14f2093a8373da0aabe3de3e0106
+  [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   ├── 85
 │   │   │   ├── 2066ca48fe444443d2cc96a9fbd7c8383f74b1
   [Error: 'utf-8' codec can't decode byte 0xad in position 2: invalid start byte]
@@ -2774,6 +2812,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
 │   │   │   ├── 9f883668221cb30214c845d51c2386820aef1a
   [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
+│   │   │   ├── a34e1adc48c28eda3452ece176f92dde813605
+  [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
 │   │   │   ├── e86e94b0bd34ba53e6d0ead0627576bdaf8ef1
   [Error: 'utf-8' codec can't decode byte 0xed in position 2: invalid continuation byte]
 │   │   │   └── fddd152758f07bc2e170dfe9800bb2069b68e8
@@ -2922,6 +2962,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
 │   │   ├── 98
 │   │   │   ├── 04e80b7cf1be0febffd569ff03cc4e8cceebd3
   [Error: 'utf-8' codec can't decode byte 0xbd in position 2: invalid start byte]
+│   │   │   ├── 1a15705e5042a4c6b6abcabd441a4f9213fcd7
+  [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── aab0cdaec81f572d69a89d562ac400ff7d8a85
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── af01c3540671173745bc0c7babae9e11285feb
@@ -2988,6 +3030,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   [Error: 'utf-8' codec can't decode byte 0x8d in position 2: invalid start byte]
 │   │   │   ├── 549cade048be4183770c0c707b76a587cde7ad
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+│   │   │   ├── b79ed995854990c53f18906de652eca856bd20
+  [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── eda68dd1a86003cffad4774c6ba71912271d2b
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   └── f56c67bd933ff55c0c2f3119e1fdd142c2bb7d
@@ -3047,6 +3091,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
 │   │   │   ├── 5d623843c032ef96eccdabc88d3ce0a04f5a8c
   [Error: 'utf-8' codec can't decode byte 0xcd in position 2: invalid continuation byte]
+│   │   │   ├── 606b75c4119b037eaf02f9d461fcac8714e7e0
+  [Error: 'utf-8' codec can't decode byte 0xed in position 2: invalid continuation byte]
 │   │   │   ├── 9294f94a5ddf69ef8e5b13bf595582e2a28571
   [Error: 'utf-8' codec can't decode byte 0xed in position 2: invalid continuation byte]
 │   │   │   ├── a13cfd946f45ea6e53fc2f2deca82eebf663de
@@ -3099,14 +3145,18 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
 │   │   │   └── f504dcaa692f9135db0551ff320d7cac070a56
   [Error: 'utf-8' codec can't decode byte 0xbd in position 2: invalid start byte]
 │   │   ├── a7
+│   │   │   ├── 4100abdab21389eaca18de02bc3acdc251441a
+  [Error: 'utf-8' codec can't decode byte 0xca in position 20: invalid continuation byte]
 │   │   │   ├── 63d8370ad6d07bf09f9a9a796f521b93424cc5
   [Error: 'utf-8' codec can't decode byte 0x8d in position 2: invalid start byte]
 │   │   │   ├── 99a0612f4271cfc95c21575cf693edf4b2e973
   [Error: 'utf-8' codec can't decode byte 0xb0 in position 7: invalid start byte]
 │   │   │   ├── a1b677188666f11afd2fe7bbc447ecb4919354
   [Error: 'utf-8' codec can't decode byte 0xa5 in position 2: invalid start byte]
-│   │   │   └── a3a4f6d82d1393b1602039f1702dcef3da4e5b
+│   │   │   ├── a3a4f6d82d1393b1602039f1702dcef3da4e5b
   [Error: 'utf-8' codec can't decode byte 0xad in position 2: invalid start byte]
+│   │   │   └── e487db1be6f6eb8679418acfb9f63ca07faaa2
+  [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   ├── a8
 │   │   │   ├── 183cda01d4037206e1355a9be806ed5d8c1bc8
   [Error: 'utf-8' codec can't decode byte 0xb2 in position 10: invalid start byte]
@@ -3359,6 +3409,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
 │   │   ├── c2
 │   │   │   ├── 5f39a410998965661d6eaed4d28c7f8a0b6168
   [Error: 'utf-8' codec can't decode byte 0x8d in position 2: invalid start byte]
+│   │   │   ├── 827879377ecc22df667980106e9e721d5e036a
+  [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
 │   │   │   ├── cc4e5362995541458229ab24055eab40f5ce7e
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── e4ffadce4d3b4da759ac54377133c376d0cce8
@@ -3661,6 +3713,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── 06ffe8eb66fd764001725f088dc41be104fd46
   [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
+│   │   │   ├── 3ad27a6ac356d2a88cb0e726248918658b7d15
+  [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── 6a9a5d3d2d96963e6a39bb41c83629a9abf758
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── e217978922cb6ae6e616d7a928012cfb012fe2
@@ -3778,6 +3832,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   [Error: 'utf-8' codec can't decode byte 0xd5 in position 2: invalid continuation byte]
 │   │   │   ├── e48d4515a903f9a2e8cea33936ea69ab4b1cbf
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+│   │   │   ├── f7eebe2d6a85ddbdb441a4f3aed8504b84205b
+  [Error: 'utf-8' codec can't decode byte 0xcd in position 2: invalid continuation byte]
 │   │   │   └── f9c1ae1d071657bf6d40c85c75f28f732ba62b
   [Error: 'utf-8' codec can't decode byte 0xad in position 2: invalid start byte]
 │   │   ├── e2
@@ -3810,10 +3866,14 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
 │   │   ├── e5
 │   │   │   ├── 0b09a6280950bd8a8591613d679bc80ed17ee1
   [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
+│   │   │   ├── 41aacb716da0f48d846fc651bb15f22454b258
+  [Error: 'utf-8' codec can't decode byte 0xca in position 20: invalid continuation byte]
 │   │   │   ├── 4cae7c362e98453de518200ce0071928d698b6
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── 62ab70f3d8810b2b0566c4f76f77f5b10ba870
   [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
+│   │   │   ├── 7ac458b8fefe0542aa8e9cde95f8bae13baf93
+  [Error: 'utf-8' codec can't decode byte 0xca in position 20: invalid continuation byte]
 │   │   │   ├── d65dab72acb2266b4f561d5167823dfffbf007
   [Error: 'utf-8' codec can't decode byte 0xcd in position 2: invalid continuation byte]
 │   │   │   └── edfe77f9abb7c8953a5a4cd5e3c25c05e8e554
@@ -3886,6 +3946,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
 │   │   │   └── 9555e41f35f5f74b919c056ba4737e1b0de667
   [Error: 'utf-8' codec can't decode byte 0xce in position 19: invalid continuation byte]
 │   │   ├── ed
+│   │   │   ├── 0e33299534be72846e6ec3fccf961eef030674
+  [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
 │   │   │   ├── 118cc08078385c5834cee5bc50c5d9bae49ce2
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── 51ea28f0549dd0525bafec4cdf0a885c98f0cc
@@ -3943,6 +4005,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
 │   │   │   └── b6a3348ca7b809226618d81e5b39c3a47a667b
   [Error: 'utf-8' codec can't decode byte 0xb5 in position 2: invalid start byte]
 │   │   ├── f2
+│   │   │   ├── 1bdb63bc51ac1d8ee884e74634192fe77a9657
+  [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── 479c8ddefe958e4bd1de0e021c563674962fb0
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── 5368065f28bed52060c62f52e76d3cde534076
@@ -3994,6 +4058,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
 │   │   │   ├── 318a795c248591c4f541b6a52c1c74e95d7d3f
   [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
+│   │   │   ├── 833d18f2c13526bc87e71ec97fc7b8bf32584b
+  [Error: 'utf-8' codec can't decode bytes in position 2-3: invalid continuation byte]
 │   │   │   ├── b5dc24d8ece66af93bd52548ffb89a8edfb373
   [Error: 'utf-8' codec can't decode byte 0xcd in position 2: invalid continuation byte]
 │   │   │   ├── c65391cfb776d7e1840d4dce71db4642658a42
@@ -4020,6 +4086,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   [Error: 'utf-8' codec can't decode byte 0xbd in position 2: invalid start byte]
 │   │   │   ├── 1eb2b7b1958920b1a4db79414bc4ebd52fcc3e
   [Error: 'utf-8' codec can't decode byte 0xcd in position 2: invalid continuation byte]
+│   │   │   ├── 4f6b0e2255688aef44c38e0325f39a3f8bf32e
+  [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
 │   │   │   ├── 51a4b0f36fe208429771c5f1f746f7e585b1e0
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   ├── 8c917e20ac974b485f808b2c54fd8c6d4c19c6
@@ -4051,6 +4119,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
 │   │   │   ├── dd9c58c0829d1053dbebda6c07a5722f89642f
   [Error: 'utf-8' codec can't decode byte 0xb5 in position 2: invalid start byte]
 │   │   │   ├── ebc6caa020a3be89867840e2b1e47f899c1bd0
+  [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+│   │   │   ├── ee55e75a1ba2cd4c01214ea0a54387e7b3daa5
   [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
 │   │   │   └── f77e9cd406a577def6e1e30c971eba2bf5c43b
   [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
@@ -4117,11 +4187,11 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
 │   └── refs
 │       ├── heads
 │       │   └── main
-  7102bb53d14e637655a85480f69aeeb27d1a6169
+  88a34e1adc48c28eda3452ece176f92dde813605
 │       ├── remotes
 │       │   └── origin
 │       │       └── main
-  7102bb53d14e637655a85480f69aeeb27d1a6169
+  88a34e1adc48c28eda3452ece176f92dde813605
 │       └── tags
 ├── .github
 │   └── workflows
@@ -5349,6 +5419,9 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
     4b406d1795b822b182cbcf793588b9df23695be7 1fc54119986a8568951b261a60615af6a3976092 muvixo <godarshia20@gmail.com> 1790120433 +0330	commit: SQiiiL
     1fc54119986a8568951b261a60615af6a3976092 395d1e4080140eba08538a055de844f3854ae209 muvixo <godarshia20@gmail.com> 1790125144 +0330	commit: SQiiiL
     395d1e4080140eba08538a055de844f3854ae209 7102bb53d14e637655a85480f69aeeb27d1a6169 muvixo <godarshia20@gmail.com> 1790138515 +0330	commit: SQiiiL
+    7102bb53d14e637655a85480f69aeeb27d1a6169 ed0e33299534be72846e6ec3fccf961eef030674 muvixo <godarshia20@gmail.com> 1790288824 +0330	commit: SQiiiL
+    ed0e33299534be72846e6ec3fccf961eef030674 f74f6b0e2255688aef44c38e0325f39a3f8bf32e muvixo <godarshia20@gmail.com> 1790289035 +0330	commit: SQiiiL
+    f74f6b0e2255688aef44c38e0325f39a3f8bf32e 88a34e1adc48c28eda3452ece176f92dde813605 muvixo <godarshia20@gmail.com> 1790293592 +0330	commit: SQiiiL
   │   │   └── refs
   │   │       ├── heads
   │   │       │   └── main
@@ -5466,6 +5539,9 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
     4b406d1795b822b182cbcf793588b9df23695be7 1fc54119986a8568951b261a60615af6a3976092 muvixo <godarshia20@gmail.com> 1790120433 +0330	commit: SQiiiL
     1fc54119986a8568951b261a60615af6a3976092 395d1e4080140eba08538a055de844f3854ae209 muvixo <godarshia20@gmail.com> 1790125144 +0330	commit: SQiiiL
     395d1e4080140eba08538a055de844f3854ae209 7102bb53d14e637655a85480f69aeeb27d1a6169 muvixo <godarshia20@gmail.com> 1790138515 +0330	commit: SQiiiL
+    7102bb53d14e637655a85480f69aeeb27d1a6169 ed0e33299534be72846e6ec3fccf961eef030674 muvixo <godarshia20@gmail.com> 1790288824 +0330	commit: SQiiiL
+    ed0e33299534be72846e6ec3fccf961eef030674 f74f6b0e2255688aef44c38e0325f39a3f8bf32e muvixo <godarshia20@gmail.com> 1790289035 +0330	commit: SQiiiL
+    f74f6b0e2255688aef44c38e0325f39a3f8bf32e 88a34e1adc48c28eda3452ece176f92dde813605 muvixo <godarshia20@gmail.com> 1790293592 +0330	commit: SQiiiL
   │   │       └── remotes
   │   │           └── origin
   │   │               └── main
@@ -5577,6 +5653,9 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
     4b406d1795b822b182cbcf793588b9df23695be7 1fc54119986a8568951b261a60615af6a3976092 muvixo <godarshia20@gmail.com> 1790120455 +0330	update by push
     1fc54119986a8568951b261a60615af6a3976092 395d1e4080140eba08538a055de844f3854ae209 muvixo <godarshia20@gmail.com> 1790125175 +0330	update by push
     395d1e4080140eba08538a055de844f3854ae209 7102bb53d14e637655a85480f69aeeb27d1a6169 muvixo <godarshia20@gmail.com> 1790138561 +0330	update by push
+    7102bb53d14e637655a85480f69aeeb27d1a6169 ed0e33299534be72846e6ec3fccf961eef030674 muvixo <godarshia20@gmail.com> 1790288844 +0330	update by push
+    ed0e33299534be72846e6ec3fccf961eef030674 f74f6b0e2255688aef44c38e0325f39a3f8bf32e muvixo <godarshia20@gmail.com> 1790289093 +0330	update by push
+    f74f6b0e2255688aef44c38e0325f39a3f8bf32e 88a34e1adc48c28eda3452ece176f92dde813605 muvixo <godarshia20@gmail.com> 1790293628 +0330	update by push
   │   ├── objects
   │   │   ├── 00
   │   │   │   ├── 0fd67875ec0ed06e64d240d4964a1e5be06f47
@@ -5667,7 +5746,9 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   │   ├── 89d8c7efa319b6b16337e7efe0935de6515fe3
     [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
-  │   │   │   └── ed12f7dbcc883d519e21da4cfbe3b3c7530b0b
+  │   │   │   ├── ed12f7dbcc883d519e21da4cfbe3b3c7530b0b
+    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+  │   │   │   └── eee19291225223bebf948ad38248a3e203414a
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   ├── 09
   │   │   │   ├── 052799659e6547f273fed7fd66e9769463f7d2
@@ -5751,6 +5832,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
     [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
   │   │   │   ├── 7dfafe5a246f16e920fe838bfa788e25ae6e63
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+  │   │   │   ├── ba5972689b3ddee0299db537b8f316f6f8c8ce
+    [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
   │   │   │   └── f782832afae11a214b248debcc5e61ad3aebe1
     [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
   │   │   ├── 11
@@ -6007,13 +6090,17 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
     [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
   │   │   │   ├── 8ba5cbedcf28524e7fb21229a3fd59c74a0cb9
     [Error: 'utf-8' codec can't decode byte 0xcd in position 2: invalid continuation byte]
-  │   │   │   └── be7c595c6556be938de477b92f10aa2f377347
+  │   │   │   ├── be7c595c6556be938de477b92f10aa2f377347
     [Error: 'utf-8' codec can't decode byte 0xa5 in position 2: invalid start byte]
+  │   │   │   └── efd586e0f449ccea08de942b52bbf5b5f95e62
+    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   ├── 27
   │   │   │   ├── 1c728e482a8a342614b3a945062de3c6c8843f
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   │   ├── 4cd0a966d3ce80f6ca29240fdd489aa493f158
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+  │   │   │   ├── 68efb67801d47b638572f33b62517fbf3b37b9
+    [Error: 'utf-8' codec can't decode byte 0x8d in position 2: invalid start byte]
   │   │   │   ├── 78d027ad683ead7dd9ae2f16285bcf404bf8c8
     [Error: 'utf-8' codec can't decode byte 0xce in position 18: invalid continuation byte]
   │   │   │   ├── 87a83fad3a4a6987554ce3b38c05a30b20fb50
@@ -6220,6 +6307,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   │   │   ├── 37
   │   │   │   ├── 0b55ab9f0ee4af25d1c9cc6ca110fb55486e75
     [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
+  │   │   │   ├── 1e2051fc254a8a58bdb6d1c9ccc8b7747cac24
+    [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
   │   │   │   ├── 613e22710d7617a352cf809ffd4a6b61d65b64
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   │   ├── 7505eae2633293ca172a682abd2839cc296135
@@ -6383,10 +6472,14 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   │   ├── 44f17424930ac5fd53508c34782aa0defa9421
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
-  │   │   │   └── 47cf594880f3f677e8941021d5c230ed189571
+  │   │   │   ├── 47cf594880f3f677e8941021d5c230ed189571
     [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
+  │   │   │   └── 74b9fb1dd3659d9a8a5f227c32ddc402269dd3
+    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   ├── 47
   │   │   │   ├── 39d6c3e9389a24f41e7d2d6bdae5474e6110be
+    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+  │   │   │   ├── 57c0ed15c55e8f815a13afa28ab030628f7897
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   │   └── 90889a3b684365b2d3a5230bc042c022f899e0
     [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
@@ -6419,8 +6512,10 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
     [Error: 'utf-8' codec can't decode byte 0xbd in position 2: invalid start byte]
   │   │   │   ├── be4450f966116f00dad32fa624c17fa2fc261f
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
-  │   │   │   └── e4c0b1f7cdeca253a2bbe1d0cd908fc2fb4b9d
+  │   │   │   ├── e4c0b1f7cdeca253a2bbe1d0cd908fc2fb4b9d
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+  │   │   │   └── f1cccede54bd4eb6423193f11169dd7e4af089
+    [Error: 'utf-8' codec can't decode byte 0xce in position 19: invalid continuation byte]
   │   │   ├── 4b
   │   │   │   ├── 3f1ae86cbdbc7b478cca51fd9bb32b008015f6
     [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
@@ -6439,7 +6534,9 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   │   ├── 7ae5850dc080f062aed80a82a373dd08d5a97c
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
-  │   │   │   └── c8e2674bbf83cbbc1e2872490522ae5918c96d
+  │   │   │   ├── c8e2674bbf83cbbc1e2872490522ae5918c96d
+    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+  │   │   │   └── fe087760a07d0826ff3d002ec45b44a4c768c8
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   ├── 4d
   │   │   │   ├── 499d7d9a3987076be718d1de76808166440383
@@ -6627,6 +6724,10 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   │   │   │   └── 9fb206faa89f558eea99366903f24c781eaeed
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   ├── 5c
+  │   │   │   ├── 3f71fe2f83ee288df78837519684b1270ac819
+    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+  │   │   │   ├── 4d156ec2e3b493f881ff89456cd21d91a2299f
+    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   │   ├── 68a9a4a5cd2161caba18528e191f84abf14e63
     [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
   │   │   │   ├── 8c9b750f167c823a241af01984bdbddc9b0097
@@ -6744,6 +6845,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   │   │   │   └── ee141082878296e32912f8084382fd8d713750
     [Error: 'utf-8' codec can't decode byte 0xbd in position 2: invalid start byte]
   │   │   ├── 67
+  │   │   │   ├── 1590597462f6dd435021c57a741c301a415fcd
+    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   │   ├── 68a6c1602ff64c2affce1ac64b6bc07c21c61e
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   │   └── f719653a808d168716ee5afa657d05f38de167
@@ -6892,6 +6995,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   │   │   ├── 73
   │   │   │   ├── 0dbfb76aeda3aaac883462e313a426e6cd7604
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+  │   │   │   ├── 1465706b1162edc0a2c028fc3b9509a785f920
+    [Error: 'utf-8' codec can't decode byte 0xad in position 2: invalid start byte]
   │   │   │   ├── 33451f67cb036073d3c08cdad048f6c817fd22
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   │   ├── 34f7f5af0585720693518a81ff2595b279cab9
@@ -7040,6 +7145,9 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
     [Error: 'utf-8' codec can't decode byte 0xdd in position 4: invalid continuation byte]
   │   │   │   └── ae4bbd7a1898d445307ed4e7ddc65d8a71bde8
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+  │   │   ├── 84
+  │   │   │   └── 5b78ead6ec14f2093a8373da0aabe3de3e0106
+    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   ├── 85
   │   │   │   ├── 2066ca48fe444443d2cc96a9fbd7c8383f74b1
     [Error: 'utf-8' codec can't decode byte 0xad in position 2: invalid start byte]
@@ -7090,6 +7198,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
     [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
   │   │   │   ├── 9f883668221cb30214c845d51c2386820aef1a
     [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
+  │   │   │   ├── a34e1adc48c28eda3452ece176f92dde813605
+    [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
   │   │   │   ├── e86e94b0bd34ba53e6d0ead0627576bdaf8ef1
     [Error: 'utf-8' codec can't decode byte 0xed in position 2: invalid continuation byte]
   │   │   │   └── fddd152758f07bc2e170dfe9800bb2069b68e8
@@ -7238,6 +7348,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   │   │   ├── 98
   │   │   │   ├── 04e80b7cf1be0febffd569ff03cc4e8cceebd3
     [Error: 'utf-8' codec can't decode byte 0xbd in position 2: invalid start byte]
+  │   │   │   ├── 1a15705e5042a4c6b6abcabd441a4f9213fcd7
+    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   │   ├── aab0cdaec81f572d69a89d562ac400ff7d8a85
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   │   ├── af01c3540671173745bc0c7babae9e11285feb
@@ -7304,6 +7416,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
     [Error: 'utf-8' codec can't decode byte 0x8d in position 2: invalid start byte]
   │   │   │   ├── 549cade048be4183770c0c707b76a587cde7ad
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
+  │   │   │   ├── b79ed995854990c53f18906de652eca856bd20
+    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   │   ├── eda68dd1a86003cffad4774c6ba71912271d2b
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   │   └── f56c67bd933ff55c0c2f3119e1fdd142c2bb7d
@@ -7363,6 +7477,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
     [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
   │   │   │   ├── 5d623843c032ef96eccdabc88d3ce0a04f5a8c
     [Error: 'utf-8' codec can't decode byte 0xcd in position 2: invalid continuation byte]
+  │   │   │   ├── 606b75c4119b037eaf02f9d461fcac8714e7e0
+    [Error: 'utf-8' codec can't decode byte 0xed in position 2: invalid continuation byte]
   │   │   │   ├── 9294f94a5ddf69ef8e5b13bf595582e2a28571
     [Error: 'utf-8' codec can't decode byte 0xed in position 2: invalid continuation byte]
   │   │   │   ├── a13cfd946f45ea6e53fc2f2deca82eebf663de
@@ -7415,14 +7531,18 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   │   │   │   └── f504dcaa692f9135db0551ff320d7cac070a56
     [Error: 'utf-8' codec can't decode byte 0xbd in position 2: invalid start byte]
   │   │   ├── a7
+  │   │   │   ├── 4100abdab21389eaca18de02bc3acdc251441a
+    [Error: 'utf-8' codec can't decode byte 0xca in position 20: invalid continuation byte]
   │   │   │   ├── 63d8370ad6d07bf09f9a9a796f521b93424cc5
     [Error: 'utf-8' codec can't decode byte 0x8d in position 2: invalid start byte]
   │   │   │   ├── 99a0612f4271cfc95c21575cf693edf4b2e973
     [Error: 'utf-8' codec can't decode byte 0xb0 in position 7: invalid start byte]
   │   │   │   ├── a1b677188666f11afd2fe7bbc447ecb4919354
     [Error: 'utf-8' codec can't decode byte 0xa5 in position 2: invalid start byte]
-  │   │   │   └── a3a4f6d82d1393b1602039f1702dcef3da4e5b
+  │   │   │   ├── a3a4f6d82d1393b1602039f1702dcef3da4e5b
     [Error: 'utf-8' codec can't decode byte 0xad in position 2: invalid start byte]
+  │   │   │   └── e487db1be6f6eb8679418acfb9f63ca07faaa2
+    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   ├── a8
   │   │   │   ├── 183cda01d4037206e1355a9be806ed5d8c1bc8
     [Error: 'utf-8' codec can't decode byte 0xb2 in position 10: invalid start byte]
@@ -7675,6 +7795,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   │   │   ├── c2
   │   │   │   ├── 5f39a410998965661d6eaed4d28c7f8a0b6168
     [Error: 'utf-8' codec can't decode byte 0x8d in position 2: invalid start byte]
+  │   │   │   ├── 827879377ecc22df667980106e9e721d5e036a
+    [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
   │   │   │   ├── cc4e5362995541458229ab24055eab40f5ce7e
     [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
   │   │   │   ├── e4ffadce4d3b4da759ac54377133c376d0cce8
@@ -7744,68 +7866,6 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   │   │   ├── c7
   │   │   │   ├── 03a6e20ee1787fe161325a439a0c7880182a4f
     [Error: 'utf-8' codec can't decode byte 0xad in position 2: invalid start byte]
-  │   │   │   ├── 1031551f8d1e7ef9d9bb07bd57a974f56d2d87
-    [Error: 'utf-8' codec can't decode byte 0xed in position 2: invalid continuation byte]
-  │   │   │   ├── 1c79829ff38f7952d00b8769d1c631015b9a98
-    [Error: 'utf-8' codec can't decode byte 0xb4 in position 9: invalid start byte]
-  │   │   │   ├── 906d50f08e379d0276653b008bff0209f70072
-    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
-  │   │   │   ├── 9a8a7875ba4a98bc0bf411d53ee247c4c13ed1
-    [Error: 'utf-8' codec can't decode byte 0xb5 in position 2: invalid start byte]
-  │   │   │   └── bd4796d2d690e609497c2026f3341143cab88c
-    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
-  │   │   ├── c8
-  │   │   │   ├── 165c59b65c93c8f02c927c202e1dfbb4440e56
-    [Error: 'utf-8' codec can't decode byte 0xcd in position 2: invalid continuation byte]
-  │   │   │   ├── 4f6ca885487a0af7a625f50a24921024aa12dd
-    [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
-  │   │   │   ├── 625a0a5dc3a10068428357be4402930f4cb8aa
-    [Error: 'utf-8' codec can't decode byte 0xb2 in position 10: invalid start byte]
-  │   │   │   ├── 7c2c7506eb88adb9d884ef4a96898636e45132
-    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
-  │   │   │   └── fc3bf01a32d5a76ce637374f38875515f6f359
-    [Error: 'utf-8' codec can't decode byte 0xca in position 20: invalid continuation byte]
-  │   │   ├── c9
-  │   │   │   ├── 20199a630bb44344d60cb55e5764454c0b1cb1
-    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
-  │   │   │   └── b37e17c57e5fe95d379f5057573e87aad23217
-    [Error: 'utf-8' codec can't decode byte 0xbd in position 2: invalid start byte]
-  │   │   ├── ca
-  │   │   │   ├── 0e326d32cc758694b4538d08ad52c9422c9116
-    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
-  │   │   │   ├── 1b9986b9f8e7115e63be8b3b7a81be3b76a654
-    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
-  │   │   │   ├── 489749e6ed8959ffd433cec75e814a42fd1655
-    [Error: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte]
-  │   │   │   ├── 4a823b057c8220f92a59caaace99c92141a5c2
-    [Error: 'utf-8' codec can't decode byte 0xce in position 18: invalid continuation byte]
-  │   │   │   ├── 5cfb0c7530289705e0f74ab07817e5ea63805a
-    [Error: 'utf-8' codec can't decode byte 0xcd in position 2: invalid continuation byte]
-  │   │   │   ├── 640d933cdf229331f4ae011c771e14dbcb967e
-    [Error: 'utf-8' codec can't decode byte 0xad in position 2: invalid start byte]
-  │   │   │   ├── 672355fa6f3f4bb50848763c4bdf6e980ebf88
-    [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
-  │   │   │   └── dc6e06dfe7bc7d882f0a4b637113c00512f299
-    [Error: 'utf-8' codec can't decode byte 0xc5 in position 2: invalid continuation byte]
-  │   │   ├── cb
-  │   │   │   ├── 36d123ed52102f0f59473f410f7a3cb8bddda7
-    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
-  │   │   │   ├── cb8fbdd0dca0c76d96e760394772ff7d7b9462
-    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
-  │   │   │   ├── ced6c87ee2655b7d4dc41711543d837763c51c
-    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
-  │   │   │   └── f5c406db3524ed55efa93d009ecdc34242fbb8
-    [Error: 'utf-8' codec can't decode byte 0xd5 in position 2: invalid continuation byte]
-  │   │   ├── cc
-  │   │   │   ├── 099c9556264f38045db6819bc63894e13ca7e3
-    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
-  │   │   │   ├── 17213a903617073df56b579e030d8201e03841
-    [Error: 'utf-8' codec can't decode byte 0x85 in position 14: invalid start byte]
-  │   │   │   ├── 6905fb574e351751b861df4395dd505c9b8427
-    [Error: 'utf-8' codec can't decode byte 0xbd in position 16: invalid start byte]
-  │   │   │   ├── 9688b119feda2269f749b4f10f5077861970ee
-    [Error: 'utf-8' codec can't decode byte 0xb0 in position 9: invalid start byte]
-  │   │   │   ├── c61fe4a50c691e5512feacf533df96ee9f5d96
 ├── pom.xml
   <?xml version="1.0" encoding="UTF-8"?>
   <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -8717,9 +8777,11 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   import java.lang.reflect.Method;
   import java.util.ArrayList;
   import java.util.List;
+  import java.util.UUID;
   import org.bukkit.Bukkit;
   import org.bukkit.ChatColor;
   import org.bukkit.Location;
+  import org.bukkit.OfflinePlayer;
   import org.bukkit.command.Command;
   import org.bukkit.command.CommandExecutor;
   import org.bukkit.command.CommandSender;
@@ -8754,6 +8816,76 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
       private void sendNoPerm(CommandSender sender) {
           String msg = this.plugin.getConfig().getString("messages.no-permission", "&cYou do not have permission to do this.");
           sender.sendMessage(colorize(msg));
+      }
+  
+      // ============================================================
+      //  OFFLINE PLAYER RESOLVER
+      //  Returns a small holder with UUID + resolved name, or null.
+      // ============================================================
+      private static class TargetInfo {
+          final UUID uuid;
+          final String name;
+          final boolean online;
+          final Player onlinePlayer;   // non-null only if online
+  
+          TargetInfo(UUID uuid, String name, boolean online, Player onlinePlayer) {
+              this.uuid = uuid;
+              this.name = name;
+              this.online = online;
+              this.onlinePlayer = onlinePlayer;
+          }
+      }
+  
+      /**
+       * Resolves a player by name — online first, then offline.
+       * Returns null if the player has never joined the server.
+       */
+      private TargetInfo resolveTarget(CommandSender sender, String name) {
+          if (name == null || name.isEmpty()) {
+              sender.sendMessage(colorize("&cPlayer name is empty."));
+              return null;
+          }
+  
+          // 1) Online?
+          Player online = Bukkit.getPlayerExact(name);
+          if (online != null && online.isOnline()) {
+              return new TargetInfo(online.getUniqueId(), online.getName(), true, online);
+          }
+  
+          // 2) Offline lookup
+          OfflinePlayer offline = Bukkit.getOfflinePlayer(name);
+          if (offline == null) {
+              sender.sendMessage(colorize("&cPlayer never joined this server: &e" + name));
+              return null;
+          }
+  
+          // hasPlayedBefore() is false for players who never joined
+          boolean known = offline.hasPlayedBefore() || offline.isOnline();
+          if (!known) {
+              sender.sendMessage(colorize("&cPlayer never joined this server: &e" + name));
+              return null;
+          }
+  
+          String resolvedName = offline.getName();
+          if (resolvedName == null || resolvedName.isEmpty()) {
+              resolvedName = name;
+          }
+  
+          return new TargetInfo(offline.getUniqueId(), resolvedName, false, null);
+      }
+  
+      // ============================================================
+      //  LOAD PlayerData with offline-safe fallback
+      // ============================================================
+      private PlayerData loadDataSafe(TargetInfo info) {
+          PlayerData data = this.database.getPlayer(info.uuid);
+          if (data == null) {
+              data = this.database.loadPlayer(info.uuid);
+          }
+          if (data != null) {
+              data.setName(info.name);
+          }
+          return data;
       }
   
       @Override
@@ -8947,9 +9079,11 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
       }
   
       // ==========================================
-      // Stats Command
+      // Stats Command (online + offline)
       // ==========================================
       private boolean handleStats(CommandSender sender, String[] args) {
+  
+          // ==================== /buildffa stats add ====================
           if (args.length >= 2 && args[1].equalsIgnoreCase("add")) {
               if (args.length < 5) {
                   sender.sendMessage(colorize("&cUsage: /buildffa stats add <kill|kdr|ks|death> <player> <amount>"));
@@ -8957,12 +9091,7 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
               }
   
               String stat = args[2].toLowerCase();
-              Player target = Bukkit.getPlayer(args[3]);
-              if (target == null) {
-                  sender.sendMessage(colorize("&cPlayer not found: &e" + args[3]));
-                  return true;
-              }
-  
+              String targetName = args[3];
               int amount;
               try {
                   amount = Integer.parseInt(args[4]);
@@ -8971,12 +9100,12 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
                   return true;
               }
   
-              PlayerData data = this.database.getPlayer(target.getUniqueId());
+              TargetInfo info = resolveTarget(sender, targetName);
+              if (info == null) return true;
+  
+              PlayerData data = loadDataSafe(info);
               if (data == null) {
-                  data = this.database.loadPlayer(target.getUniqueId());
-              }
-              if (data == null) {
-                  sender.sendMessage(colorize("&cNo data found for &e" + target.getName()));
+                  sender.sendMessage(colorize("&cNo data found for &e" + info.name));
                   return true;
               }
   
@@ -9004,7 +9133,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   
               this.database.savePlayerImmediate(data);
   
-              sender.sendMessage(colorize("&aAdded &e" + amount + " &ato &e" + target.getName() + "'s &e" + statName + "&a."));
+              sender.sendMessage(colorize("&aAdded &e" + amount + " &ato &e" + info.name
+                      + "'s &e" + statName + "&a." + (info.online ? "" : " &7(offline)")));
               sender.sendMessage(colorize("&7Kills: &a" + data.getKills()
                       + " &7| Deaths: &c" + data.getDeaths()
                       + " &7| KS: &b" + data.getKillstreak()
@@ -9012,6 +9142,7 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
               return true;
           }
   
+          // ==================== /buildffa stats reset ====================
           if (args.length >= 2 && args[1].equalsIgnoreCase("reset")) {
               if (args.length < 4) {
                   sender.sendMessage(colorize("&cUsage: /buildffa stats reset <kill|ks|death> <player>"));
@@ -9019,18 +9150,14 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
               }
   
               String stat = args[2].toLowerCase();
-              Player target = Bukkit.getPlayer(args[3]);
-              if (target == null) {
-                  sender.sendMessage(colorize("&cPlayer not found: &e" + args[3]));
-                  return true;
-              }
+              String targetName = args[3];
   
-              PlayerData data = this.database.getPlayer(target.getUniqueId());
+              TargetInfo info = resolveTarget(sender, targetName);
+              if (info == null) return true;
+  
+              PlayerData data = loadDataSafe(info);
               if (data == null) {
-                  data = this.database.loadPlayer(target.getUniqueId());
-              }
-              if (data == null) {
-                  sender.sendMessage(colorize("&cNo data found for &e" + target.getName()));
+                  sender.sendMessage(colorize("&cNo data found for &e" + info.name));
                   return true;
               }
   
@@ -9053,34 +9180,35 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   
               this.database.savePlayerImmediate(data);
   
-              sender.sendMessage(colorize("&aReset &e" + statName + " &afor &e" + target.getName() + "&a."));
+              sender.sendMessage(colorize("&aReset &e" + statName + " &afor &e" + info.name + "&a."
+                      + (info.online ? "" : " &7(offline)")));
               return true;
           }
   
-          Player target;
+          // ==================== /buildffa stats [player] ====================
+          TargetInfo info;
   
           if (args.length >= 2) {
-              target = Bukkit.getPlayer(args[1]);
-              if (target == null) {
-                  sender.sendMessage(colorize("&cPlayer not found: &e" + args[1]));
-                  return true;
-              }
+              info = resolveTarget(sender, args[1]);
+              if (info == null) return true;
           } else {
               if (!(sender instanceof Player)) {
                   sender.sendMessage(colorize("&cUsage from console: /buildffa stats <player>"));
                   return true;
               }
-              target = (Player) sender;
+              Player self = (Player) sender;
+              info = new TargetInfo(self.getUniqueId(), self.getName(), true, self);
           }
   
-          PlayerData data = this.database.getPlayer(target.getUniqueId());
+          PlayerData data = loadDataSafe(info);
           if (data == null) {
-              sender.sendMessage(colorize("&cNo data found for &e" + target.getName()));
+              sender.sendMessage(colorize("&cNo data found for &e" + info.name));
               return true;
           }
   
           sender.sendMessage(colorize("&8&m----------------------------------"));
-          sender.sendMessage(colorize("&6&lStats &7- &f" + data.getName()));
+          sender.sendMessage(colorize("&6&lStats &7- &f" + data.getName()
+                  + (info.online ? "" : " &7(offline)")));
           sender.sendMessage(colorize("&7Kills: &a" + data.getKills()));
           sender.sendMessage(colorize("&7Deaths: &c" + data.getDeaths()));
           sender.sendMessage(colorize("&7KDR: &e" + String.format("%.2f", data.getKDR())));
@@ -9091,7 +9219,7 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
       }
   
       // ==========================================
-      // Force Killstreak Reward
+      // Force Killstreak Reward (self only)
       // ==========================================
       private boolean handleForceKsReward(CommandSender sender, String[] args) {
           if (!(sender instanceof Player)) {
@@ -9228,9 +9356,6 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
           return null;
       }
   
-      // ============================================================
-      //  ✅ MAKE REWARD POTION — works for ANY level (I through V)
-      // ============================================================
       private org.bukkit.inventory.ItemStack makeRewardPotion(int kind, int level) {
           org.bukkit.inventory.ItemStack potion = new org.bukkit.inventory.ItemStack(
                   org.bukkit.Material.POTION, 1);
@@ -9347,7 +9472,7 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
       }
   
       // ==========================================
-      // Reset Stats
+      // Reset Stats (online + offline)
       // ==========================================
       private boolean handleResetStats(CommandSender sender, String[] args) {
           if (args.length < 2) {
@@ -9355,15 +9480,12 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
               return true;
           }
   
-          Player target = Bukkit.getPlayer(args[1]);
-          if (target == null) {
-              sender.sendMessage(colorize("&cPlayer not found: &e" + args[1]));
-              return true;
-          }
+          TargetInfo info = resolveTarget(sender, args[1]);
+          if (info == null) return true;
   
-          PlayerData data = this.database.getPlayer(target.getUniqueId());
+          PlayerData data = loadDataSafe(info);
           if (data == null) {
-              sender.sendMessage(colorize("&cNo data found."));
+              sender.sendMessage(colorize("&cNo data found for &e" + info.name));
               return true;
           }
   
@@ -9374,8 +9496,12 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   
           this.database.savePlayerImmediate(data);
   
-          sender.sendMessage(colorize("&aReset stats for &e" + target.getName()));
-          target.sendMessage(colorize("&cYour stats have been reset by an admin."));
+          sender.sendMessage(colorize("&aReset stats for &e" + info.name + "&a."
+                  + (info.online ? "" : " &7(offline)")));
+  
+          if (info.online && info.onlinePlayer != null) {
+              info.onlinePlayer.sendMessage(colorize("&cYour stats have been reset by an admin."));
+          }
           return true;
       }
   
@@ -13157,9 +13283,17 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
     private Map<UUID, Integer> killCounts = new HashMap<UUID, Integer>();
     private Map<UUID, Long> lastKillTimes = new ConcurrentHashMap<UUID, Long>();
     private Map<UUID, Long> lastVictimTimes = new ConcurrentHashMap<UUID, Long>();
+  
+    // ✅ NEW: last time this player did ANY activity (kill or got hit)
+    private Map<UUID, Long> lastActivityTimes = new ConcurrentHashMap<UUID, Long>();
+  
     private JavaPlugin plugin;
     private FileConfiguration config;
     private String nmsVersion;
+  
+    // ✅ NEW: idle timeout in milliseconds (default 60s = 1 minute)
+    private static final long IDLE_TIMEOUT_MS = 60_000L;
+    private int idleTaskId = -1;
   
     public KillListener(JavaPlugin plugin) {
       this.plugin = plugin;
@@ -13168,6 +13302,42 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   
       String packageName = plugin.getServer().getClass().getPackage().getName();
       this.nmsVersion = packageName.substring(packageName.lastIndexOf('.') + 1);
+  
+      // ✅ NEW: start idle-reset task
+      startIdleResetTask();
+    }
+  
+    // ============================================================
+    //  ✅ IDLE RESET TASK
+    //  Every second, check if any player has been idle for more
+    //  than IDLE_TIMEOUT_MS. If yes, reset their kill counter.
+    // ============================================================
+    private void startIdleResetTask() {
+      if (this.idleTaskId != -1) {
+        Bukkit.getScheduler().cancelTask(this.idleTaskId);
+      }
+  
+      this.idleTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(this.plugin,
+          new Runnable() {
+            @Override
+            public void run() {
+              long now = System.currentTimeMillis();
+  
+              for (Player player : Bukkit.getOnlinePlayers()) {
+                UUID id = player.getUniqueId();
+                Long last = lastActivityTimes.get(id);
+                if (last == null) continue;
+  
+                if (now - last.longValue() >= IDLE_TIMEOUT_MS) {
+                  // Idle too long → reset kill counter
+                  if (killCounts.containsKey(id)) {
+                    killCounts.remove(id);
+                  }
+                  lastActivityTimes.remove(id);
+                }
+              }
+            }
+          }, 20L, 20L);
     }
   
     // ============================================================
@@ -13193,6 +13363,11 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
       if (attacker.getUniqueId().equals(victim.getUniqueId())) return;
   
       CombatManager.registerHit(attacker.getUniqueId(), victim.getUniqueId());
+  
+      // ✅ NEW: mark activity for both players
+      long now = System.currentTimeMillis();
+      lastActivityTimes.put(attacker.getUniqueId(), Long.valueOf(now));
+      lastActivityTimes.put(victim.getUniqueId(), Long.valueOf(now));
     }
   
     @EventHandler
@@ -13203,13 +13378,15 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
   
       long currentTime = System.currentTimeMillis();
   
-      long lastVictimTime = this.lastVictimTimes.getOrDefault(deathPlayer.getUniqueId(), Long.valueOf(0L)).longValue();
+      long lastVictimTime = this.lastVictimTimes.getOrDefault(
+          deathPlayer.getUniqueId(), Long.valueOf(0L)).longValue();
       if (currentTime - lastVictimTime < 3000L) {
         return;
       }
       this.lastVictimTimes.put(deathPlayer.getUniqueId(), Long.valueOf(currentTime));
   
-      long lastKillTime = this.lastKillTimes.getOrDefault(killer.getUniqueId(), Long.valueOf(0L)).longValue();
+      long lastKillTime = this.lastKillTimes.getOrDefault(
+          killer.getUniqueId(), Long.valueOf(0L)).longValue();
       if (currentTime - lastKillTime < 80L) {
         return;
       }
@@ -13218,6 +13395,10 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
       UUID killerId = killer.getUniqueId();
       int kills = this.killCounts.getOrDefault(killerId, Integer.valueOf(0)).intValue() + 1;
       this.killCounts.put(killerId, Integer.valueOf(kills));
+  
+      // ✅ NEW: update activity timestamp so kill counter doesn't reset mid-fight
+      lastActivityTimes.put(killerId, Long.valueOf(currentTime));
+      lastActivityTimes.put(deathPlayer.getUniqueId(), Long.valueOf(currentTime));
   
       boolean enableTitle = this.config.getBoolean("kill-screen.enable-title", true);
   
@@ -13339,6 +13520,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
       this.killCounts.remove(player.getUniqueId());
       this.lastKillTimes.remove(player.getUniqueId());
       this.lastVictimTimes.remove(player.getUniqueId());
+      // ✅ NEW: clear activity timestamp
+      this.lastActivityTimes.remove(player.getUniqueId());
     }
   
     public int getKillCount(Player player) {
@@ -13349,6 +13532,8 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
       UUID playerId = player.getUniqueId();
       int currentKills = this.killCounts.getOrDefault(playerId, Integer.valueOf(0)).intValue();
       this.killCounts.put(playerId, Integer.valueOf(currentKills + increment));
+      // ✅ NEW: mark activity
+      this.lastActivityTimes.put(playerId, Long.valueOf(System.currentTimeMillis()));
     }
   
     private String colorize(String message) {
@@ -13468,79 +13653,118 @@ C:\Users\nasle javan\Downloads\r48jd4j98r498ej-main\r48jd4j98r498ej-main\buildff
       return this.database;
     }
   
-    public void openKitEditorGUI(final Player player) {
-      Inventory inv = Bukkit.createInventory(null, SIZE, colorize("&6&lKit Editor"));
+  public void openKitEditorGUI(final Player player) {
+    Inventory inv = Bukkit.createInventory(null, SIZE, colorize("&6&lKit Editor"));
   
-      UUID uuid = player.getUniqueId();
+    UUID uuid = player.getUniqueId();
   
-      ItemStack[] kitContents;
-      ItemStack helmet, chestplate, leggings, boots;
+    ItemStack[] kitContents;
+    ItemStack helmet, chestplate, leggings, boots;
   
-      if (kitDatabase.hasKit(uuid)) {
-        List<ItemStack> contentsList = kitDatabase.getContents(uuid);
-        kitContents = new ItemStack[36];
-        if (contentsList != null) {
-          for (int i = 0; i < contentsList.size() && i < 36; i++) {
-            ItemStack item = contentsList.get(i);
-            if (item != null) {
-              kitContents[i] = item;
+    if (kitDatabase.hasKit(uuid)) {
+      // ============================================================
+      //  Player already saved a kit → load it from DB
+      // ============================================================
+      List<ItemStack> contentsList = kitDatabase.getContents(uuid);
+      kitContents = new ItemStack[36];
+      if (contentsList != null) {
+        for (int i = 0; i < contentsList.size() && i < 36; i++) {
+          ItemStack item = contentsList.get(i);
+          if (item != null) {
+            kitContents[i] = item;
+          }
+        }
+      }
+      helmet = kitDatabase.getHelmet(uuid);
+      chestplate = kitDatabase.getChestplate(uuid);
+      leggings = kitDatabase.getLeggings(uuid);
+      boots = kitDatabase.getBoots(uuid);
+    } else {
+      // ============================================================
+      //  ✅ FIX: Use the SERVER DEFAULT KIT from kit-setting.yml
+      //  (red leather helmet/chestplate + diamond leggings/boots)
+      //  instead of the old hardcoded iron kit.
+      // ============================================================
+      helmet = null;
+      chestplate = null;
+      leggings = null;
+      boots = null;
+      kitContents = new ItemStack[36];
+  
+      try {
+        BuildFFA bffa = (BuildFFA) this.plugin;
+        KitSettingsManager settings = bffa.getKitSettings();
+        if (settings != null) {
+          List<ItemStack> defaults = settings.getDefaultKitContents();
+          if (defaults != null && !defaults.isEmpty()) {
+            // Layout: [0]=helmet, [1]=chestplate, [2]=leggings, [3]=boots, [4..39]=items
+            if (defaults.size() >= 1) helmet = defaults.get(0);
+            if (defaults.size() >= 2) chestplate = defaults.get(1);
+            if (defaults.size() >= 3) leggings = defaults.get(2);
+            if (defaults.size() >= 4) boots = defaults.get(3);
+  
+            // Copy the rest of the items into the 36-slot contents array
+            for (int i = 4; i < defaults.size() && (i - 4) < 36; i++) {
+              ItemStack item = defaults.get(i);
+              if (item != null && item.getType() != Material.AIR) {
+                kitContents[i - 4] = item;
+              }
             }
           }
         }
-        helmet = kitDatabase.getHelmet(uuid);
-        chestplate = kitDatabase.getChestplate(uuid);
-        leggings = kitDatabase.getLeggings(uuid);
-        boots = kitDatabase.getBoots(uuid);
-      } else {
-        kitContents = getDefaultKitContents();
-        helmet = unbreakable(new ItemStack(Material.IRON_HELMET));
-        chestplate = unbreakable(new ItemStack(Material.IRON_CHESTPLATE));
-        leggings = unbreakable(new ItemStack(Material.DIAMOND_LEGGINGS));
-        boots = unbreakable(new ItemStack(Material.DIAMOND_BOOTS));
+      } catch (Throwable t) {
+        this.plugin.getLogger().warning("KitEditor: failed to load server default kit: " + t.getMessage());
       }
   
-      for (int i = 0; i < 27 && i < kitContents.length; i++) {
-        if (kitContents[i] != null) {
-          inv.setItem(i, kitContents[i]);
-        }
-      }
-  
-      inv.setItem(27, helmet);
-      inv.setItem(28, chestplate);
-      inv.setItem(29, leggings);
-      inv.setItem(30, boots);
-  
-      ItemStack saveBtn = createButton(Material.EMERALD_BLOCK, colorize("&a&lSave Kit"), Arrays.asList(
-          colorize("&7Click to save your current kit")
-      ));
-      ItemStack cancelBtn = createButton(Material.REDSTONE_BLOCK, colorize("&c&lCancel"), Arrays.asList(
-          colorize("&7Click to cancel editing"),
-          colorize("&7Your kit will NOT be saved")
-      ));
-      ItemStack resetBtn = createButton(Material.BARRIER, colorize("&e&lReset Kit"), Arrays.asList(
-          colorize("&7Click to reset to default kit")
-      ));
-      ItemStack infoBtn = createButton(Material.BOOK, colorize("&b&lInfo"), Arrays.asList(
-          colorize("&7Top 27 slots = kit contents"),
-          colorize("&7Armor is locked (cannot be edited)"),
-          colorize("&7Click Save when done")
-      ));
-  
-      inv.setItem(SLOT_SAVE, saveBtn);
-      inv.setItem(SLOT_CANCEL, cancelBtn);
-      inv.setItem(SLOT_RESET, resetBtn);
-      inv.setItem(SLOT_INFO, infoBtn);
-  
-      this.openEditors.put(player.getUniqueId(), inv);
-      this.editingKit.put(player.getUniqueId(), Boolean.valueOf(true));
-      this.saving.put(player.getUniqueId(), Boolean.valueOf(false));
-  
-      player.openInventory(inv);
-      player.sendMessage(colorize("&8&m----------------------------------"));
-      player.sendMessage(colorize("&6&lKit Editor &7opened"));
-      player.sendMessage(colorize("&7Move items freely, then click &aSave &7or &cCancel"));
-      player.sendMessage(colorize("&8&m----------------------------------"));
+      // Fallback if kit-setting.yml failed to load
+      if (helmet == null) helmet = unbreakable(new ItemStack(Material.LEATHER_HELMET));
+      if (chestplate == null) chestplate = unbreakable(new ItemStack(Material.LEATHER_CHESTPLATE));
+      if (leggings == null) leggings = unbreakable(new ItemStack(Material.DIAMOND_LEGGINGS));
+      if (boots == null) boots = unbreakable(new ItemStack(Material.DIAMOND_BOOTS));
     }
+  
+    for (int i = 0; i < 27 && i < kitContents.length; i++) {
+      if (kitContents[i] != null) {
+        inv.setItem(i, kitContents[i]);
+      }
+    }
+  
+    inv.setItem(27, helmet);
+    inv.setItem(28, chestplate);
+    inv.setItem(29, leggings);
+    inv.setItem(30, boots);
+  
+    ItemStack saveBtn = createButton(Material.EMERALD_BLOCK, colorize("&a&lSave Kit"), Arrays.asList(
+        colorize("&7Click to save your current kit")
+    ));
+    ItemStack cancelBtn = createButton(Material.REDSTONE_BLOCK, colorize("&c&lCancel"), Arrays.asList(
+        colorize("&7Click to cancel editing"),
+        colorize("&7Your kit will NOT be saved")
+    ));
+    ItemStack resetBtn = createButton(Material.BARRIER, colorize("&e&lReset Kit"), Arrays.asList(
+        colorize("&7Click to reset to default kit")
+    ));
+    ItemStack infoBtn = createButton(Material.BOOK, colorize("&b&lInfo"), Arrays.asList(
+        colorize("&7Top 27 slots = kit contents"),
+        colorize("&7Armor is locked (cannot be edited)"),
+        colorize("&7Click Save when done")
+    ));
+  
+    inv.setItem(SLOT_SAVE, saveBtn);
+    inv.setItem(SLOT_CANCEL, cancelBtn);
+    inv.setItem(SLOT_RESET, resetBtn);
+    inv.setItem(SLOT_INFO, infoBtn);
+  
+    this.openEditors.put(player.getUniqueId(), inv);
+    this.editingKit.put(player.getUniqueId(), Boolean.valueOf(true));
+    this.saving.put(player.getUniqueId(), Boolean.valueOf(false));
+  
+    player.openInventory(inv);
+    player.sendMessage(colorize("&8&m----------------------------------"));
+    player.sendMessage(colorize("&6&lKit Editor &7opened"));
+    player.sendMessage(colorize("&7Move items freely, then click &aSave &7or &cCancel"));
+    player.sendMessage(colorize("&8&m----------------------------------"));
+  }
   
     private ItemStack[] getDefaultKitContents() {
       ItemStack[] contents = new ItemStack[36];

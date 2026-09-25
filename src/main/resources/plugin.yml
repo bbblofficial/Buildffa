@@ -10,7 +10,7 @@ softdepend: [PlaceholderAPI]
 commands:
   buildffa:
     description: Main BuildFFA command
-    usage: /buildffa <help|kiteditor|setvoid|sethighlimit|setspawn|buildmode|ypvp|ypearl|fb-speed|sb|stats|top|resetstats|forceksreward|creator|reload>
+    usage: /buildffa <help|kiteditor|setvoid|sethighlimit|setspawn|buildmode|ypvp|ypearl|fb-speed|sb|stats|top|deathleaderboard|killleaderboard|kdrleaderboard|streakleaderboard|leaderboards|resetstats|resetallleaderboards|forceksreward|creator|reload>
     aliases:
       - bffa
 

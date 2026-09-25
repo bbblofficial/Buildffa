@@ -669,6 +669,52 @@ public class DatabaseManager {
         return list;
     }
 
+    // ============================================================
+    //  GET ALL PLAYERS (used by /bffa resetallleaderboards)
+    //  Returns every player in the DB + any cached (online) players,
+    //  so a full wipe is guaranteed to be complete.
+    // ============================================================
+    public List<PlayerData> getAllPlayers() {
+        List<PlayerData> list = new ArrayList<PlayerData>();
+
+        try {
+            synchronized (dbLock) {
+                PreparedStatement ps = getConnection().prepareStatement(
+                    "SELECT uuid, name, kills, deaths, killstreak, best_killstreak, last_seen " +
+                    "FROM players"
+                );
+                ResultSet rs = ps.executeQuery();
+                while (rs.next()) {
+                    list.add(fromResultSet(rs));
+                }
+                rs.close();
+                ps.close();
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().warning("getAllPlayers failed: " + e.getMessage());
+        }
+
+        // Merge cached (online) players so fresh stats are included
+        Map<UUID, PlayerData> dbIndex = new java.util.HashMap<UUID, PlayerData>();
+        for (PlayerData d : list) {
+            dbIndex.put(d.getUuid(), d);
+        }
+        for (PlayerData cached : this.cache.values()) {
+            if (dbIndex.containsKey(cached.getUuid())) {
+                for (int i = 0; i < list.size(); i++) {
+                    if (list.get(i).getUuid().equals(cached.getUuid())) {
+                        list.set(i, cached);
+                        break;
+                    }
+                }
+            } else {
+                list.add(cached);
+            }
+        }
+
+        return list;
+    }
+
     private PlayerData fromResultSet(ResultSet rs) throws SQLException {
         UUID uuid;
         try {
