@@ -103,8 +103,23 @@ public class BuildFFACommand implements CommandExecutor {
         return data;
     }
 
+    // ★ FIX: single entry-point permission gate. Nobody without
+    // buildffa.use (default: op, see plugin.yml) can run ANY
+    // subcommand — including help/stats/top/creator, which
+    // previously had no permission check at all.
+    private boolean canSee(CommandSender sender) {
+        return sender.hasPermission(getPerm("use", "buildffa.use"));
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        // ★ FIX: block the entire command for anyone without permission,
+        // before any subcommand (including help) is reached.
+        if (!canSee(sender)) {
+            sendNoPerm(sender);
+            return true;
+        }
+
         if (args.length == 0) {
             sendHelp(sender);
             return true;
@@ -242,7 +257,7 @@ public class BuildFFACommand implements CommandExecutor {
             return true;
         }
 
-        sender.sendMessage(colorize("&cUnknown subcommand. Use /buildffa help"));
+        sender.sendMessage(colorize("&cUnknown subcommand. Use /bffa help"));
         return true;
     }
 
@@ -295,7 +310,7 @@ public class BuildFFACommand implements CommandExecutor {
             sender.sendMessage(colorize("&7Current value: &e" + String.format("%.2f", current)));
             sender.sendMessage(colorize("&7Multiplier: &e" + String.format("%.2f", mult) + "x"));
             sender.sendMessage(colorize("&7Range: &e-10 &7to &e+10"));
-            sender.sendMessage(colorize("&7Usage: &e/buildffa fb-speed <value>"));
+            sender.sendMessage(colorize("&7Usage: &e/bffa fb-speed <value>"));
             sender.sendMessage(colorize("&8&m----------------------------------"));
             return true;
         }
@@ -305,7 +320,7 @@ public class BuildFFACommand implements CommandExecutor {
             value = Double.parseDouble(args[1]);
         } catch (NumberFormatException e) {
             sender.sendMessage(colorize("&cInvalid number: &e" + args[1]));
-            sender.sendMessage(colorize("&7Usage: &e/buildffa fb-speed <-10 to 10>"));
+            sender.sendMessage(colorize("&7Usage: &e/bffa fb-speed <-10 to 10>"));
             return true;
         }
 
@@ -331,7 +346,7 @@ public class BuildFFACommand implements CommandExecutor {
 
         if (args.length >= 2 && args[1].equalsIgnoreCase("add")) {
             if (args.length < 5) {
-                sender.sendMessage(colorize("&cUsage: /buildffa stats add <kill|kdr|ks|death> <player> <amount>"));
+                sender.sendMessage(colorize("&cUsage: /bffa stats add <kill|kdr|ks|death> <player> <amount>"));
                 return true;
             }
 
@@ -389,7 +404,7 @@ public class BuildFFACommand implements CommandExecutor {
 
         if (args.length >= 2 && args[1].equalsIgnoreCase("reset")) {
             if (args.length < 4) {
-                sender.sendMessage(colorize("&cUsage: /buildffa stats reset <kill|ks|death> <player>"));
+                sender.sendMessage(colorize("&cUsage: /bffa stats reset <kill|ks|death> <player>"));
                 return true;
             }
 
@@ -436,7 +451,7 @@ public class BuildFFACommand implements CommandExecutor {
             if (info == null) return true;
         } else {
             if (!(sender instanceof Player)) {
-                sender.sendMessage(colorize("&cUsage from console: /buildffa stats <player>"));
+                sender.sendMessage(colorize("&cUsage from console: /bffa stats <player>"));
                 return true;
             }
             Player self = (Player) sender;
@@ -471,8 +486,8 @@ public class BuildFFACommand implements CommandExecutor {
         }
 
         if (args.length < 2) {
-            sender.sendMessage(colorize("&cUsage: /buildffa forceksreward <ks>"));
-            sender.sendMessage(colorize("&7Example: &e/buildffa forceksreward 10"));
+            sender.sendMessage(colorize("&cUsage: /bffa forceksreward <ks>"));
+            sender.sendMessage(colorize("&7Example: &e/bffa forceksreward 10"));
             return true;
         }
 
@@ -931,7 +946,7 @@ public class BuildFFACommand implements CommandExecutor {
     // ==========================================
     private boolean handleResetStats(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(colorize("&cUsage: /buildffa resetstats <player>"));
+            sender.sendMessage(colorize("&cUsage: /bffa resetstats <player>"));
             return true;
         }
 
@@ -1047,7 +1062,7 @@ public class BuildFFACommand implements CommandExecutor {
     private boolean handleYPvP(CommandSender sender, String[] args) {
         YPvP ypvp = getYPvPListener();
         if (ypvp == null) {
-            sender.sendMessage(colorize("&cError: YPvP listener not found. Try /buildffa reload"));
+            sender.sendMessage(colorize("&cError: YPvP listener not found. Try /bffa reload"));
             return true;
         }
 
@@ -1056,9 +1071,9 @@ public class BuildFFACommand implements CommandExecutor {
             sender.sendMessage(colorize("&6&lYPvP Status"));
             sender.sendMessage(colorize("&7Enabled: " + (ypvp.isEnabled() ? "&aYES" : "&cNO")));
             sender.sendMessage(colorize("&7Y-Level: &e" + ypvp.getYPvPLimit()));
-            sender.sendMessage(colorize("&7Usage: &e/buildffa ypvp [y] &7- Set Y level"));
-            sender.sendMessage(colorize("&7Usage: &e/buildffa ypvp toggle &7- Enable/Disable"));
-            sender.sendMessage(colorize("&7Usage: &e/buildffa ypvp off &7- Disable"));
+            sender.sendMessage(colorize("&7Usage: &e/bffa ypvp [y] &7- Set Y level"));
+            sender.sendMessage(colorize("&7Usage: &e/bffa ypvp toggle &7- Enable/Disable"));
+            sender.sendMessage(colorize("&7Usage: &e/bffa ypvp off &7- Disable"));
             sender.sendMessage(colorize("&8&m----------------------------------"));
             return true;
         }
@@ -1091,7 +1106,7 @@ public class BuildFFACommand implements CommandExecutor {
             y = Double.parseDouble(arg);
         } catch (NumberFormatException e) {
             sender.sendMessage(colorize("&cInvalid number: &e" + args[1]));
-            sender.sendMessage(colorize("&7Usage: &e/buildffa ypvp [y]"));
+            sender.sendMessage(colorize("&7Usage: &e/bffa ypvp [y]"));
             return true;
         }
 
@@ -1120,7 +1135,7 @@ public class BuildFFACommand implements CommandExecutor {
     private boolean handleYPearl(CommandSender sender, String[] args) {
         YPearl ypearl = getYPearlListener();
         if (ypearl == null) {
-            sender.sendMessage(colorize("&cError: YPearl listener not found. Try /buildffa reload"));
+            sender.sendMessage(colorize("&cError: YPearl listener not found. Try /bffa reload"));
             return true;
         }
 
@@ -1129,9 +1144,9 @@ public class BuildFFACommand implements CommandExecutor {
             sender.sendMessage(colorize("&6&lYPearl Status"));
             sender.sendMessage(colorize("&7Enabled: " + (ypearl.isEnabled() ? "&aYES" : "&cNO")));
             sender.sendMessage(colorize("&7Y-Level: &e" + ypearl.getYPearlLimit()));
-            sender.sendMessage(colorize("&7Usage: &e/buildffa ypearl [y] &7- Set Y level"));
-            sender.sendMessage(colorize("&7Usage: &e/buildffa ypearl toggle &7- Enable/Disable"));
-            sender.sendMessage(colorize("&7Usage: &e/buildffa ypearl off &7- Disable"));
+            sender.sendMessage(colorize("&7Usage: &e/bffa ypearl [y] &7- Set Y level"));
+            sender.sendMessage(colorize("&7Usage: &e/bffa ypearl toggle &7- Enable/Disable"));
+            sender.sendMessage(colorize("&7Usage: &e/bffa ypearl off &7- Disable"));
             sender.sendMessage(colorize("&8&m----------------------------------"));
             return true;
         }
@@ -1164,7 +1179,7 @@ public class BuildFFACommand implements CommandExecutor {
             y = Double.parseDouble(arg);
         } catch (NumberFormatException e) {
             sender.sendMessage(colorize("&cInvalid number: &e" + args[1]));
-            sender.sendMessage(colorize("&7Usage: &e/buildffa ypearl [y]"));
+            sender.sendMessage(colorize("&7Usage: &e/bffa ypearl [y]"));
             return true;
         }
 
@@ -1229,7 +1244,7 @@ public class BuildFFACommand implements CommandExecutor {
             return true;
         }
 
-        player.sendMessage(colorize("&cUsage: /buildffa buildmode <on|off|toggle>"));
+        player.sendMessage(colorize("&cUsage: /bffa buildmode <on|off|toggle>"));
         return true;
     }
 
@@ -1290,13 +1305,13 @@ public class BuildFFACommand implements CommandExecutor {
                 y = Double.parseDouble(args[1]);
             } catch (NumberFormatException e) {
                 sender.sendMessage(colorize("&cInvalid number: &e" + args[1]));
-                sender.sendMessage(colorize("&7Usage: &e/buildffa setvoid [y]"));
+                sender.sendMessage(colorize("&7Usage: &e/bffa setvoid [y]"));
                 return true;
             }
         } else {
             if (!(sender instanceof Player)) {
                 sender.sendMessage(colorize("&cYou must be a player to use setvoid without a value."));
-                sender.sendMessage(colorize("&7From console: &e/buildffa setvoid [y]"));
+                sender.sendMessage(colorize("&7From console: &e/bffa setvoid [y]"));
                 return true;
             }
             Player player = (Player) sender;
@@ -1323,13 +1338,13 @@ public class BuildFFACommand implements CommandExecutor {
                 y = Double.parseDouble(args[1]);
             } catch (NumberFormatException e) {
                 sender.sendMessage(colorize("&cInvalid number: &e" + args[1]));
-                sender.sendMessage(colorize("&7Usage: &e/buildffa sethighlimit [y]"));
+                sender.sendMessage(colorize("&7Usage: &e/bffa sethighlimit [y]"));
                 return true;
             }
         } else {
             if (!(sender instanceof Player)) {
                 sender.sendMessage(colorize("&cYou must be a player to use sethighlimit without a value."));
-                sender.sendMessage(colorize("&7From console: &e/buildffa sethighlimit [y]"));
+                sender.sendMessage(colorize("&7From console: &e/bffa sethighlimit [y]"));
                 return true;
             }
             Player player = (Player) sender;
@@ -1440,22 +1455,22 @@ public class BuildFFACommand implements CommandExecutor {
         sender.sendMessage(colorize("&8&m----------------------------------"));
 
         if (sender.hasPermission(getPerm("kiteditor", "buildffa.kiteditor"))) {
-            sender.sendMessage(colorize("&e/buildffa kiteditor &7- Open the Kit Editor GUI"));
-            sender.sendMessage(colorize("&e/buildffa kiteditor reset &7- Reset your kit"));
+            sender.sendMessage(colorize("&e/bffa kiteditor &7- Open the Kit Editor GUI"));
+            sender.sendMessage(colorize("&e/bffa kiteditor reset &7- Reset your kit"));
         }
 
         if (sender.hasPermission(getPerm("scoreboard-toggle", "buildffa.scoreboard.toggle"))) {
-            sender.sendMessage(colorize("&e/buildffa sb &7- Toggle scoreboard visibility"));
+            sender.sendMessage(colorize("&e/bffa sb &7- Toggle scoreboard visibility"));
         }
 
-        sender.sendMessage(colorize("&e/buildffa stats [player] &7- Show player stats"));
-        sender.sendMessage(colorize("&e/buildffa top [kills|deaths|kdr|streak] [limit] &7- Show top players"));
-        sender.sendMessage(colorize("&e/buildffa deathleaderboard [limit] &7- Deaths leaderboard"));
-        sender.sendMessage(colorize("&e/buildffa killleaderboard [limit] &7- Kills leaderboard"));
-        sender.sendMessage(colorize("&e/buildffa kdrleaderboard [limit] &7- KDR leaderboard"));
-        sender.sendMessage(colorize("&e/buildffa streakleaderboard [limit] &7- Killstreak leaderboard"));
-        sender.sendMessage(colorize("&e/buildffa leaderboards &7- Show all leaderboards"));
-        sender.sendMessage(colorize("&e/buildffa creator &7- Show plugin credits"));
+        sender.sendMessage(colorize("&e/bffa stats [player] &7- Show player stats"));
+        sender.sendMessage(colorize("&e/bffa top [kills|deaths|kdr|streak] [limit] &7- Show top players"));
+        sender.sendMessage(colorize("&e/bffa deathleaderboard [limit] &7- Deaths leaderboard"));
+        sender.sendMessage(colorize("&e/bffa killleaderboard [limit] &7- Kills leaderboard"));
+        sender.sendMessage(colorize("&e/bffa kdrleaderboard [limit] &7- KDR leaderboard"));
+        sender.sendMessage(colorize("&e/bffa streakleaderboard [limit] &7- Killstreak leaderboard"));
+        sender.sendMessage(colorize("&e/bffa leaderboards &7- Show all leaderboards"));
+        sender.sendMessage(colorize("&e/bffa creator &7- Show plugin credits"));
 
         boolean isAdmin = sender.hasPermission(getPerm("setvoid", "buildffa.setvoid"))
                 || sender.hasPermission(getPerm("sethighlimit", "buildffa.sethighlimit"))
@@ -1473,53 +1488,53 @@ public class BuildFFACommand implements CommandExecutor {
             sender.sendMessage(colorize("&8&m----------------------------------"));
 
             if (sender.hasPermission(getPerm("buildmode", "buildffa.buildmode"))) {
-                sender.sendMessage(colorize("&e/buildffa buildmode &7- Toggle Build Mode"));
-                sender.sendMessage(colorize("&e/buildffa buildmode on|off &7- Set Build Mode"));
+                sender.sendMessage(colorize("&e/bffa buildmode &7- Toggle Build Mode"));
+                sender.sendMessage(colorize("&e/bffa buildmode on|off &7- Set Build Mode"));
             }
 
             if (sender.hasPermission(getPerm("setvoid", "buildffa.setvoid"))) {
-                sender.sendMessage(colorize("&e/buildffa setvoid &7- Set void Y to your current Y"));
-                sender.sendMessage(colorize("&e/buildffa setvoid [y] &7- Set void Y to a specific value"));
+                sender.sendMessage(colorize("&e/bffa setvoid &7- Set void Y to your current Y"));
+                sender.sendMessage(colorize("&e/bffa setvoid [y] &7- Set void Y to a specific value"));
             }
 
             if (sender.hasPermission(getPerm("sethighlimit", "buildffa.sethighlimit"))) {
-                sender.sendMessage(colorize("&e/buildffa sethighlimit &7- Set high limit to your current Y"));
-                sender.sendMessage(colorize("&e/buildffa sethighlimit [y] &7- Set high limit to a value"));
+                sender.sendMessage(colorize("&e/bffa sethighlimit &7- Set high limit to your current Y"));
+                sender.sendMessage(colorize("&e/bffa sethighlimit [y] &7- Set high limit to a value"));
             }
 
             if (sender.hasPermission(getPerm("ypvp", "buildffa.ypvp"))) {
-                sender.sendMessage(colorize("&e/buildffa ypvp [y] &7- Set YPvP Y level & enable"));
-                sender.sendMessage(colorize("&e/buildffa ypvp toggle &7- Enable/Disable YPvP"));
-                sender.sendMessage(colorize("&e/buildffa ypvp off &7- Disable YPvP"));
+                sender.sendMessage(colorize("&e/bffa ypvp [y] &7- Set YPvP Y level & enable"));
+                sender.sendMessage(colorize("&e/bffa ypvp toggle &7- Enable/Disable YPvP"));
+                sender.sendMessage(colorize("&e/bffa ypvp off &7- Disable YPvP"));
             }
 
             if (sender.hasPermission(getPerm("ypearl", "buildffa.ypearl"))) {
-                sender.sendMessage(colorize("&e/buildffa ypearl [y] &7- Set YPearl Y level & enable"));
-                sender.sendMessage(colorize("&e/buildffa ypearl toggle &7- Enable/Disable YPearl"));
-                sender.sendMessage(colorize("&e/buildffa ypearl off &7- Disable YPearl"));
+                sender.sendMessage(colorize("&e/bffa ypearl [y] &7- Set YPearl Y level & enable"));
+                sender.sendMessage(colorize("&e/bffa ypearl toggle &7- Enable/Disable YPearl"));
+                sender.sendMessage(colorize("&e/bffa ypearl off &7- Disable YPearl"));
             }
 
             if (sender.hasPermission(getPerm("fireball-speed", "buildffa.fireball.speed"))) {
-                sender.sendMessage(colorize("&e/buildffa fb-speed <value> &7- Set fireball speed (-10 to +10)"));
+                sender.sendMessage(colorize("&e/bffa fb-speed <value> &7- Set fireball speed (-10 to +10)"));
             }
 
             if (sender.hasPermission(getPerm("setspawn", "buildffa.setspawn"))) {
-                sender.sendMessage(colorize("&e/buildffa setspawn &7- Set respawn point to your location"));
+                sender.sendMessage(colorize("&e/bffa setspawn &7- Set respawn point to your location"));
             }
 
             if (sender.hasPermission(getPerm("resetstats", "buildffa.resetstats"))) {
-                sender.sendMessage(colorize("&e/buildffa stats add <kill|kdr|ks|death> <player> <amount> &7- Add to a stat"));
-                sender.sendMessage(colorize("&e/buildffa stats reset <kill|ks|death> <player> &7- Reset a stat"));
-                sender.sendMessage(colorize("&e/buildffa resetstats <player> &7- Reset all player stats"));
-                sender.sendMessage(colorize("&e/buildffa resetallleaderboards &7- Reset ALL leaderboards"));
-                sender.sendMessage(colorize("&e/buildffa forceksreward <ks> &7- Give yourself the reward for that killstreak"));
+                sender.sendMessage(colorize("&e/bffa stats add <kill|kdr|ks|death> <player> <amount> &7- Add to a stat"));
+                sender.sendMessage(colorize("&e/bffa stats reset <kill|ks|death> <player> &7- Reset a stat"));
+                sender.sendMessage(colorize("&e/bffa resetstats <player> &7- Reset all player stats"));
+                sender.sendMessage(colorize("&e/bffa resetallleaderboards &7- Reset ALL leaderboards"));
+                sender.sendMessage(colorize("&e/bffa forceksreward <ks> &7- Give yourself the reward for that killstreak"));
             }
 
             if (sender.hasPermission(getPerm("reload", "buildffa.reload"))) {
-                sender.sendMessage(colorize("&e/buildffa reload &7- Reload configuration"));
-                sender.sendMessage(colorize("&e/buildffa sb reload &7- Reload scoreboard.yml"));
-                sender.sendMessage(colorize("&e/buildffa dbinfo &7- Show database info"));
-                sender.sendMessage(colorize("&e/buildffa dbbackup &7- Force a database backup"));
+                sender.sendMessage(colorize("&e/bffa reload &7- Reload configuration"));
+                sender.sendMessage(colorize("&e/bffa sb reload &7- Reload scoreboard.yml"));
+                sender.sendMessage(colorize("&e/bffa dbinfo &7- Show database info"));
+                sender.sendMessage(colorize("&e/bffa dbbackup &7- Force a database backup"));
             }
         }
 

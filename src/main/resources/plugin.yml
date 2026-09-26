@@ -8,17 +8,22 @@ api-version: 1.8
 softdepend: [PlaceholderAPI]
 
 commands:
-  buildffa:
+  bffa:
     description: Main BuildFFA command
-    usage: /buildffa <help|kiteditor|setvoid|sethighlimit|setspawn|buildmode|ypvp|ypearl|fb-speed|sb|stats|top|deathleaderboard|killleaderboard|kdrleaderboard|streakleaderboard|leaderboards|resetstats|resetallleaderboards|forceksreward|creator|reload>
+    usage: /bffa <help|kiteditor|setvoid|sethighlimit|setspawn|buildmode|ypvp|ypearl|fb-speed|sb|stats|top|deathleaderboard|killleaderboard|kdrleaderboard|streakleaderboard|leaderboards|resetstats|resetallleaderboards|forceksreward|creator|reload>
     aliases:
-      - bffa
+      - buildffa
+    # ★ FIX: gate the whole command at the Bukkit level — anyone without
+    # this permission can't even run it (also hides it from tab-complete).
+    permission: buildffa.use
+    permission-message: '&cYou do not have permission to use this command.'
 
 permissions:
   buildffa.*:
     description: Grants all BuildFFA permissions
     default: op
     children:
+      buildffa.use: true
       buildffa.kiteditor: true
       buildffa.setvoid: true
       buildffa.sethighlimit: true
@@ -33,6 +38,12 @@ permissions:
       buildffa.buildmode: true
       buildffa.scoreboard.toggle: true
       buildffa.resetstats: true
+
+  # ★ FIX: new top-level permission. Only op / players explicitly
+  # granted this (or buildffa.*) can see or run ANY /bffa subcommand.
+  buildffa.use:
+    description: Allows seeing and using the /bffa command at all
+    default: op
 
   buildffa.kiteditor:
     description: Allows using the Kit Editor

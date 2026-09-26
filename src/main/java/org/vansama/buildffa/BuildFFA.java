@@ -132,7 +132,8 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         // ✅ EnemyHealthBar self-registers in its constructor — no need to register here.
         // =============================================================
 
-        getCommand("buildffa").setExecutor(new BuildFFACommand(this, this.kitEditor, this.scoreboardManager, this.databaseManager));
+        // ★ FIX: command moved from /buildffa to /bffa (see plugin.yml)
+        getCommand("bffa").setExecutor(new BuildFFACommand(this, this.kitEditor, this.scoreboardManager, this.databaseManager));
 
         // ==================== PlaceholderAPI ====================
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
@@ -366,6 +367,8 @@ public final class BuildFFA extends JavaPlugin implements Listener {
         setIfMissing(cfg, "permissions.scoreboard-toggle", "buildffa.scoreboard.toggle");
         setIfMissing(cfg, "permissions.highlimit-bypass", "buildffa.highlimit.bypass");
         setIfMissing(cfg, "permissions.resetstats", "buildffa.resetstats");
+        // ★ FIX: top-level gate — only op/permission holders can use /bffa at all
+        setIfMissing(cfg, "permissions.use", "buildffa.use");
 
         setIfMissing(cfg, "messages.no-permission", "&cYou do not have permission to do this.");
 
